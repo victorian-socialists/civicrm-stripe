@@ -41,7 +41,14 @@
   // Prepare the form.
   $(document).ready(function() {
     Stripe.setPublishableKey($('#stripe-pub-key').val());
+    loadStripeBillingBlock();
+  });
 
+  CRM.$('input[name="payment_processor_id"]').change(function() {
+    loadStripeBillingBlock();
+  });
+
+  function loadStripeBillingBlock() {
     // Check for form marked as a stripe-payment-form by the server.
     if (!($('form.stripe-payment-form').length)) {
       // If there isn't one look for it.
@@ -49,8 +56,11 @@
         isWebform = true;
         $('form.webform-client-form').addClass('stripe-payment-form');
       }
+      else if ($('#crm-container form').length) {
+        $('#crm-container form').addClass('stripe-payment-form');
+      }
       else {
-        $('#crm-container > form').addClass('stripe-payment-form');
+        return;
       }
     }
 
@@ -223,7 +233,7 @@
       debugging('debug: ywkvh (Getting Stripe token)');
       return false;
     });
-  });
+  }
 }(cj, CRM));
 
 function debugging (errorCode) {
