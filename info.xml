@@ -5,6 +5,7 @@
   <description>Stripe Payment Processor</description>
   <urls>
     <url desc="Main Extension Page">http://drastikbydesign.com</url>
+    <url desc="Support">https://www.mjwconsult.co.uk</url>
   </urls>
   <license>AGPL</license>
   <maintainer>
