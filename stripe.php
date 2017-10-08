@@ -3,6 +3,8 @@
 require_once 'stripe.civix.php';
 require_once __DIR__.'/vendor/autoload.php';
 
+use CRM_Stripe_ExtensionUtil as E;
+
 /**
  * Implementation of hook_civicrm_config().
  */
@@ -194,7 +196,7 @@ function stripe_civicrm_managed(&$entities) {
    * @return void
    */
   function stripe_civicrm_alterContent( &$content, $context, $tplName, &$object ) {
-    if($context == 'form' && !empty($object->_paymentProcessor['class_name'])) {
+    if ($context == 'form' && !empty($object->_paymentProcessor['class_name'])) {
       $stripeJSURL = CRM_Core_Resources::singleton()->getUrl('com.drastikbydesign.stripe', 'js/civicrm_stripe.js');
       $content .= "<script src='{$stripeJSURL}'></script>";
     }
@@ -207,9 +209,9 @@ function stripe_civicrm_managed(&$entities) {
  */
 function stripe_civicrm_buildForm($formName, &$form) {
   if (!empty($form->_paymentProcessor['class_name'])) {
-    CRM_Core_Resources::singleton()->addScriptUrl('https://js.stripe.com/v2/');
+    //CRM_Core_Resources::singleton()->addScriptUrl('https://js.stripe.com/v2/', 10, 'page-body');
   }
-  if (($formName == 'CRM_Member_Form_MembershipRenewal') && !empty($form->_paymentProcessor['class_name'])) {
+  if (/*$form->isBackOffice &&*/ !empty($form->_paymentProcessor['class_name'])) {
     // civicrm_stripe.js is not included on backend form renewal unless we add it here.
     CRM_Core_Resources::singleton()->addScriptFile('com.drastikbydesign.stripe', 'js/civicrm_stripe.js');
   }

@@ -208,7 +208,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @param $form - reference to the form object
    */
   public function buildForm(&$form) {
-    $stripe_ppid = self::get_stripe_ppid($form);
+    $stripe_ppid = CRM_Utils_Array::value('id', $form->_paymentProcessor);
 
     // Add the ID to our form so our js can tell if Stripe has been selected.
     $form->addElement('hidden', 'stripe_id', $stripe_ppid, array('id' => 'stripe-id'));
@@ -221,56 +221,16 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     if (!empty($params[0]['stripe_token'])) {
       $params = $params[0];
     }
-    $stripe_token = (empty($params['stripe_token']) ? NULL : $params['stripe_token']);
+    $stripeToken = (empty($params['stripetoken']) ? NULL : $params['stripetoken']);
 
     // Add some hidden fields for Stripe.
-    if (!$form->elementExists('stripe_token')) {
-      $form->setAttribute('class', $form->getAttribute('class') . ' stripe-payment-form');
-      $form->addElement('hidden', 'stripe_token', $stripe_token, array('id' => 'stripe-token'));
+    if (!empty($stripeToken) && !$form->elementExists('stripetoken')) {
+        $form->addElement('hidden', 'stripetoken', $stripeToken, array('id' => 'stripe-token'));
     }
-
-    // Add the Civi version so we can accommodate different versions in civicrm_stripe.js.
-    if (self::get_civi_version() <= '4.7.0') {
-      $ext_mode = 1;
-    }
-    else {
-      $ext_mode = 2;
-    }
-    $form->addElement('hidden', 'ext_mode', $ext_mode, array('id' => 'ext-mode'));
 
     // Add email field as it would usually be found on donation forms.
     if (!isset($form->_elementIndex['email']) && !empty($form->userEmail)) {
       $form->addElement('hidden', 'email', $form->userEmail, array('id' => 'user-email'));
-    }
-  }
-
- public static function get_stripe_ppid($form) {
-    if (empty($form->_paymentProcessor)) {
-      return;
-    }
-
-    // When called from admin backend (eg via CRM_Contribute_Form_Contribution, CRM_Member_Form_Membership)
-    // the isBackOffice flag will be set to true.
-    // But if called via webform in CiviCRM 4.7: isBackOffice=NULL and for is of class CRM_Financial_Form_Payment or CRM_Contribute_Form_Contribution
-    // Those don't have a _paymentProcessors array and only have one payprocesssor.
-    if (!empty($form->isBackOffice)
-      || (in_array(get_class($form), array('CRM_Financial_Form_Payment', 'CRM_Contribute_Form_Contribution')))) {
-      return $stripe_ppid = $form->_paymentProcessor['id'];
-    }
-    else {
-      // Find a Stripe pay processor ascociated with this Civi form and find the ID.
-      //   $payProcessors = $form->_paymentProcessors;
-      $payProcessors = CRM_Core_Form_Stripe::get_ppids($form);
-      foreach ($payProcessors as $payProcessor) {
-        if ($payProcessor['class_name'] == 'Payment_Stripe') {
-          return $stripe_ppid = $payProcessor['id'];
-          break;
-        }
-      }
-    }
-    // None of the payprocessors are Stripe.
-    if (empty($stripe_ppid)) {
-      return;
     }
   }
 
@@ -342,8 +302,9 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     $amount = (int) preg_replace('/[^\d]/', '', strval($amount));
 
     // Use Stripe.js instead of raw card details.
-    if (!empty($params['stripe_token'])) {
-      $card_details = $params['stripe_token'];
+    if (!empty($params['credit_card_number']) && (substr($params['credit_card_number'], 0, 4) === 'tok_')) {
+      $card_details = $params['credit_card_number'];
+      $params['credit_card_number'] = '';
     }
     else {
       CRM_Core_Error::fatal(ts('Stripe.js token was not passed!  Report this message to the site administrator.'));
@@ -815,5 +776,22 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    */
   public function doTransferCheckout(&$params, $component) {
     CRM_Core_Error::fatal(ts('Use direct billing instead of Transfer method.'));
+  }
+
+  /**
+   * Default payment instrument validation.
+   *
+   * Implement the usual Luhn algorithm via a static function in the CRM_Core_Payment_Form if it's a credit card
+   * Not a static function, because I need to check for payment_type.
+   *
+   * @param array $values
+   * @param array $errors
+   */
+  public function validatePaymentInstrument($values, &$errors) {
+    CRM_Core_Form::validateMandatoryFields($this->getMandatoryFields(), $values, $errors);
+    if ($this->_paymentProcessor['payment_type'] == 1) {
+      // Don't validate credit card details as they are not passed (and stripe does this for us)
+      //CRM_Core_Payment_Form::validateCreditCard($values, $errors, $this->_paymentProcessor['id']);
+    }
   }
 }
