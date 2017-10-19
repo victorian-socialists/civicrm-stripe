@@ -188,16 +188,56 @@ function stripe_civicrm_managed(&$entities) {
     }
   }
 
+// Flag so we don't add the stripe scripts more than once.
+static $_stripe_scripts_added;
+
+/**
+ * Implementation of hook_civicrm_alterContent
+ *
+ * Adding civicrm_stripe.js in a way that works for webforms and (some) Civi forms.
+ * hook_civicrm_buildForm is not called for webforms
+ *
+ * @return void
+ */
+function stripe_civicrm_alterContent( &$content, $context, $tplName, &$object ) {
+  global $_stripe_scripts_added;
+  /* Adding stripe js:
+   * - Webforms don't get scripts added by hook_civicrm_buildForm so we have to user alterContent
+   * - (Webforms still call buildForm and it looks like they are added but they are not,
+   *   which is why we check for $object instanceof CRM_Financial_Form_Payment here to ensure that
+   *   Webforms always have scripts added).
+   * - Almost all forms have context = 'form' and a paymentprocessor object.
+   * - Membership backend form is a 'page' and has a _isPaymentProcessor=true flag.
+   *
+   */
+  if (($context == 'form' && !empty($object->_paymentProcessor['class_name']))
+     || (($context == 'page') && !empty($object->_isPaymentProcessor))) {
+    if (!$_stripe_scripts_added || $object instanceof CRM_Financial_Form_Payment) {
+      $stripeJSURL = CRM_Core_Resources::singleton()
+        ->getUrl('com.drastikbydesign.stripe', 'js/civicrm_stripe.js');
+      $content .= "<script src='{$stripeJSURL}'></script>";
+      $content .= "<script src='https://js.stripe.com/v2/'></script>";
+      $_stripe_scripts_added = TRUE;
+    }
+  }
+}
+
 /**
  * Add stripe.js to forms, to generate stripe token
+ * hook_civicrm_alterContent is not called for all forms (eg. CRM_Contribute_Form_Contribution on backend)
  * @param $formName
  * @param $form
  */
 function stripe_civicrm_buildForm($formName, &$form) {
+  global $_stripe_scripts_added;
   if (!empty($form->_paymentProcessor['class_name'])) {
-    // civicrm_stripe.js is not included on backend form renewal unless we add it here.
-    CRM_Core_Resources::singleton()->addScriptUrl('https://js.stripe.com/v2/', 10, 'page-body');
-    CRM_Core_Resources::singleton()->addScriptFile('com.drastikbydesign.stripe', 'js/civicrm_stripe.js');
+    if (!$_stripe_scripts_added) {
+      CRM_Core_Resources::singleton()
+        ->addScriptUrl('https://js.stripe.com/v2/', 10, 'page-body');
+      CRM_Core_Resources::singleton()
+        ->addScriptFile('com.drastikbydesign.stripe', 'js/civicrm_stripe.js');
+    }
+    $_stripe_scripts_added = TRUE;
   }
 }
 
