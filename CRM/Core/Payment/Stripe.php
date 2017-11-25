@@ -891,7 +891,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    *
    */
   public function doTransferCheckout(&$params, $component) {
-    CRM_Core_Error::fatal(ts('Use direct billing instead of Transfer method.'));
+    self::doDirectPayment($params);
   }
 
   /**
