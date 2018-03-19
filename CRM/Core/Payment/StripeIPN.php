@@ -81,7 +81,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
     }
 
     // Now re-retrieve the data from Stripe to ensure it's legit.
-    require_once ("packages/stripe-php/init.php");
+    require_once ("vendor/stripe/stripe-php/init.php");
     \Stripe\Stripe::setApiKey($this->secret_key);
 
     if ($this->verify_event) {
