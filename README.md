@@ -100,7 +100,7 @@ Tests can be run most easily via an installation made through CiviCRM Buildkit (
     phpunit4 tests/phpunit/CRM/Stripe/IpnTest.php
     phpunit4 tests/phpunit/CRM/Stripe/DirectTest.php
 
-The following manual tests should also be run:
+#### The following manual tests should also be run:
 
 1. Test webform submission with payment and user-select, single processor.
 1. Test online contribution page with single processor, multi-processor (stripe default, stripe non-default).
@@ -109,3 +109,5 @@ The following manual tests should also be run:
 1. Test event registration (cart checkout).
 1. Test offline event registration.
 1. Test offline membership.
+1. Test online contribution page on Wordpress.
+1. Test online contribution page on Joomla.
