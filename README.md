@@ -1,16 +1,29 @@
 CiviCRM Stripe Payment Processor
 --------------------------------
-Version 1.8+ of this extension *must* use Stripe's latest API version (at least 2013-12-03).  
+
+## Requirements
+* PHP 5.6+
+* Jquery 1.10 (Use jquery_update module on Drupal).
+* Drupal 7 / Joomla / Wordpress (latest supported release).
+*Not currently tested with other CMS but it may work.*
+* CiviCRM 5.0+
+* Stripe API version: ??? 
+
+### How to update Stripe API version
 Go to _Account Settings_ -> _API Keys_ tab -> click _Upgrade available_ button.  
 More info on how to change:  https://stripe.com/docs/upgrades#how-can-i-upgrade-my-api  
 
-CONFIGURATION
--------------
+## Configuration
 All configuration is in the standard Payment Processors settings area in CiviCRM admin.  
 You will enter your "Publishable" & "Secret" key given by stripe.com.  
 
-WEBHOOK & RECURRING PAYMENTS
----------
+## Installation
+Download and install extension via CiviCRM's "Manage Extensions" page.  
+
+## Webhook and Recurring Contributions
+
+**TODO: Replace with documentation for NEW CiviCRM standard method**
+
 The Webhook.php file is registered to the path of civicrm/stripe/webhook  
 You will have to make a Webhook rule in your Stripe.com account and enter this path for recurring charges to end!  
 For Drupal:  https://example.com/civicrm/stripe/webhook  
@@ -25,50 +38,13 @@ For Drupal:  https://example.com/civicrm/stripe/webhook?ppid=3
 For Joomla:  https://example.com/index.php/component/civicrm/?task=civicrm/stripe/webhook&ppid=3
 For Wordpress:  https://example.com/?page=CiviCRM&q=civicrm/stripe/webhook&ppid=3
 
-INSTALLATION
-------------
-For CiviCRM 4.4 & up:  
-1)  Your CiviCRM 'Resource URLs' must be set to the extensions directory  
-    relative to Drupal/CRM base.  Example: /sites/all/civicrm_extensions/  
-    *NOT the full server path like /var/www/sites/all/civicrm_extensions/*  
-    The admin page for Resource URLs is:  /civicrm/admin/setting/url  
-
-2)  Install extension via CiviCRM's "Manage Extensions" page.  
-
-CANCELLING RECURRING CONTRIBUTIONS
-------------
+### Cancelling Recurring Contributions
 You can cancel a recurring contribution from the Stripe.com dashboard. Go to Customers and then to the specific customer.
 Inside the customer you will see a Subscriptions section. Click Cancel on the subscription you want to cancel.
 Stripe.com will cancel the subscription and will send a webhook to your site (if you have set the webhook options correctly).
  Then the stripe_civicrm extension will process the webhook and cancel the Civi recurring contribution.
 
-GOOD TO KNOW
-------------
-* The stripe-php package has been added to this project & no longer needs to be  
-downloaded separately.  
-* You do not need the separate civicrm_stripe CMS module for 4.2 & up  
-* There will no longer be branches for each version.  The branches will be:  
-  * Civi's major.minor-dev, and we will create releases (tags) for each new release version.  
-    * Example: 4.6-dev.  
-
-AUTHOR INFO
------------
-Joshua Walker  
-http://drastikbydesign.com  
-https://drupal.org/user/433663  
-
-MAINTAINER INFO
----------------
-Peter Hartmann
-https://blog.hartmanncomputer.com
-
-OTHER CREDITS
--------------
-For bug fixes, new features, and documentiation, thanks to:
-rgburton, Swingline0, BorislavZlatanov, agh1, & jmcclelland
-
-API
-------------
+## API
 This extension comes with several APIs to help you troubleshoot problems. These can be run via /civicrm/api or via drush if you are using Drupal (drush cvapi Stripe.XXX).
 
 The api commands are:
@@ -87,9 +63,9 @@ The api commands are:
   * ppid - Use the given Payment Processor ID. By default, uses the saved, live Stripe payment processor and throws an error if there is more than one.
   * noreceipt - Set to 1 if you want to suppress the generation of receipts or set to 0 or leave out to send receipts normally.
 
-TESTING
---------
+# TESTING
 
+### PHPUnit
 This extension comes with two PHP Unit tests:
 
  * Ipn - This unit test ensures that a recurring contribution is properly updated after the event is received from Stripe and that it is properly canceled when cancelled via Stripe.
@@ -100,16 +76,43 @@ Tests can be run most easily via an installation made through CiviCRM Buildkit (
     phpunit4 tests/phpunit/CRM/Stripe/IpnTest.php
     phpunit4 tests/phpunit/CRM/Stripe/DirectTest.php
 
-In addition, see the test/katalon folder for instructions on running full web-browser based automation tests.
+### Katalon Tests
+See the test/katalon folder for instructions on running full web-browser based automation tests.
 
-#### The following manual tests should also be run:
+Expects a drupal (demo) site installed at http://localhost:8001
+
+1. Login: No expected result, just logs into a Drupal CMS.
+1. Enable Stripe Extension: Two payment processors are created, can be done manually but processor labels must match or subsequent tests will fail.
+1. Offline Contribution, default PP: A contribution is created for Arlyne Adams with default PP.
+1. Offline Contribution, alternate PP: A contribution is created for Arlyne Adams with alternate PP.
+1. Offline Membership, default PP: A membership/contribution is created for Arlyne Adams with default PP.
+1. Offline Membership, alternate PP: A membership/contribution is created for Arlyne Adams with alternate PP.
+1. Offline Event Registration, default PP: A participant record/contribution is created for Arlyne Adams with default PP.
+1. Offline Event Registration, alternate PP: A participant record/contribution is created for Arlyne Adams with alternate PP.
+
+ONLINE contribution, event registration tests
+ONLINE webform test
+
+### Manual Tests
 
 1. Test webform submission with payment and user-select, single processor.
-1. Test online contribution page with single processor, multi-processor (stripe default, stripe non-default).
-1. Test offline contribution page with single processor, multi-processor (stripe default, stripe non-default).
-1. Test event registration.
-1. Test event registration (cart checkout).
-1. Test offline event registration.
-1. Test offline membership.
+1. TODO: Are we testing offline contribution with single/multi-processor properly when stripe is/is not default with katalon tests?
+
 1. Test online contribution page on Wordpress.
 1. Test online contribution page on Joomla.
+1. Test online event registration.
+1. Test online event registration (cart checkout).
+
+## Credits / Maintenance
+
+### Original Author
+Joshua Walker - http://drastikbydesign.com - https://drupal.org/user/433663  
+
+### Maintainer
+---------------
+Peter Hartmann - https://blog.hartmanncomputer.com
+
+### Other Credits
+-------------
+For bug fixes, new features, and documentation, thanks to:
+rgburton, Swingline0, BorislavZlatanov, agh1, jmcclelland, mattwire
