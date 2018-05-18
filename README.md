@@ -52,7 +52,7 @@ Therefore the call back address for your site will be:
 
 See below for the full address to add to the endpoint (replace NN with your actual ID number):
 
-* For Drupal:  https://example.com/civicrm/paymet/ipn/NN
+* For Drupal:  https://example.com/civicrm/payment/ipn/NN
 * For Joomla:  https://example.com/index.php/component/civicrm/?task=civicrm/payment/ipn/NN
 * For Wordpress:  https://example.com/?page=CiviCRM&q=civicrm/payment/ipn/NN
 
