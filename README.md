@@ -7,7 +7,7 @@ CiviCRM Stripe Payment Processor
 * Drupal 7 / Joomla / Wordpress (latest supported release).
 *Not currently tested with other CMS but it may work.*
 * CiviCRM 5.0+
-* Stripe API version: ??? 
+* Stripe API version: Tested on 2018-02-28
 
 ### How to update Stripe API version
 Go to _Account Settings_ -> _API Keys_ tab -> click _Upgrade available_ button.  
