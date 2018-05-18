@@ -209,20 +209,26 @@
         return false;
       }
 
-      // Handle multiple payment options and Stripe not being chosen.
-      if ($form.find(".crm-section.payment_processor-section").length > 0) {
-        var extMode = $('#ext-mode').val();
-        var stripeProcessorId = $('#stripe-id').val();
-        var chosenProcessorId = $form.find('input[name="payment_processor_id"]:checked').val();
+      var isWebform = getIsWebform();
 
-        // Bail if we're not using Stripe or are using pay later (option value '0' in payment_processor radio group).
-        if ((chosenProcessorId !== stripeProcessorId) || (chosenProcessorId === 0)) {
-          debugging('debug: Not a Stripe transaction, or pay-later');
-          return true;
-        }
+      // Handle multiple payment options and Stripe not being chosen.
+      if (isWebform) {
+        var stripeProcessorId = $('#stripe-id').val();
+        var chosenProcessorId = $form.find('input[name="submitted[civicrm_1_contribution_1_contribution_payment_processor_id]"]:checked').val();
       }
       else {
-        debugging('debug: Stripe is the selected payprocessor');
+        if ($form.find(".crm-section.payment_processor-section").length > 0) {
+          var stripeProcessorId = $('#stripe-id').val();
+          var chosenProcessorId = $form.find('input[name="payment_processor_id"]:checked').val();
+        }
+      }
+      // Bail if we're not using Stripe or are using pay later (option value '0' in payment_processor radio group).
+      if ((chosenProcessorId !== stripeProcessorId) || (chosenProcessorId === 0)) {
+        debugging('Not a Stripe transaction, or pay-later');
+        return true;
+      }
+      else {
+        debugging('Stripe is the selected payprocessor');
       }
 
       $form = getBillingForm();
@@ -239,23 +245,18 @@
       }
 
       $submit = getBillingSubmit();
-      var isWebform = getIsWebform();
 
       if (isWebform) {
-        var $processorFields = $('.civicrm-enabled[name$="civicrm_1_contribution_1_contribution_payment_processor_id]"]');
-
-        $totalElement = $('#wf-crm-billing-total');
-        if ($totalElement.length) {
-          // Handle old and new jQuery conventions (https://api.jquery.com/data/#data-html5)
-          // The second form is the new form as of jQuery 1.4.3 (jQuery tries to convert string
-          // numbers to integers).
-          if ($totalElement.data('data-amount') === '0' || $totalElement.data('amount') === 0 ) {
-            debugging('webform total is 0');
-            return true;
-          }
+        // If we have selected Stripe but amount is 0 we don't submit via Stripe
+        if ($('#billing-payment-block').is(':hidden')) {
+          debugging('no payment processor on webform');
+          return true;
         }
+
+        // If we have more than one processor (user-select) then we have a set of radio buttons:
+        var $processorFields = $('[name="submitted[civicrm_1_contribution_1_contribution_payment_processor_id]"]');
         if ($processorFields.length) {
-          if ($processorFields.filter(':checked').val() === '0') {
+          if ($processorFields.filter(':checked').val() === '0' || $processorFields.filter(':checked').val() === 0) {
             debugging('no payment processor selected');
             return true;
           }
@@ -265,7 +266,7 @@
       // If there's no credit card field, no use in continuing (probably wrong
       // context anyway)
       if (!$form.find('#credit_card_number').length) {
-        debugging('debug: No credit card field');
+        debugging('No credit card field');
         return true;
       }
       // Lock to prevent multiple submissions
@@ -296,7 +297,7 @@
         exp_month: cc_month,
         exp_year: cc_year
       }, stripeResponseHandler);
-      debugging('debug: Getting Stripe token');
+      debugging('Getting Stripe token');
       return false;
     }
   }
@@ -306,7 +307,11 @@
   }
 
   function getBillingForm() {
-    return $('input#stripe-pub-key').closest('form');
+    var $billingForm = $('input#stripe-pub-key').closest('form');
+    if (!$billingForm.length && getIsWebform()) {
+      $billingForm = $('.webform-client-form');
+    }
+    return $billingForm;
   }
 
   function getBillingSubmit() {
@@ -339,7 +344,7 @@
 
   function debugging (errorCode) {
     // Uncomment the following to debug unexpected returns.
-    console.log(errorCode);
+    console.log('civicrm_stripe.js: ' + errorCode);
   }
 
 }(cj, CRM));

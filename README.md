@@ -18,7 +18,9 @@ All configuration is in the standard Payment Processors settings area in CiviCRM
 You will enter your "Publishable" & "Secret" key given by stripe.com.  
 
 ## Installation
-Download and install extension via CiviCRM's "Manage Extensions" page.  
+Download and install extension via CiviCRM's "Manage Extensions" page.
+
+To use with Drupal Webform you **MUST** apply the following patch to webform_civicrm: https://github.com/colemanw/webform_civicrm/pull/100  
 
 ## Webhook and Recurring Contributions
 
@@ -89,9 +91,17 @@ Expects a drupal (demo) site installed at http://localhost:8001
 1. Offline Membership, alternate PP: A membership/contribution is created for Arlyne Adams with alternate PP.
 1. Offline Event Registration, default PP: A participant record/contribution is created for Arlyne Adams with default PP.
 1. Offline Event Registration, alternate PP: A participant record/contribution is created for Arlyne Adams with alternate PP.
+1. Online Contribution Stripe Default Only: A new contribution record is created.
+1. Online Contribution Page 2xStripe, Test proc, use Stripe Alt: A new contribution record is created. **FAIL:
+Error Oops! Looks like there was an error. Payment Response: 
+Type: invalid_request_error
+Code: resource_missing
+Message: No such token: Stripe Token**
+1. Online Contribution Page Stripe Default, Pay Later: A new contribution record is created.
+1. Test Webform: A new contribution is created. *Partial test only*
 
 ONLINE contribution, event registration tests
-ONLINE webform test
+
 
 ### Manual Tests
 
@@ -102,6 +112,19 @@ ONLINE webform test
 1. Test online contribution page on Joomla.
 1. Test online event registration.
 1. Test online event registration (cart checkout).
+
+#### Drupal Webform Tests
+TODO: Add these as Katalon tests.
+
+1. Webform with single payment processor (Stripe) - Amount = 0.
+1. Webform with single payment processor (Stripe) - Amount > 0.
+1. Webform with multiple payment processor (Stripe selected) - Amount = 0.
+1. Webform with multiple payment processor (Stripe selected) - Amount > 0.
+1. Webform with multiple payment processor (Pay Later selected) - Amount = 0.
+1. Webform with multiple payment processor (Pay Later selected) - Amount > 0.
+1. Webform with multiple payment processor (Non-stripe processor selected) - Amount = 0.
+1. Webform with multiple payment processor (Non-stripe processor selected) - Amount > 0.
+
 
 ## Credits / Maintenance
 
