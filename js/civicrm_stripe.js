@@ -213,13 +213,21 @@
 
       // Handle multiple payment options and Stripe not being chosen.
       if (isWebform) {
-        var stripeProcessorId = $('#stripe-id').val();
-        var chosenProcessorId = $form.find('input[name="submitted[civicrm_1_contribution_1_contribution_payment_processor_id]"]:checked').val();
+        debugger;
+        var stripeProcessorId;
+        var chosenProcessorId;
+        stripeProcessorId = $('#stripe-id').val();
+        // this element may or may not exist on the webform, but we are dealing with a single (stripe) processor enabled.
+        if (!$('input[name="submitted[civicrm_1_contribution_1_contribution_payment_processor_id]"]').length) {
+          chosenProcessorId = stripeProcessorId;
+        } else {
+          chosenProcessorId = $form.find('input[name="submitted[civicrm_1_contribution_1_contribution_payment_processor_id]"]:checked').val();
+        }
       }
       else {
         if ($form.find(".crm-section.payment_processor-section").length > 0) {
-          var stripeProcessorId = $('#stripe-id').val();
-          var chosenProcessorId = $form.find('input[name="payment_processor_id"]:checked').val();
+          stripeProcessorId = $('#stripe-id').val();
+          chosenProcessorId = $form.find('input[name="payment_processor_id"]:checked').val();
         }
       }
       // Bail if we're not using Stripe or are using pay later (option value '0' in payment_processor radio group).
