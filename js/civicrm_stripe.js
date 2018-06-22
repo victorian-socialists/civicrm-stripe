@@ -271,6 +271,9 @@
         }
       }
 
+      // This is ONLY triggered in the following circumstances on a CiviCRM contribution page:
+      // - With a priceset that allows a 0 amount to be selected.
+      // - When Stripe is the ONLY payment processor configured on the page.
       if (typeof calculateTotalFee == 'function') {
         var totalFee = calculateTotalFee();
         if (totalFee == '0') {
