@@ -81,20 +81,28 @@ function stripe_civicrm_uninstall() {
  */
 function stripe_civicrm_enable() {
   $UF_webhook_paths = array(
-    "Drupal"    => "/civicrm/stripe/webhook",
-    "Drupal6"   => "/civicrm/stripe/webhook",
-    "Joomla"    => "/index.php/component/civicrm/?task=civicrm/stripe/webhook",
-    "WordPress" => "/?page=CiviCRM&q=civicrm/stripe/webhook"
+    "Drupal"    => "/civicrm/payment/ipn/NN",
+    "Joomla"    => "/index.php/component/civicrm/?task=civicrm/payment/ipn/NN",
+    "WordPress" => "/?page=CiviCRM&q=civicrm/payment/ipn/NN"
   );
+
   // Use Drupal path as default if the UF isn't in the map above
   $webookhook_path = (array_key_exists(CIVICRM_UF, $UF_webhook_paths)) ?
     CIVICRM_UF_BASEURL . $UF_webhook_paths[CIVICRM_UF] :
-    CIVICRM_UF_BASEURL . "civicrm/stripe/webhook";
+    CIVICRM_UF_BASEURL . $UF_webhook_paths['Drupal'];
 
-  CRM_Core_Session::setStatus("Stripe Payment Processor Message:
+  CRM_Core_Session::setStatus(
+    "
     <br />Don't forget to set up Webhooks in Stripe so that recurring contributions are ended!
-    <br />Webhook path to enter in Stripe:<br/><em>$webookhook_path</em>
-    <br />");
+    <br />Webhook path to enter in Stripe:
+    <br/><em>$webookhook_path</em>
+    <br />Replace NN with the actual payment processor ID configured on your site.
+    <br />
+    ",
+    'Stripe Payment Processor',
+    'info',
+    ['expires' => 0]
+  );
 
   _stripe_civix_civicrm_enable();
 }
