@@ -213,7 +213,6 @@
 
       // Handle multiple payment options and Stripe not being chosen.
       if (isWebform) {
-        debugger;
         var stripeProcessorId;
         var chosenProcessorId;
         stripeProcessorId = $('#stripe-id').val();
@@ -363,7 +362,7 @@
 
   function debugging (errorCode) {
     // Uncomment the following to debug unexpected returns.
-    console.log('civicrm_stripe.js: ' + errorCode);
+    console.log(new Date().toISOString() + ' civicrm_stripe.js: ' + errorCode);
   }
 
 }(cj, CRM));
