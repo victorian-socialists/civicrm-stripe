@@ -229,8 +229,14 @@
           chosenProcessorId = $form.find('input[name="payment_processor_id"]:checked').val();
         }
       }
-      // Bail if we're not using Stripe or are using pay later (option value '0' in payment_processor radio group).
-      if ((chosenProcessorId !== stripeProcessorId) || (chosenProcessorId === 0)) {
+
+      // If any of these are true, we are not using the stripe processor:
+      // - Is the selected processor ID pay later (0)
+      // - Is the Stripe processor ID defined?
+      // - Is selected processor ID and stripe ID undefined? If we only have stripe ID, then there is only one (stripe) processor on the page
+      if ((chosenProcessorId === 0)
+          || (stripeProcessorId == null)
+          || ((chosenProcessorId == null) && (stripeProcessorId == null))) {
         debugging('Not a Stripe transaction, or pay-later');
         return true;
       }
