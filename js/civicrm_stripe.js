@@ -331,9 +331,15 @@
   }
 
   function getBillingForm() {
+    // If we have a stripe billing form on the page
     var $billingForm = $('input#stripe-pub-key').closest('form');
     if (!$billingForm.length && getIsWebform()) {
+      // If we are in a webform
       $billingForm = $('.webform-client-form');
+    }
+    if (!$billingForm.length) {
+      // If we have multiple payment processors to select and stripe is not currently loaded
+      $billingForm = $('input[name=hidden_processor]').closest('form');
     }
     return $billingForm;
   }
