@@ -109,7 +109,9 @@
   });
 
   function loadStripeBillingBlock() {
+    // Setup Stripe.Js
     var $stripePubKey = $('#stripe-pub-key');
+
     if ($stripePubKey.length) {
       if (!$().Stripe) {
         $.getScript('https://js.stripe.com/v2/', function () {
