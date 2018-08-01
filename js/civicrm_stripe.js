@@ -224,7 +224,9 @@
         }
       }
       else {
-        if ($form.find(".crm-section.payment_processor-section").length > 0) {
+        // Most forms have payment_processor-section but event registration has credit_card_info-section
+        if (($form.find(".crm-section.payment_processor-section").length > 0)
+            || ($form.find(".crm-section.credit_card_info-section").length > 0)) {
           stripeProcessorId = $('#stripe-id').val();
           chosenProcessorId = $form.find('input[name="payment_processor_id"]:checked').val();
         }
