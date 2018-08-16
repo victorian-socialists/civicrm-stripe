@@ -8,6 +8,7 @@ CiviCRM Stripe Payment Processor
 *Not currently tested with other CMS but it may work.*
 * CiviCRM 5.0+
 * Stripe API version: Tested on 2018-02-28
+* Drupal webform_civicrm 7.x-4.22+ (if using webform integration)
 
 ### How to update Stripe API version
 Go to _Account Settings_ -> _API Keys_ tab -> click _Upgrade available_ button.  
@@ -17,10 +18,31 @@ More info on how to change:  https://stripe.com/docs/upgrades#how-can-i-upgrade-
 All configuration is in the standard Payment Processors settings area in CiviCRM admin.  
 You will enter your "Publishable" & "Secret" key given by stripe.com.  
 
-## Installation
-Download and install extension via CiviCRM's "Manage Extensions" page.
+## Installation (Web UI)
 
-To use with Drupal Webform you **MUST** apply the following patch to webform_civicrm: https://github.com/colemanw/webform_civicrm/pull/100  
+This extension has not yet been published for installation via the web UI.
+
+## Installation (CLI, Zip)
+
+Sysadmins and developers may download the `.zip` file for this extension and
+install it with the command-line tool [cv](https://github.com/civicrm/cv).
+
+Latest releases can be found here: https://github.com/mattwire/com.drastikbydesign.stripe/releases
+
+```bash
+cd <extension-dir>
+cv dl com.drastikbydesign.stripe@https://github.com/mattwire/com.drastikbydesign.stripe/archive/master.zip
+```
+
+## Installation (CLI, Git)
+
+Sysadmins and developers may clone the [Git](https://en.wikipedia.org/wiki/Git) repo for this extension and
+install it with the command-line tool [cv](https://github.com/civicrm/cv).
+
+```bash
+git clone https://github.com/mattwire/com.drastikbydesign.stripe.git
+cv en stripe
+```
 
 ## Webhook and Recurring Contributions
 
