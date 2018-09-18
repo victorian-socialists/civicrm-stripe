@@ -71,7 +71,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    */
   public function logStripeException($op, $exception) {
     $body = print_r($exception->getJsonBody(), TRUE);
-    CRM_Core_Error::debug_log_message("Stripe_Error {$op}:  <pre> {$body} </pre>");
+    Civi::log()->debug("Stripe_Error {$op}:  <pre> {$body} </pre>");
   }
 
   /**
@@ -386,7 +386,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     if (array_key_exists('credit_card_number', $params)) {
       $cc = $params['credit_card_number'];
       if (!empty($cc) && substr($cc, 0, 8) != '00000000') {
-        CRM_Core_Error::debug_log_message(ts('ALERT! Unmasked credit card received in back end. Please report this error to the site administrator.'));
+        Civi::log()->debug(ts('ALERT! Unmasked credit card received in back end. Please report this error to the site administrator.'));
       }
     }
 
