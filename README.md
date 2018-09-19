@@ -27,12 +27,8 @@ This extension has not yet been published for installation via the web UI.
 Sysadmins and developers may download the `.zip` file for this extension and
 install it with the command-line tool [cv](https://github.com/civicrm/cv).
 
-Latest releases can be found here: https://github.com/mattwire/com.drastikbydesign.stripe/releases
+Latest releases can be found here: https://civicrm.org/extensions/stripe-payment-processor
 
-```bash
-cd <extension-dir>
-cv dl com.drastikbydesign.stripe@https://github.com/mattwire/com.drastikbydesign.stripe/archive/master.zip
-```
 
 ## Installation (CLI, Git)
 
@@ -40,7 +36,7 @@ Sysadmins and developers may clone the [Git](https://en.wikipedia.org/wiki/Git) 
 install it with the command-line tool [cv](https://github.com/civicrm/cv).
 
 ```bash
-git clone https://github.com/mattwire/com.drastikbydesign.stripe.git
+git clone https://lab.civicrm.org/extensions/stripe.git
 cv en stripe
 ```
 
@@ -166,16 +162,14 @@ TODO: Add these as Katalon tests.
 1. Webform with multiple payment processor (Non-stripe processor selected) - Amount > 0.
 
 
-## Credits / Maintenance
+## Credits
 
 ### Original Author
 Joshua Walker - http://drastikbydesign.com - https://drupal.org/user/433663  
 
-### Maintainer
----------------
-Peter Hartmann - https://blog.hartmanncomputer.com
-
 ### Other Credits
 -------------
+Peter Hartmann - https://blog.hartmanncomputer.com
+
 For bug fixes, new features, and documentation, thanks to:
 rgburton, Swingline0, BorislavZlatanov, agh1, jmcclelland, mattwire

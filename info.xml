@@ -4,20 +4,23 @@
   <name>Stripe</name>
   <description>Stripe Payment Processor</description>
   <urls>
-    <url desc="Main Extension Page">https://github.com/mattwire/com.drastikbydesign.stripe</url>
-    <url desc="Support">https://github.com/mattwire/com.drastikbydesign.stripe</url>
+    <url desc="Main Extension Page">https://lab.civicrm.org/extensions/stripe</url>
+    <url desc="Support">https://lab.civicrm.org/extensions/stripe/issues</url>
   </urls>
   <license>AGPL</license>
   <maintainer>
-    <author>Joshua Walker (drastik) - Drastik by Design</author>
-    <email>admin@drastikbydesign.com</email>
+    <author>Matthew Wire (MJW Consulting)</author>
+    <email>mjw@mjwconsult.co.uk</email>
   </maintainer>
-  <releaseDate>2018-08-16</releaseDate>
-  <version>5.0.beta4</version>
+  <releaseDate>2018-09-19</releaseDate>
+  <version>5.0.beta5</version>
   <develStage>beta</develStage>
   <compatibility>
     <ver>5.0</ver>
   </compatibility>
+  <comments>Original Author: Joshua Walker (drastik) - Drastik by Design.
+    Jamie Mcclelland (ProgressiveTech) did a lot of the 5.x compatibility work.
+  </comments>
   <civix>
     <namespace>CRM/Stripe</namespace>
   </civix>
