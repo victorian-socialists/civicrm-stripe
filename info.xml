@@ -13,8 +13,8 @@
     <email>mjw@mjwconsult.co.uk</email>
   </maintainer>
   <releaseDate>2018-09-19</releaseDate>
-  <version>5.0.beta5</version>
-  <develStage>beta</develStage>
+  <version>5.0</version>
+  <develStage>stable</develStage>
   <compatibility>
     <ver>5.0</ver>
   </compatibility>
