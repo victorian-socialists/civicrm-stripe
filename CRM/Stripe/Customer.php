@@ -57,7 +57,6 @@ class CRM_Stripe_Customer {
   }
 
   public static function create($params, $paymentProcessor) {
-    $params['processor_id'] = $paymentProcessor->_paymentProcessor['id'];
     $requiredParams = ['contact_id', 'card_token', 'is_live', 'processor_id'];
     // $optionalParams = ['email'];
     foreach ($requiredParams as $required) {

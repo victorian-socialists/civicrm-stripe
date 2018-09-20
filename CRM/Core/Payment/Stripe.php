@@ -494,7 +494,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         // Customer was found in civicrm_stripe database, but not in Stripe.
         // Delete existing customer record from CiviCRM and create a new customer
         CRM_Stripe_Customer::delete($customerParams);
-        $stripe_customer = CRM_Stripe_Customer::create($customerParams);
+        $stripe_customer = CRM_Stripe_Customer::create($customerParams, $this);
       }
     }
 
