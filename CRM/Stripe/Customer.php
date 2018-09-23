@@ -66,7 +66,7 @@ class CRM_Stripe_Customer {
     }
 
     $contactDisplayName = civicrm_api3('Contact', 'getvalue', [
-      'return' => ['display_name'],
+      'return' => 'display_name',
       'id' => $params['contact_id'],
     ]);
 
