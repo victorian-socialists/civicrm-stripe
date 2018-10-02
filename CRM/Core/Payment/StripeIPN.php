@@ -67,8 +67,8 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    * @throws CRM_Core_Exception
   */
   public function setInputParameters($parameters) {
-    if (empty($parameters) || !is_object($parameters) || empty($parameters->id)) {
-      $this->exception('Invalid input parameters. Should be an object with an id parameter');
+    if (!is_object($parameters)) {
+      $this->exception('Invalid input parameters');
     }
 
     // Determine the proper Stripe Processor ID so we can get the secret key
@@ -76,7 +76,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
     
     // The $_GET['processor_id'] value is set by CRM_Core_Payment::handlePaymentMethod.
     if (!array_key_exists('processor_id', $_GET) || empty($_GET['processor_id'])) {
-      $this->exception('Cannot determine processor id.');
+      $this->exception('Cannot determine processor id');
     }
     $this->ppid = $_GET['processor_id'];
 
