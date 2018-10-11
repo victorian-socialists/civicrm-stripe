@@ -21,9 +21,6 @@
   <comments>Original Author: Joshua Walker (drastik) - Drastik by Design.
     Jamie Mcclelland (ProgressiveTech) did a lot of the 5.x compatibility work.
   </comments>
-  <requires>
-    <ext>org.civicrm.paymentlib</ext>
-  </requires>
   <civix>
     <namespace>CRM/Stripe</namespace>
   </civix>
