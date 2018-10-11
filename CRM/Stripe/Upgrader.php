@@ -375,7 +375,6 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
        ADD COLUMN `contact_id` int(10) UNSIGNED DEFAULT NULL COMMENT "FK ID from civicrm_contact"');
       CRM_Core_DAO::executeQuery('ALTER TABLE `civicrm_stripe_customers` 
        ADD CONSTRAINT `FK_civicrm_stripe_customers_contact_id` FOREIGN KEY (`contact_id`) REFERENCES `civicrm_contact` (`id`) ON DELETE CASCADE;');
-      CRM_Core_DAO::executeQuery('ALTER TABLE `civicrm_stripe_customers` ADD UNIQUE (contact_id)');
     }
 
     $this->ctx->log->info('Applying Stripe update 5010. Getting Contact IDs for civicrm_stripe_customers.');
