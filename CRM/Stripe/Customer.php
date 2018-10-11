@@ -53,7 +53,7 @@ class CRM_Stripe_Customer {
       4 => [$params['processor_id'], 'Integer'],
     ];
     CRM_Core_DAO::executeQuery("INSERT INTO civicrm_stripe_customers
-          (contact_id, id, is_live, processor_id) VALUES (%1, %2, %3, %3)", $queryParams);
+          (contact_id, id, is_live, processor_id) VALUES (%1, %2, %3, %4)", $queryParams);
   }
 
   public static function create($params, $paymentProcessor) {
@@ -77,17 +77,17 @@ class CRM_Stripe_Customer {
       'metadata' => ['civicrm_contact_id' => $params['contact_id']],
     ];
 
-    $stripe_customer = $paymentProcessor->stripeCatchErrors('create_customer', $sc_create_params, $params);
+    $stripeCustomer = $paymentProcessor->stripeCatchErrors('create_customer', $sc_create_params, $params);
 
     // Store the relationship between CiviCRM's email address for the Contact & Stripe's Customer ID.
-    if (isset($stripe_customer)) {
-      if ($paymentProcessor->isErrorReturn($stripe_customer)) {
-        return $stripe_customer;
+    if (isset($stripeCustomer)) {
+      if ($paymentProcessor->isErrorReturn($stripeCustomer)) {
+        return $stripeCustomer;
       }
 
       $params = [
         'contact_id' => $params['contact_id'],
-        'customer_id' => $stripe_customer->id,
+        'customer_id' => $stripeCustomer->id,
         'is_live' => $params['is_live'],
         'processor_id' => $params['processor_id'],
       ];
@@ -96,7 +96,7 @@ class CRM_Stripe_Customer {
     else {
       Throw new CRM_Core_Exception(ts('There was an error saving new customer within Stripe.'));
     }
-    return $stripe_customer;
+    return $stripeCustomer;
   }
   /**
    * Delete a Stripe customer from the CiviCRM database
