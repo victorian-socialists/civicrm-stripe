@@ -486,23 +486,15 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
           }
         }
 
-        // Avoid the 'use same token twice' issue while still using latest card.
-        if (!empty($params['is_secondary_financial_transaction'])) {
-          // This is a Contribution page with "Separate Membership Payment".
-          // Charge is coming through for the 2nd time.
-          // Don't update customer again or we will get "token_already_used" error from Stripe.
-        }
-        else {
-          $stripeCustomer->card = $card_token;
-          $updatedStripeCustomer = $this->stripeCatchErrors('save', $stripeCustomer, $params);
-          if ($this->isErrorReturn($updatedStripeCustomer)) {
-            if (($updatedStripeCustomer['type'] == 'invalid_request_error') && ($updatedStripeCustomer['code'] == 'token_already_used')) {
-              // This error is ok, we've already used the token during create_customer
-            }
-            else {
-              self::handleErrorNotification($updatedStripeCustomer, $params['stripe_error_url']);
-              return $updatedStripeCustomer;
-            }
+        $stripeCustomer->card = $card_token;
+        $updatedStripeCustomer = $this->stripeCatchErrors('save', $stripeCustomer, $params);
+        if ($this->isErrorReturn($updatedStripeCustomer)) {
+          if (($updatedStripeCustomer['type'] == 'invalid_request_error') && ($updatedStripeCustomer['code'] == 'token_already_used')) {
+            // This error is ok, we've already used the token during create_customer
+          }
+          else {
+            self::handleErrorNotification($updatedStripeCustomer, $params['stripe_error_url']);
+            return $updatedStripeCustomer;
           }
         }
       }
