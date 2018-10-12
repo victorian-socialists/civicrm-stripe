@@ -198,13 +198,14 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    */
   public function main() {
     // Collect and determine all data about this event.
-    $this->setInfo();
+    $this->event_type = $this->retrieve('event_type', 'String');
 
     $pendingStatusId = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending');
 
     switch($this->event_type) {
       // Successful recurring payment.
       case 'invoice.payment_succeeded':
+        $this->setInfo();
         // Lets do a check to make sure this payment has the amount same as that of first contribution.
         // If it's not a match, something is wrong (since when we update a plan, we generate a whole
         // new recurring contribution).
@@ -273,6 +274,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
 
       // Failed recurring payment.
       case 'invoice.payment_failed':
+        $this->setInfo();
         $fail_date = date("Y-m-d H:i:s");
 
         if ($this->previous_contribution_status_id == $pendingStatusId) {
@@ -316,6 +318,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
 
       // Subscription is cancelled
       case 'customer.subscription.deleted':
+        $this->setInfo();
         // Cancel the recurring contribution
         civicrm_api3('ContributionRecur', 'cancel', array(
           'id' => $this->contribution_recur_id,
@@ -332,12 +335,15 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
 
       // One-time donation and per invoice payment.
       case 'charge.succeeded':
+        //$this->setInfo();
+        // TODO: Implement this so we can mark payments as failed?
         // Not implemented.
         return TRUE;
 
      // Subscription is updated. Delete existing recurring contribution and start a fresh one.
      // This tells a story to site admins over editing a recurring contribution record.
      case 'customer.subscription.updated':
+       $this->setInfo();
        if (empty($this->previous_plan_id)) {
          // Not a plan change...don't care.
          return TRUE;
@@ -428,6 +434,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
 
       // Keep plans table in sync with Stripe when a plan is deleted.
      case 'plan.deleted':
+       $this->setInfo();
        $is_live = $this->test_mode == 1 ? 0 : 1;
        $query_params = array(
          1 => array($this->plan_id, 'String'),
@@ -454,7 +461,6 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    * @throws \CiviCRM_API3_Exception
    */
   public function setInfo() {
-    $this->event_type = $this->retrieve('event_type', 'String');
     $this->test_mode = $this->retrieve('test_mode', 'Integer');
 
     $abort = FALSE;

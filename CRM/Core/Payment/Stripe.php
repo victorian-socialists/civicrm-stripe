@@ -568,7 +568,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       else {
         // Don't have return url - return error object to api
         $core_err = CRM_Core_Error::singleton();
-        $core_err->push(9000, 0, NULL, 'Stripe transaction response not recieved!  Check the Logs section of your stripe.com account.');
+        $core_err->push(9000, 0, NULL, 'Stripe transaction response not received!  Check the Logs section of your stripe.com account.');
         return $core_err;
       }
     }
