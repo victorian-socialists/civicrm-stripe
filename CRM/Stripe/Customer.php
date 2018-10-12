@@ -98,10 +98,11 @@ class CRM_Stripe_Customer {
     }
     return $stripeCustomer;
   }
+
   /**
    * Delete a Stripe customer from the CiviCRM database
    *
-   * @param $params
+   * @param array $params
    *
    * @throws \CRM_Core_Exception
    */
@@ -118,8 +119,9 @@ class CRM_Stripe_Customer {
       2 => [$params['is_live'], 'Boolean'],
       3 => [$params['processor_id'], 'Integer'],
     ];
-    CRM_Core_DAO::executeQuery("DELETE FROM civicrm_stripe_customers
-            WHERE contact_id = %1 AND is_live = %2 AND processor_id = %3", $queryParams);
+    $sql = "DELETE FROM civicrm_stripe_customers
+            WHERE contact_id = %1 AND is_live = %2 AND processor_id = %3";
+    CRM_Core_DAO::executeQuery($sql, $queryParams);
   }
 
 }

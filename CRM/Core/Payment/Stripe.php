@@ -476,6 +476,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         if ($this->isErrorReturn($stripeCustomer)) {
           if (($stripeCustomer['type'] == 'invalid_request_error') && ($stripeCustomer['code'] == 'resource_missing')) {
             // Customer doesn't exist, create a new one
+            CRM_Stripe_Customer::delete($customerParams);
             $stripeCustomer = CRM_Stripe_Customer::create($customerParams, $this);
           }
           if ($this->isErrorReturn($stripeCustomer)) {
