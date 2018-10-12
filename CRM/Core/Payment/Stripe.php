@@ -93,8 +93,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    *   The error!
    */
   public function logStripeException($op, $exception) {
-    $body = print_r($exception->getJsonBody(), TRUE);
-    Civi::log()->debug("Stripe_Error {$op}:  <pre> {$body} </pre>");
+    Civi::log()->debug("Stripe_Error {$op}: " . print_r($exception->getJsonBody(), TRUE));
   }
 
   /**
@@ -494,14 +493,14 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         }
         else {
           $stripeCustomer->card = $card_token;
-          $stripeCustomer = $this->stripeCatchErrors('save', $stripeCustomer, $params);
-          if ($this->isErrorReturn($stripeCustomer)) {
-            if (($stripeCustomer['type'] == 'invalid_request_error') && ($stripeCustomer['code'] == 'token_already_used')) {
+          $updatedStripeCustomer = $this->stripeCatchErrors('save', $stripeCustomer, $params);
+          if ($this->isErrorReturn($updatedStripeCustomer)) {
+            if (($updatedStripeCustomer['type'] == 'invalid_request_error') && ($updatedStripeCustomer['code'] == 'token_already_used')) {
               // This error is ok, we've already used the token during create_customer
             }
             else {
-              self::handleErrorNotification($stripeCustomer, $params['stripe_error_url']);
-              return $stripeCustomer;
+              self::handleErrorNotification($updatedStripeCustomer, $params['stripe_error_url']);
+              return $updatedStripeCustomer;
             }
           }
         }
