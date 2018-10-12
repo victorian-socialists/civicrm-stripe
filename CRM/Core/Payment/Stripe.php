@@ -124,13 +124,15 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return string errorMessage (or statusbounce if URL is specified)
    */
   public function handleErrorNotification($err, $bounceURL = NULL) {
-    $errorMessage = 'Oops!  Looks like there was an error.  Payment Response: <br />' .
+    $errorMessage = 'Payment Response: <br />' .
       'Type: ' . $err['type'] . '<br />' .
       'Code: ' . $err['code'] . '<br />' .
       'Message: ' . $err['message'] . '<br />';
 
+    Civi::log()->debug('Stripe Payment Error: ' . $errorMessage);
+
     if ($bounceURL) {
-      CRM_Core_Error::statusBounce($errorMessage, $bounceURL);
+      CRM_Core_Error::statusBounce($errorMessage, $bounceURL, 'Payment Error');
     }
     return $errorMessage;
   }
@@ -483,6 +485,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
             return $stripeCustomer;
           }
         }
+
         // Avoid the 'use same token twice' issue while still using latest card.
         if (!empty($params['is_secondary_financial_transaction'])) {
           // This is a Contribution page with "Separate Membership Payment".
@@ -491,11 +494,16 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         }
         else {
           $stripeCustomer->card = $card_token;
-          $response = $this->stripeCatchErrors('save', $stripeCustomer, $params);
-            if (isset($response) && $this->isErrorReturn($response)) {
-              self::handleErrorNotification($response, $params['stripe_error_url']);
-              return $response;
+          $stripeCustomer = $this->stripeCatchErrors('save', $stripeCustomer, $params);
+          if ($this->isErrorReturn($stripeCustomer)) {
+            if (($stripeCustomer['type'] == 'invalid_request_error') && ($stripeCustomer['code'] == 'token_already_used')) {
+              // This error is ok, we've already used the token during create_customer
             }
+            else {
+              self::handleErrorNotification($stripeCustomer, $params['stripe_error_url']);
+              return $stripeCustomer;
+            }
+          }
         }
       }
       else {
