@@ -586,7 +586,8 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   }
 
   public function exception($message) {
-    Civi::log()->debug("StripeIPN: $message");
-    throw new CRM_Core_Exception("StripeIPN: $message");
+    $errorMessage = 'StripeIPN Exception: Event: ' . $this->event_type . ' Error: ' . $message;
+    Civi::log()->debug($errorMessage);
+    throw new CRM_Core_Exception($errorMessage);
   }
 }
