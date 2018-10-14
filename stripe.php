@@ -39,22 +39,12 @@ function stripe_civicrm_uninstall() {
  * Implementation of hook_civicrm_enable().
  */
 function stripe_civicrm_enable() {
-  $UF_webhook_paths = array(
-    "Drupal"    => "/civicrm/payment/ipn/NN",
-    "Joomla"    => "/index.php/component/civicrm/?task=civicrm/payment/ipn/NN",
-    "WordPress" => "/?page=CiviCRM&q=civicrm/payment/ipn/NN"
-  );
-
-  // Use Drupal path as default if the UF isn't in the map above
-  $webookhook_path = (array_key_exists(CIVICRM_UF, $UF_webhook_paths)) ?
-    CIVICRM_UF_BASEURL . $UF_webhook_paths[CIVICRM_UF] :
-    CIVICRM_UF_BASEURL . $UF_webhook_paths['Drupal'];
-
+  $UFWebhookPath = stripe_get_webhook_path(TRUE);
   CRM_Core_Session::setStatus(
     "
     <br />Don't forget to set up Webhooks in Stripe so that recurring contributions are ended!
     <br />Webhook path to enter in Stripe:
-    <br/><em>$webookhook_path</em>
+    <br/><em>$UFWebhookPath</em>
     <br />Replace NN with the actual payment processor ID configured on your site.
     <br />
     ",
@@ -210,21 +200,37 @@ function stripe_civicrm_buildForm($formName, &$form) {
   }
 }
 
+/**
+ * Get the path of the webhook depending on the UF (eg Drupal, Joomla, Wordpress)
+ *
+ * @param bool $includeBaseUrl
+ *
+ * @return string
+ */
+function stripe_get_webhook_path($includeBaseUrl = TRUE) {
+  $UFWebhookPaths = [
+    "Drupal"    => "civicrm/payment/ipn/NN",
+    "Joomla"    => "?option=com_civicrm&task=civicrm/payment/ipn/NN",
+    "WordPress" => "?page=CiviCRM&q=civicrm/payment/ipn/NN"
+  ];
+
+
+  // Use Drupal path as default if the UF isn't in the map above
+  $UFWebhookPath = (array_key_exists(CIVICRM_UF, $UFWebhookPaths)) ?
+    $UFWebhookPaths[CIVICRM_UF] :
+    $UFWebhookPaths['Drupal'];
+  if ($includeBaseUrl) {
+    return CIVICRM_UF_BASEURL . '/' . $UFWebhookPath;
+  }
+  return $UFWebhookPath;
+}
+
 /*
  * Implementation of hook_idsException.
  *
  * Ensure webhooks don't get caught in the IDS check.
  */
 function stripe_civicrm_idsException(&$skip) {
-  // Handle old method.
-  $skip[] = 'civicrm/stripe/webhook';
-  $result = civicrm_api3('PaymentProcessor', 'get', array(
-    'sequential' => 1,
-    'return' => "id",
-    'class_name' => "Payment_stripe",
-    'is_active' => 1,
-  ));
-  foreach($result['values'] as $value) {
-    $skip[] = 'civicrm/payment/ipn/' . $value['id'];
-  }
+  // Path is always set to civicrm/payment/ipn (checked on Drupal/Joomla)
+  $skip[] = 'civicrm/payment/ipn';
 }

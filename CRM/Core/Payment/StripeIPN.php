@@ -270,7 +270,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           'contribution_status_id' => "In Progress"
         ));
 
-        return TRUE;
+        return;
 
       // Failed recurring payment.
       case 'invoice.payment_failed':
@@ -314,7 +314,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           'modified_date' => $fail_date,
         ));
 
-        return TRUE;
+        return;
 
       // Subscription is cancelled
       case 'customer.subscription.deleted':
@@ -331,14 +331,14 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         CRM_Core_DAO::executeQuery("DELETE FROM civicrm_stripe_subscriptions
           WHERE subscription_id = %1", $query_params);
 
-        return TRUE;
+        return;
 
       // One-time donation and per invoice payment.
       case 'charge.succeeded':
         //$this->setInfo();
         // TODO: Implement this so we can mark payments as failed?
         // Not implemented.
-        return TRUE;
+        return;
 
      // Subscription is updated. Delete existing recurring contribution and start a fresh one.
      // This tells a story to site admins over editing a recurring contribution record.
@@ -346,7 +346,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
        $this->setInfo();
        if (empty($this->previous_plan_id)) {
          // Not a plan change...don't care.
-         return TRUE;
+         return;
        }
        
        $new_civi_invoice = md5(uniqid(rand(), TRUE));
@@ -430,7 +430,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
             ));
           }
         }
-        return TRUE;
+        return;
 
       // Keep plans table in sync with Stripe when a plan is deleted.
      case 'plan.deleted':
@@ -444,10 +444,10 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
        CRM_Core_DAO::executeQuery("DELETE FROM civicrm_stripe_plans WHERE
          plan_id = %1 AND  processor_id = %2 and is_live = %3", $query_params);
 
-       return TRUE;
+       return;
     }
     // Unhandled event type.
-    return TRUE;
+    return;
   }
 
   /**
@@ -594,6 +594,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   public function exception($message) {
     $errorMessage = 'StripeIPN Exception: Event: ' . $this->event_type . ' Error: ' . $message;
     Civi::log()->debug($errorMessage);
-    throw new CRM_Core_Exception($errorMessage);
+    //throw new CRM_Core_Exception($errorMessage);
+    exit();
   }
 }
