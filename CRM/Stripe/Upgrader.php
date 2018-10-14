@@ -378,7 +378,7 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
     }
 
     $this->ctx->log->info('Applying Stripe update 5010. Getting Contact IDs for civicrm_stripe_customers.');
-    civicrm_api3('Stripe', 'customercontactids', []);
+    civicrm_api3('StripeCustomer', 'updatecontactids', []);
 
     return TRUE;
   }
