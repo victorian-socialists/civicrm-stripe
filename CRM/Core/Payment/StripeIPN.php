@@ -404,6 +404,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           $query_params
         );
 
+        // FIXME: MJW Do we need this custom handling for memberships here? Core should do all we need
         if ($this->membership_id) { 
           $plan_elements = explode("-", $this->plan_id);
           $plan_name_elements = explode("-", $this->plan_name);
@@ -581,6 +582,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         }
 
         // Check for membership id.
+        // FIXME: MJW Not sure why we assign membership_id here
         $membership = civicrm_api3('Membership', 'get', array(
           'contribution_recur_id' => $this->contribution_recur_id,
         ));
