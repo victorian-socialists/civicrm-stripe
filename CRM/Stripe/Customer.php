@@ -17,8 +17,8 @@ class CRM_Stripe_Customer {
         throw new CRM_Core_Exception('Stripe Customer (find): Missing required parameter: ' . $required);
       }
     }
-    if (empty($params['email']) && empty($params['contact_id'])) {
-      throw new CRM_Core_Exception('Stripe Customer (find): One of email or contact_id is required');
+    if (empty($params['contact_id'])) {
+      throw new CRM_Core_Exception('Stripe Customer (find): contact_id is required');
     }
     $queryParams = [
       1 => [$params['contact_id'], 'String'],

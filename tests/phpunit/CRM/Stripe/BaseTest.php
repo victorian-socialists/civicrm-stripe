@@ -157,6 +157,7 @@ class CRM_Stripe_BaseTest extends \PHPUnit_Framework_TestCase implements Headles
         'address_zip' => '12345',
       ),
       'email' => $this->contact->email,
+      'contactID' => $this->contact->id,
       'description' => 'Test from Stripe Test Code',
       'currencyID' => 'USD',
       'invoiceID' => $this->_invoiceID,
