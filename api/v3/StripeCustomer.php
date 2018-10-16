@@ -115,7 +115,7 @@ function civicrm_api3_stripe_customer_updatecontactids($params) {
         $sql = "SELECT c.id
           FROM civicrm_contribution_recur rc
             JOIN civicrm_stripe_subscriptions sc ON
-              ( rc.id = sc.contribution_recur_id OR rc.invoice_id = sc.invoice_id)
+              rc.id = sc.contribution_recur_id
             JOIN civicrm_contact c ON c.id = rc.contact_id
           WHERE c.is_deleted = 0 AND customer_id = %0
           ORDER BY start_date DESC LIMIT 1";
