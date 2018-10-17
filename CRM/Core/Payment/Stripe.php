@@ -172,10 +172,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
           $return = $stripe_params->save();
           break;
 
-        case 'create_plan':
-          $return = \Stripe\Plan::create($stripe_params);
-          break;
-
         case 'retrieve_customer':
           $return = \Stripe\Customer::retrieve($stripe_params);
           break;
@@ -229,6 +225,78 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     return $return;
   }
 
+  /**
+   * Stripe exceptions contain a json object in the body "error". This function extracts and returns that as an array.
+   * @param String $op
+   * @param Exception $e
+   * @param Boolean $log
+   *
+   * @return array $err
+   */
+  public function parseStripeException($op, $e, $log = FALSE) {
+    if ($log) {
+      $this->logStripeException($op, $e);
+    }
+    $body = $e->getJsonBody();
+    $err = $body['error'];
+    if (!isset($err['code'])) {
+      // A "fake" error code
+      $err['code'] = 9000;
+    }
+    return $err;
+  }
+
+  /**
+   * Create or update a Stripe Plan
+   *
+   * @param array $params
+   * @param integer $amount
+   *
+   * @return \Stripe\Plan
+   */
+  public function createPlan($params, $amount) {
+    $currency = strtolower($params['currencyID']);
+    $planId = "every-{$params['frequency_interval']}-{$params['frequency_unit']}-{$amount}-" . $currency;
+    if (isset($params['membership_type_tag'])) {
+      $planId = $params['membership_type_tag'] . $planId;
+    }
+
+    if (!$this->_islive) {
+      $planId .= '-test';
+    }
+
+    // Try and retrieve existing plan from Stripe
+    // If this fails, we'll create a new one
+    try {
+      $plan = \Stripe\Plan::retrieve($planId);
+    }
+    catch (Stripe\Error\InvalidRequest $e) {
+      $err = $this->parseStripeException('plan_retrieve', $e, FALSE);
+      if ($err['code'] == 'resource_missing') {
+        $formatted_amount = number_format(($amount / 100), 2);
+        $productName = "CiviCRM " . (isset($params['membership_name']) ? $params['membership_name'] . ' ' : '') . "every {$params['frequency_interval']} {$params['frequency_unit']}(s) {$formatted_amount}{$currency}";
+        if (!$this->_islive) {
+          $productName .= '-test';
+        }
+        $product = \Stripe\Product::create(array(
+          "name" => $productName,
+          "type" => "service"
+        ));
+        // Create a new Plan.
+        $stripePlan = array(
+          'amount' => $amount,
+          'interval' => $params['frequency_unit'],
+          'product' => $product->id,
+          'currency' => $currency,
+          'id' => $planId,
+          'interval_count' => $params['frequency_interval'],
+        );
+        $plan = \Stripe\Plan::create($stripePlan);
+      }
+    }
+
+    return $plan;
+  }
   /**
    * Override CRM_Core_Payment function
    *
@@ -588,6 +656,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     // Get recurring contrib properties.
     $frequency = $params['frequency_unit'];
     $frequency_interval = (empty($params['frequency_interval']) ? 1 : $params['frequency_interval']);
+    empty($params['frequency_interval']) ? $params['frequency_interval'] = 1 : NULL;
     $currency = strtolower($params['currencyID']);
     if (isset($params['installments'])) {
       $installments = $params['installments'];
@@ -642,7 +711,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
           $discount_amount = $discount_object['values'][0]['amount'];
           $discount_in_cents = $discount_amount * 100;
           // Set amount to full price.
-          $amount =  $amount + $discount_in_cents;
+          $amount = $amount + $discount_in_cents;
         }
      }
         // Apply the disount through a negative balance.
@@ -658,84 +727,32 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     $membership_name = '';
     if (isset($params['selectMembership'])) {
       $membership_type_id = $params['selectMembership'][0];
-      $membership_type_tag = 'membertype_' . $membership_type_id . '-';
+      $params['membership_type_tag'] = 'membertype_' . $membership_type_id . '-';
       $membershipType = civicrm_api3('MembershipType', 'get', array(
        'sequential' => 1,
        'return' => "name",
        'id' => $membership_type_id,
       ));
-      $membership_name = $membershipType['values'][0]['name'];
+      $params['membership_name'] = $membershipType['values'][0]['name'];
     }
 
-    // Currently plan_id is a unique db key. Therefore test plans of the
-    // same name as a live plan fail to be added with a DB error Already exists,
-    // which is a problem for testing.  This appends 'test' to a test
-    // plan to avoid that error.
-    $is_live = $this->_islive;
-    $mode_tag = '';
-    if ( $is_live == 0 ) {
-      $mode_tag = '-test';
-    }
-    $plan_id = "{$membership_type_tag}every-{$frequency_interval}-{$frequency}-{$amount}-{$currency}{$mode_tag}";
-
-    // Prepare escaped query params.
-    $query_params = array(
-      1 => array($plan_id, 'String'),
-      2 => array($this->_paymentProcessor['id'], 'Integer'),
-    );
-
-    $stripe_plan_query = CRM_Core_DAO::singleValueQuery("SELECT plan_id
-      FROM civicrm_stripe_plans
-      WHERE plan_id = %1 AND is_live = '{$this->_islive}' AND processor_id = %2", $query_params);
-
-    if (!isset($stripe_plan_query)) {
-      $formatted_amount = number_format(($amount / 100), 2);
-      $product = \Stripe\Product::create(array(
-        "name" => "CiviCRM {$membership_name} every {$frequency_interval} {$frequency}(s) {$formatted_amount}{$currency}{$mode_tag}",
-        "type" => "service"
-      ));
-      // Create a new Plan.
-      $stripe_plan = array(
-        'amount' => $amount,
-        'interval' => $frequency,
-        'product' => $product->id,
-        'currency' => $currency,
-        'id' => $plan_id,
-        'interval_count' => $frequency_interval,
-      );
-
-      $ignores = array(
-        array(
-          'class' => 'Stripe_InvalidRequestError',
-          'type' => 'invalid_request_error',
-          'message' => 'Plan already exists.',
-        ),
-      );
-      $this->stripeCatchErrors('create_plan', $stripe_plan, $params, $ignores);
-      // Prepare escaped query params.
-      $query_params = array(
-        1 => array($plan_id, 'String'),
-        2 => array($this->_paymentProcessor['id'], 'Integer'),
-      );
-      CRM_Core_DAO::executeQuery("INSERT INTO civicrm_stripe_plans (plan_id, is_live, processor_id)
-        VALUES (%1, '{$this->_islive}', %2)", $query_params);
-    }
+    $planId = self::createPlan($params, $amount);
 
     // As of Feb. 2014, Stripe handles multiple subscriptions per customer, even
     // ones of the exact same plan. To pave the way for that kind of support here,
     // were using subscription_id as the unique identifier in the
     // civicrm_stripe_subscription table, instead of using customer_id to derive
-    // the invoice_id.  The proposed default behavor should be to always create a
+    // the invoice_id.  The proposed default behaviour should be to always create a
     // new subscription. Upgrade/downgrades keep the same subscription id in Stripe
-    // and we mirror this behavior by modifing our recurring contribution when this happens.
-    // For now, updating happens in Webhook.php as a result of modifiying the subscription
+    // and we mirror this behavior by modifying our recurring contribution when this happens.
+    // For now, updating happens in Webhook.php as a result of modifying the subscription
     // in the UI at stripe.com. Eventually we'll initiating subscription changes
     // from within Civi and Stripe.php. The Webhook.php code should still be relevant.
 
     // Attach the Subscription to the Stripe Customer.
     $cust_sub_params = array(
       'prorate' => FALSE,
-      'plan' => $plan_id,
+      'plan' => $planId,
     );
     $stripeSubscription = $stripeCustomer->subscriptions->create($cust_sub_params);
     $subscription_id = $stripeSubscription->id;

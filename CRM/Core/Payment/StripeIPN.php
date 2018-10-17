@@ -432,20 +432,6 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           }
         }
         return;
-
-      // Keep plans table in sync with Stripe when a plan is deleted.
-     case 'plan.deleted':
-       $this->setInfo();
-       $is_live = $this->test_mode == 1 ? 0 : 1;
-       $query_params = array(
-         1 => array($this->plan_id, 'String'),
-         2 => array($this->ppid, 'Integer'),
-         3 => array($is_live, 'Integer')
-       );
-       CRM_Core_DAO::executeQuery("DELETE FROM civicrm_stripe_plans WHERE
-         plan_id = %1 AND  processor_id = %2 and is_live = %3", $query_params);
-
-       return;
     }
     // Unhandled event type.
     return;
