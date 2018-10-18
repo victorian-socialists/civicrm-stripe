@@ -193,6 +193,31 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   }
 
   /**
+   * Get a lock so we don't process browser return & ipn return at the same time.
+   *
+   * Paralell processing notably results in 2 receipts.
+   *
+   * Currently mysql 5.7.5+ will process a cross-session lock. If we can't do that
+   * then we should be tardy on the processing of the ipn response.
+   *
+   * @return bool
+   */
+  protected function getLock() {
+    $mysqlVersion = CRM_Core_DAO::singleValueQuery('SELECT VERSION()');
+    if (stripos($mysqlVersion, 'mariadb') === FALSE
+      && version_compare($mysqlVersion, '5.7.5', '>=')
+    ) {
+      $lock = Civi::lockManager()->acquire('data.contribute.contribution.' . $this->transaction_id);
+      return $lock->isAcquired();
+    }
+    if (empty(CRM_Core_Session::singleton()->getLoggedInContactID())) {
+      // So far the best way of telling the difference is the session.
+      sleep(30);
+    }
+    return TRUE;
+  }
+
+  /**
    * @return bool
    * @throws \CRM_Core_Exception
    * @throws \CiviCRM_API3_Exception
@@ -449,6 +474,10 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    * @throws \CiviCRM_API3_Exception
    */
   public function setInfo() {
+    if (!$this->getLock()) {
+      return;
+    }
+
     $this->test_mode = $this->retrieve('test_mode', 'Integer');
 
     $abort = FALSE;
