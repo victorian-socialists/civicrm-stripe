@@ -43,6 +43,7 @@ function civicrm_api3_stripe_customer_get($params) {
         break;
 
       case 'contact_id':
+      case 'processor_id':
         $where[$index] = "{$key}=%{$index}";
         $whereParam[$index] = [$value, 'Integer'];
         $index++;
@@ -51,12 +52,6 @@ function civicrm_api3_stripe_customer_get($params) {
       case 'is_live':
         $where[$index] = "{$key}=%{$index}";
         $whereParam[$index] = [$value, 'Boolean'];
-        $index++;
-        break;
-
-      case 'processor_id':
-        $where[$index] = "{$key}=%{$index}";
-        $whereParam[$index] = [$value, 'Integer'];
         $index++;
         break;
     }
