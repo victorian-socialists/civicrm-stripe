@@ -151,7 +151,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    *
    * @throws \CiviCRM_API3_Exception
    */
-  public function stripeCatchErrors($op = 'create_customer', $stripe_params, $params, $ignores = array()) {
+  public function stripeCatchErrors($op, $stripe_params, $params, $ignores = array()) {
     $return = FALSE;
     // Check for errors before trying to submit.
     try {
@@ -178,10 +178,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
 
         case 'retrieve_balance_transaction':
           $return = \Stripe\BalanceTransaction::retrieve($stripe_params);
-          break;
-
-        default:
-          $return = \Stripe\Customer::create($stripe_params);
           break;
       }
     }
@@ -541,17 +537,18 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       // Customer was found in civicrm database, fetch from Stripe.
       $stripeCustomer = $this->stripeCatchErrors('retrieve_customer', $stripeCustomerId, $params);
       if (!empty($stripeCustomer)) {
-        if ($this->isErrorReturn($stripeCustomer)) {
-          if (($stripeCustomer['type'] == 'invalid_request_error') && ($stripeCustomer['code'] == 'resource_missing')) {
-            // Customer doesn't exist, create a new one
-            CRM_Stripe_Customer::delete($customerParams);
-            $stripeCustomer = CRM_Stripe_Customer::create($customerParams, $this);
-          }
+        if ($stripeCustomer->isDeleted()
+          || ($this->isErrorReturn($stripeCustomer) && ($stripeCustomer['type'] == 'invalid_request_error') && ($stripeCustomer['code'] == 'resource_missing')
+          )) {
+          // Customer doesn't exist, create a new one
+          CRM_Stripe_Customer::delete($customerParams);
+          $stripeCustomer = CRM_Stripe_Customer::create($customerParams, $this);
           if ($this->isErrorReturn($stripeCustomer)) {
             // We still failed to create a customer
             self::handleErrorNotification($stripeCustomer, $params['stripe_error_url']);
             return $stripeCustomer;
           }
+
         }
 
         $stripeCustomer->card = $card_token;

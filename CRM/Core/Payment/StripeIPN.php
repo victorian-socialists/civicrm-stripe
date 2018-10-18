@@ -20,6 +20,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   public $test_mode;
   public $event_type = NULL;
   public $subscription_id = NULL;
+  public $customer_id = NULL;
   public $charge_id = NULL;
   public $previous_plan_id = NULL;
   public $plan_id = NULL;
@@ -500,7 +501,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         financial_type_id, payment_instrument_id, contact_id
         FROM civicrm_stripe_subscriptions s JOIN civicrm_contribution_recur r
         ON s.contribution_recur_id = r.id
-        WHERE subscription_id = %1
+        WHERE s.subscription_id = %1
         AND s.processor_id = %2";
       $query_params = array(
         1 => array($this->subscription_id, 'String'),
@@ -515,7 +516,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           financial_type_id, payment_instrument_id, contact_id
           FROM civicrm_stripe_subscriptions s JOIN civicrm_contribution_recur r
           ON s.contribution_recur_id = r.id
-          WHERE customer_id = %1
+          WHERE s.customer_id = %1
           AND s.processor_id = %2";
         $query_params = array(
           1 => array($this->customer_id, 'String'),
@@ -542,7 +543,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         $this->payment_instrument_id = $dao->payment_instrument_id;
         $this->contact_id = $dao->contact_id;
 
-        // Same approach as api repeattransaction. Find last contribution ascociated 
+        // Same approach as api repeattransaction. Find last contribution associated
         // with our recurring contribution.
         $results = civicrm_api3('contribution', 'getsingle', array(
          'return' => array('id', 'contribution_status_id', 'total_amount'),
