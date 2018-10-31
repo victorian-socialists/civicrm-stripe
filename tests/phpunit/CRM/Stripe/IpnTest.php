@@ -90,11 +90,16 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     }
     catch (Stripe\Error\InvalidRequest $e) {
       // The plan has not been created yet, so create it.
+      $product = \Stripe\Product::create(array(
+        "name" => "CiviCRM testing product",
+        "type" => "service"
+      ));
+
       $plan_details = array(
         'id' => $plan_id,
         'amount' => '40000',
         'interval' => 'month',
-        'name' => "Test Updated Plan",
+        'product' => $product,
         'currency' => 'usd',
         'interval_count' => 2
       );
@@ -249,16 +254,11 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
    *
    */
   public function ipn($data, $verify = TRUE) {
-    if (!class_exists('CRM_Core_Payment_StripeIPN')) {
-      // The $_GET['processor_id'] value is normally set by 
-      // CRM_Core_Payment::handlePaymentMethod
-      $_GET['processor_id'] = $this->_paymentProcessorID;
-      $ipnClass = new CRM_Core_Payment_StripeIPN($data, $verify);
-      $ipnClass->main();
-    }
-    else {
-      trigger_error("Test suite depends on CRM_Core_Payment_StripeIPN");
-    }
+    // The $_GET['processor_id'] value is normally set by 
+    // CRM_Core_Payment::handlePaymentMethod
+    $_GET['processor_id'] = $this->_paymentProcessorID;
+    $ipnClass = new CRM_Core_Payment_StripeIPN($data, $verify);
+    $ipnClass->main();
   }
 
   /**
