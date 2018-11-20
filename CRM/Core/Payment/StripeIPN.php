@@ -48,9 +48,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   protected $amount = NULL;
   protected $fee = NULL;
   protected $net_amount = NULL;
-  protected $previous_contribution_id = NULL;
-  protected $previous_contribution_status_id = NULL;
-  protected $previous_contribution_total_amount = NULL;
+  protected $previous_contribution = [];
 
   /**
    * CRM_Core_Payment_StripeIPN constructor.
@@ -235,10 +233,10 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
       // Successful recurring payment.
       case 'invoice.payment_succeeded':
         $this->setInfo();
-        if ($this->previous_contribution_status_id == $pendingStatusId) {
+        if ($this->previous_contribution['contribution_status_id'] == $pendingStatusId) {
           $this->completeContribution();
         }
-        else {
+        elseif ($this->previous_contribution['trxn_id'] != $this->charge_id) {
           // The first contribution was completed, so create a new one.
           // api contribution repeattransaction repeats the appropriate contribution if it is given
           // simply the recurring contribution id. It also updates the membership for us.
@@ -259,17 +257,17 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           'failure_count' => 0,
           'contribution_status_id' => 'In Progress'
         ));
-        return;
+        return TRUE;
 
       // Failed recurring payment.
       case 'invoice.payment_failed':
         $this->setInfo();
         $failDate = date('YmdHis');
 
-        if ($this->previous_contribution_status_id == $pendingStatusId) {
+        if ($this->previous_contribution['contribution_status_id'] == $pendingStatusId) {
           // If this contribution is Pending, set it to Failed.
           civicrm_api3('Contribution', 'create', array(
-            'id' => $this->previous_contribution_id,
+            'id' => $this->previous_contribution['id'],
             'contribution_status_id' => "Failed",
             'receive_date' => $failDate,
             'is_email_receipt' => $this->is_email_receipt,
@@ -299,7 +297,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           'failure_count' => $failureCount,
           'modified_date' => $failDate,
         ));
-        return;
+        return TRUE;
 
       // Subscription is cancelled
       case 'customer.subscription.deleted':
@@ -308,7 +306,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         civicrm_api3('ContributionRecur', 'cancel', array(
           'id' => $this->contribution_recur_id,
         ));
-        return;
+        return TRUE;
 
       // One-time donation and per invoice payment.
       case 'charge.failed':
@@ -321,7 +319,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           $note = $failureCode . ' : ' . $failureMessage;
           civicrm_api3('Contribution', 'create', ['id' => $contribution['id'], 'contribution_status_id' => $failedStatusId, 'note' => $note]);
         }
-        return;
+        return TRUE;
 
       case 'charge.refunded':
         $chargeId = $this->retrieve('charge_id', 'String');
@@ -346,20 +344,20 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
             }
           }
         }
-        return;
+        return TRUE;
 
       case 'charge.succeeded':
         $this->setInfo();
-        if ($this->previous_contribution_status_id == $pendingStatusId) {
+        if ($this->previous_contribution['contribution_status_id'] == $pendingStatusId) {
           $this->completeContribution();
         }
-        return;
+        return TRUE;
 
       case 'customer.subscription.updated':
        $this->setInfo();
        if (empty($this->previous_plan_id)) {
          // Not a plan change...don't care.
-         return;
+         return TRUE;
        }
 
        civicrm_api3('ContributionRecur', 'create', [
@@ -372,14 +370,14 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
        ]);
 
        civicrm_api3('Contribution', 'create', [
-          'id' => $this->previous_contribution_id,
+          'id' => $this->previous_contribution['id'],
           'total_amount' => $this->plan_amount,
           'contribution_recur_id' => $this->contribution_recur_id,
        ]);
-        return;
+        return TRUE;
     }
     // Unhandled event type.
-    return;
+    return TRUE;
   }
 
   /**
@@ -390,14 +388,14 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   public function completeContribution() {
     // Update the contribution to include the fee.
     civicrm_api3('Contribution', 'create', array(
-      'id' => $this->previous_contribution_id,
+      'id' => $this->previous_contribution['id'],
       'total_amount' => $this->amount,
       'fee_amount' => $this->fee,
       'net_amount' => $this->net_amount,
     ));
     // The last one was not completed, so complete it.
     civicrm_api3('Contribution', 'completetransaction', array(
-      'id' => $this->previous_contribution_id,
+      'id' => $this->previous_contribution['id'],
       'trxn_date' => $this->receive_date,
       'trxn_id' => $this->charge_id,
       'total_amount' => $this->amount,
@@ -470,13 +468,11 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         // Same approach as api repeattransaction. Find last contribution associated
         // with our recurring contribution.
         $contribution = civicrm_api3('contribution', 'getsingle', array(
-          'return' => array('id', 'contribution_status_id', 'total_amount'),
+          'return' => array('id', 'contribution_status_id', 'total_amount', 'trxn_id'),
           'contribution_recur_id' => $this->contribution_recur_id,
           'options' => array('limit' => 1, 'sort' => 'id DESC'),
         ));
-        $this->previous_contribution_id = $contribution['id'];
-        $this->previous_contribution_status_id = $contribution['contribution_status_id'];
-        $this->previous_contribution_total_amount = $contribution['total_amount'];
+        $this->previous_contribution = $contribution;
       }
       catch (Exception $e) {
         $this->exception('Cannot find recurring contribution for subscription ID: ' . $this->subscription_id . '. ' . $e->getMessage());
