@@ -8,17 +8,17 @@ class CRM_Stripe_Customer {
    * @param $params
    *
    * @return null|string
-   * @throws \CRM_Core_Exception
+   * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
   public static function find($params) {
     $requiredParams = ['is_live', 'processor_id'];
     foreach ($requiredParams as $required) {
       if (empty($required)) {
-        throw new CRM_Core_Exception('Stripe Customer (find): Missing required parameter: ' . $required);
+        throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (find): Missing required parameter: ' . $required);
       }
     }
     if (empty($params['contact_id'])) {
-      throw new CRM_Core_Exception('Stripe Customer (find): contact_id is required');
+      throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (find): contact_id is required');
     }
     $queryParams = [
       1 => [$params['contact_id'], 'String'],
@@ -36,13 +36,13 @@ class CRM_Stripe_Customer {
    *
    * @param $params
    *
-   * @throws \CRM_Core_Exception
+   * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
   public static function add($params) {
     $requiredParams = ['contact_id', 'customer_id', 'is_live', 'processor_id'];
     foreach ($requiredParams as $required) {
       if (empty($required)) {
-        throw new CRM_Core_Exception('Stripe Customer (add): Missing required parameter: ' . $required);
+        throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (add): Missing required parameter: ' . $required);
       }
     }
 
@@ -56,12 +56,20 @@ class CRM_Stripe_Customer {
           (contact_id, id, is_live, processor_id) VALUES (%1, %2, %3, %4)", $queryParams);
   }
 
+  /**
+   * @param $params
+   * @param $paymentProcessor
+   *
+   * @return \Stripe\ApiResource
+   * @throws \CiviCRM_API3_Exception
+   * @throws \Civi\Payment\Exception\PaymentProcessorException
+   */
   public static function create($params, $paymentProcessor) {
     $requiredParams = ['contact_id', 'card_token', 'is_live', 'processor_id'];
     // $optionalParams = ['email'];
     foreach ($requiredParams as $required) {
       if (empty($required)) {
-        throw new CRM_Core_Exception('Stripe Customer (create): Missing required parameter: ' . $required);
+        throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (create): Missing required parameter: ' . $required);
       }
     }
 
@@ -70,32 +78,31 @@ class CRM_Stripe_Customer {
       'id' => $params['contact_id'],
     ]);
 
-    $sc_create_params = [
+    $stripeCustomerParams = [
       'description' => $contactDisplayName . ' (CiviCRM)',
       'card' => $params['card_token'],
       'email' => CRM_Utils_Array::value('email', $params),
       'metadata' => ['civicrm_contact_id' => $params['contact_id']],
     ];
 
-    $stripeCustomer = $paymentProcessor->stripeCatchErrors('create_customer', $sc_create_params, $params);
+    try {
+      $stripeCustomer = \Stripe\Customer::create($stripeCustomerParams);
+    }
+    catch (Exception $e) {
+      $err = CRM_Core_Payment_Stripe::parseStripeException('create_customer', $e, FALSE);
+      $errorMessage = CRM_Core_Payment_Stripe::handleErrorNotification($err, $params['stripe_error_url']);
+      throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to create Stripe Customer: ' . $errorMessage);
+    }
 
     // Store the relationship between CiviCRM's email address for the Contact & Stripe's Customer ID.
-    if (isset($stripeCustomer)) {
-      if ($paymentProcessor->isErrorReturn($stripeCustomer)) {
-        return $stripeCustomer;
-      }
+    $params = [
+      'contact_id' => $params['contact_id'],
+      'customer_id' => $stripeCustomer->id,
+      'is_live' => $params['is_live'],
+      'processor_id' => $params['processor_id'],
+    ];
+    self::add($params);
 
-      $params = [
-        'contact_id' => $params['contact_id'],
-        'customer_id' => $stripeCustomer->id,
-        'is_live' => $params['is_live'],
-        'processor_id' => $params['processor_id'],
-      ];
-      self::add($params);
-    }
-    else {
-      Throw new CRM_Core_Exception(ts('There was an error saving new customer within Stripe.'));
-    }
     return $stripeCustomer;
   }
 
@@ -104,13 +111,13 @@ class CRM_Stripe_Customer {
    *
    * @param array $params
    *
-   * @throws \CRM_Core_Exception
+   * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
   public static function delete($params) {
     $requiredParams = ['contact_id', 'is_live', 'processor_id'];
     foreach ($requiredParams as $required) {
       if (empty($required)) {
-        throw new CRM_Core_Exception('Stripe Customer (delete): Missing required parameter: ' . $required);
+        throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (delete): Missing required parameter: ' . $required);
       }
     }
 

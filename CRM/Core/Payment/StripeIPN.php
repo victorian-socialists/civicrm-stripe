@@ -6,44 +6,51 @@
 
 class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
 
-  // TODO: These vars should probably be protected, not public - but need to check them all first
-  public $ppid = NULL;
-  public $secret_key = NULL;
-  public $is_email_receipt = 1;
+  protected $_paymentProcessor;
+
+  /**
+   * Transaction ID is the contribution in the redirect flow and a random number in the on-site->POST flow
+   * Ideally the contribution id would always be created at this point in either flow for greater consistency
+   * @var
+   */
+  protected $transaction_id;
+
+  /**
+   * Do we send an email receipt for each contribution?
+   *
+   * @var int
+   */
+  protected $is_email_receipt = 1;
 
   // By default, always retrieve the event from stripe to ensure we are
   // not being fed garbage. However, allow an override so when we are 
   // testing, we can properly test a failed recurring contribution.
-  public $verify_event = TRUE;
+  protected $verify_event = TRUE;
 
   // Properties of the event.
-  public $test_mode;
-  public $event_type = NULL;
-  public $subscription_id = NULL;
-  public $customer_id = NULL;
-  public $charge_id = NULL;
-  public $previous_plan_id = NULL;
-  public $plan_id = NULL;
-  public $plan_amount = NULL;
-  public $frequency_interval = NULL;
-  public $frequency_unit = NULL;
-  public $plan_name = NULL;
-  public $plan_start = NULL;
+  protected $event_type = NULL;
+  protected $subscription_id = NULL;
+  protected $customer_id = NULL;
+  protected $charge_id = NULL;
+  protected $previous_plan_id = NULL;
+  protected $plan_id = NULL;
+  protected $plan_amount = NULL;
+  protected $frequency_interval = NULL;
+  protected $frequency_unit = NULL;
+  protected $plan_name = NULL;
+  protected $plan_start = NULL;
        
   // Derived properties.
-  public $contact_id = NULL;
-  public $contribution_recur_id = NULL;
-  public $membership_id = NULL;
-  public $event_id = NULL;
-  public $invoice_id = NULL;
-  public $receive_date = NULL;
-  public $amount = NULL;
-  public $fee = NULL;
-  public $net_amount = NULL;
-  public $previous_contribution_id = NULL;
-  public $previous_contribution_status_id = NULL;
-  public $previous_contribution_total_amount = NULL;
-  public $previous_completed_contribution_id = NULL;
+  protected $contribution_recur_id = NULL;
+  protected $event_id = NULL;
+  protected $invoice_id = NULL;
+  protected $receive_date = NULL;
+  protected $amount = NULL;
+  protected $fee = NULL;
+  protected $net_amount = NULL;
+  protected $previous_contribution_id = NULL;
+  protected $previous_contribution_status_id = NULL;
+  protected $previous_contribution_total_amount = NULL;
 
   /**
    * CRM_Core_Payment_StripeIPN constructor.
@@ -64,8 +71,6 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    * We override base because our input parameter is an object
    *
    * @param array $parameters
-   *
-   * @throws CRM_Core_Exception
   */
   public function setInputParameters($parameters) {
     if (!is_object($parameters)) {
@@ -74,32 +79,30 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
 
     // Determine the proper Stripe Processor ID so we can get the secret key
     // and initialize Stripe.
-    
+
     // The $_GET['processor_id'] value is set by CRM_Core_Payment::handlePaymentMethod.
-    if (!array_key_exists('processor_id', $_GET) || empty($_GET['processor_id'])) {
-      $this->exception('Cannot determine processor id');
+    $paymentProcessorId = (int) CRM_Utils_Array::value('processor_id', $_GET);
+    if (empty($paymentProcessorId)) {
+      $this->exception('Cannot determine payment processor id');
     }
-    $this->ppid = $_GET['processor_id'];
 
     // Get the Stripe secret key.
     try {
-      $params = array('return' => 'user_name', 'id' => $this->ppid);
-      $this->secret_key = civicrm_api3('PaymentProcessor', 'getvalue', $params);
+      $this->_paymentProcessor = \Civi\Payment\System::singleton()->getById($paymentProcessorId)->getPaymentProcessor();
     }
     catch(Exception $e) {
       $this->exception('Failed to get Stripe secret key');
     }
 
     // Now re-retrieve the data from Stripe to ensure it's legit.
-    require_once ("vendor/stripe/stripe-php/init.php");
-    \Stripe\Stripe::setApiKey($this->secret_key);
-
+    \Stripe\Stripe::setApiKey($this->_paymentProcessor['user_name']);
     if ($this->verify_event) {
       $this->_inputParameters = \Stripe\Event::retrieve($parameters->id);
     }
     else {
       $this->_inputParameters = $parameters;
     }
+    http_response_code(200);
   }
 
   /**
@@ -113,77 +116,103 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    * @throws \CRM_Core_Exception
    */
   public function retrieve($name, $type, $abort = TRUE) {
-    $class_name = get_class($this->_inputParameters->data->object);
+    $className = get_class($this->_inputParameters->data->object);
     $value = NULL;
-    switch ($name) {
-      case 'subscription_id':
-        if ($class_name == 'Stripe\Invoice') {
-          $value = $this->_inputParameters->data->object->subscription;
-        }
-        elseif ($class_name == 'Stripe\Subscription') {
-          $value = $this->_inputParameters->data->object->id;
+    switch ($className) {
+      case 'Stripe\Charge':
+        switch ($name) {
+          case 'charge_id':
+            $value = $this->_inputParameters->data->object->id;
+            break;
+
+          case 'failure_code':
+            $value = $this->_inputParameters->data->object->failure_code;
+            break;
+
+          case 'failure_message':
+            $value = $this->_inputParameters->data->object->failure_message;
+            break;
+
+          case 'refunded':
+            $value = $this->_inputParameters->data->object->refunded;
+            break;
+
+          case 'amount_refunded':
+            $value = $this->_inputParameters->data->object->amount_refunded;
+            break;
         }
         break;
+
+      case 'Stripe\Invoice':
+        switch ($name) {
+          case 'charge_id':
+            $value = $this->_inputParameters->data->object->charge;
+            break;
+
+          case 'invoice_id':
+            $value = $this->_inputParameters->data->object->id;
+            break;
+
+          case 'receive_date':
+            $value = date("Y-m-d H:i:s", $this->_inputParameters->data->object->date);
+            break;
+
+          case 'subscription_id':
+            $value = $this->_inputParameters->data->object->subscription;
+            break;
+        }
+        break;
+
+      case 'Stripe\Subscription':
+        switch ($name) {
+          case 'frequency_interval':
+            $value = $this->_inputParameters->data->object->plan->interval_count;
+            break;
+
+          case 'frequency_unit':
+            $value = $this->_inputParameters->data->object->plan->interval;
+            break;
+
+          case 'plan_amount':
+            $value = $this->_inputParameters->data->object->plan->amount / 100;
+            break;
+
+          case 'plan_id':
+            $value = $this->_inputParameters->data->object->plan->id;
+            break;
+
+          case 'plan_name':
+            $value = $this->_inputParameters->data->object->plan->name;
+            break;
+
+          case 'plan_start':
+            $value = date("Y-m-d H:i:s", $this->_inputParameters->data->object->start);
+            break;
+
+          case 'subscription_id':
+            $value = $this->_inputParameters->data->object->id;
+            break;
+        }
+        break;
+    }
+
+    // Common parameters
+    switch ($name) {
       case 'customer_id':
         $value = $this->_inputParameters->data->object->customer;
         break;
-      case 'test_mode':
-        $value = (int)!$this->_inputParameters->livemode;
-        break;
-      case 'invoice_id':
-        if ($class_name == 'Stripe\Invoice') {
-          $value = $this->_inputParameters->data->object->id;
-        }
-        break;
-      case 'receive_date':
-        if ($class_name == 'Stripe\Invoice') {
-          $value = date("Y-m-d H:i:s", $this->_inputParameters->data->object->date);
-        }
-        break;
-      case 'charge_id':
-        if ($class_name == 'Stripe\Invoice') {
-          $value = $this->_inputParameters->data->object->charge;
-        }
-        break;
+
       case 'event_type':
         $value = $this->_inputParameters->type;
         break;
-      case 'plan_id': 
-        if ($class_name == 'Stripe\Subscription') {
-          $value = $this->_inputParameters->data->object->plan->id;
-        }
-        break;
+
       case 'previous_plan_id':
         if (preg_match('/\.updated$/', $this->_inputParameters->type)) {
           $value = $this->_inputParameters->data->previous_attributes->plan->id;
         }
         break;
-      case 'plan_amount':
-        if ($class_name == 'Stripe\Subscription') {
-          $value = $this->_inputParameters->data->object->plan->amount / 100;
-        }
-        break;
-      case 'frequency_interval':
-        if ($class_name == 'Stripe\Subscription') {
-          $value = $this->_inputParameters->data->object->plan->interval_count;
-        }
-        break;
-      case 'frequency_unit':
-        if ($class_name == 'Stripe\Subscription') {
-          $value = $this->_inputParameters->data->object->plan->interval;
-        }
-        break;
-      case 'plan_name':
-        if ($class_name == 'Stripe\Subscription') {
-          $value = $this->_inputParameters->data->object->plan->name;
-        }
-        break;
-      case 'plan_start':
-        if ($class_name == 'Stripe\Subscription') {
-          $value = date("Y-m-d H:i:s", $this->_inputParameters->data->object->start);
-        }
-        break;
     }
+
     $value = CRM_Utils_Type::validate($value, $type, FALSE);
     if ($abort && $value === NULL) {
       echo "Failure: Missing Parameter<p>" . CRM_Utils_Type::escape($name, 'String');
@@ -193,32 +222,6 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   }
 
   /**
-   * Get a lock so we don't process browser return & ipn return at the same time.
-   *
-   * Paralell processing notably results in 2 receipts.
-   *
-   * Currently mysql 5.7.5+ will process a cross-session lock. If we can't do that
-   * then we should be tardy on the processing of the ipn response.
-   *
-   * @return bool
-   */
-  protected function getLock() {
-    $mysqlVersion = CRM_Core_DAO::singleValueQuery('SELECT VERSION()');
-    if (stripos($mysqlVersion, 'mariadb') === FALSE
-      && version_compare($mysqlVersion, '5.7.5', '>=')
-    ) {
-      $lock = Civi::lockManager()->acquire('data.contribute.contribution.' . $this->transaction_id);
-      return $lock->isAcquired();
-    }
-    if (empty(CRM_Core_Session::singleton()->getLoggedInContactID())) {
-      // So far the best way of telling the difference is the session.
-      sleep(30);
-    }
-    return TRUE;
-  }
-
-  /**
-   * @return bool
    * @throws \CRM_Core_Exception
    * @throws \CiviCRM_API3_Exception
    */
@@ -232,32 +235,8 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
       // Successful recurring payment.
       case 'invoice.payment_succeeded':
         $this->setInfo();
-        // Lets do a check to make sure this payment has the amount same as that of first contribution.
-        // If it's not a match, something is wrong (since when we update a plan, we generate a whole
-        // new recurring contribution).
-        if ($this->previous_contribution_total_amount != $this->amount) {
-          $this->exception("Subscription amount mismatch. I have " . $this->amount . " and I expect " . $this->previous_contribution_total_amount);
-        }
-
         if ($this->previous_contribution_status_id == $pendingStatusId) {
-          // Update the contribution to include the fee.
-          civicrm_api3('Contribution', 'create', array(
-            'id' => $this->previous_contribution_id,
- 	          'total_amount' => $this->amount,
-            'fee_amount' => $this->fee,
-            'net_amount' => $this->net_amount,
-          ));
-          // The last one was not completed, so complete it.
-          civicrm_api3('Contribution', 'completetransaction', array(
-            'id' => $this->previous_contribution_id,
-            'trxn_date' => $this->receive_date,
-            'trxn_id' => $this->charge_id,
-            'total_amount' => $this->amount,
-            'net_amount' => $this->net_amount,
-            'fee_amount' => $this->fee,
-            'payment_processor_id' => $this->ppid,
-            'is_email_receipt' => $this->is_email_receipt,
-           ));
+          $this->completeContribution();
         }
         else {
           // The first contribution was completed, so create a new one.
@@ -265,35 +244,21 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           // api contribution repeattransaction repeats the appropriate contribution if it is given
           // simply the recurring contribution id. It also updates the membership for us.
           civicrm_api3('Contribution', 'repeattransaction', array(
-            // Actually, don't use contribution_recur_id until CRM-19945 patches make it in to 4.6/4.7
-            // and we have a way to require a minimum minor CiviCRM version.
-            //'contribution_recur_id' => $this->recurring_info->id,
-            'original_contribution_id' => $this->previous_completed_contribution_id,
-            'contribution_status_id' => "Completed",
+            'contribution_recur_id' => $this->contribution_recur_id,
+            'contribution_status_id' => 'Completed',
             'receive_date' => $this->receive_date,
             'trxn_id' => $this->charge_id,
             'total_amount' => $this->amount,
             'fee_amount' => $this->fee,
-            //'invoice_id' => $new_invoice_id - contribution.repeattransaction doesn't support it currently
             'is_email_receipt' => $this->is_email_receipt,
           ));
-
-          // Update invoice_id manually. repeattransaction doesn't return the new contrib id either, so we update the db.
-          $query_params = array(
-            1 => array($this->invoice_id, 'String'),
-            2 => array($this->charge_id, 'String'),
-           );
-          CRM_Core_DAO::executeQuery("UPDATE civicrm_contribution
-            SET invoice_id = %1
-            WHERE trxn_id = %2",
-          $query_params);
         }
 
         // Successful charge & more to come. 
         civicrm_api3('ContributionRecur', 'create', array(
           'id' => $this->contribution_recur_id,
           'failure_count' => 0,
-          'contribution_status_id' => "In Progress"
+          'contribution_status_id' => 'In Progress'
         ));
 
         return;
@@ -301,45 +266,41 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
       // Failed recurring payment.
       case 'invoice.payment_failed':
         $this->setInfo();
-        $fail_date = date("Y-m-d H:i:s");
+        $failDate = date('YmdHis');
 
         if ($this->previous_contribution_status_id == $pendingStatusId) {
           // If this contribution is Pending, set it to Failed.
           civicrm_api3('Contribution', 'create', array(
             'id' => $this->previous_contribution_id,
             'contribution_status_id' => "Failed",
-            'receive_date' => $fail_date,
+            'receive_date' => $failDate,
             'is_email_receipt' => $this->is_email_receipt,
           ));
         }
         else {
-          civicrm_api3('Contribution', 'create', array(
+          $contributionParams = [
             'contribution_recur_id' => $this->contribution_recur_id,
-            'contribution_status_id' => "Failed",
-            'contact_id' => $this->contact_id,
-            'financial_type_id' => $this->financial_type_id,
-            'receive_date' => $fail_date,
+            'contribution_status_id' => 'Failed',
+            'receive_date' => $failDate,
             'total_amount' => $this->amount,
             'is_email_receipt' => $this->is_email_receipt,
-            'is_test' => $this->test_mode,
-          ));  
+          ];
+          civicrm_api3('Contribution', 'repeattransaction', $contributionParams);
         }
 
-        $failure_count = civicrm_api3('ContributionRecur', 'getvalue', array(
-         'sequential' => 1,
+        $failureCount = civicrm_api3('ContributionRecur', 'getvalue', array(
          'id' => $this->contribution_recur_id,
          'return' => 'failure_count',
         ));
-        $failure_count++;
+        $failureCount++;
 
         // Change the status of the Recurring and update failed attempts.
         civicrm_api3('ContributionRecur', 'create', array(
           'id' => $this->contribution_recur_id,
           'contribution_status_id' => "Failed",
-          'failure_count' => $failure_count,
-          'modified_date' => $fail_date,
+          'failure_count' => $failureCount,
+          'modified_date' => $failDate,
         ));
-
         return;
 
       // Subscription is cancelled
@@ -349,114 +310,74 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         civicrm_api3('ContributionRecur', 'cancel', array(
           'id' => $this->contribution_recur_id,
         ));
-
-        // Delete the record from Stripe's subscriptions table
-        $query_params = array(
-          1 => array($this->subscription_id, 'String'),
-        );
-        CRM_Core_DAO::executeQuery("DELETE FROM civicrm_stripe_subscriptions
-          WHERE subscription_id = %1", $query_params);
-
         return;
 
       // One-time donation and per invoice payment.
-      case 'charge.succeeded':
-        //$this->setInfo();
-        // TODO: Implement this so we can mark payments as failed?
-        // Not implemented.
+      case 'charge.failed':
+        $chargeId = $this->retrieve('charge_id', 'String');
+        $failureCode = $this->retrieve('failure_code', 'String');
+        $failureMessage = $this->retrieve('failure_message', 'String');
+        $contribution = civicrm_api3('Contribution', 'getsingle', ['trxn_id' => $chargeId]);
+        $failedStatusId = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Failed');
+        if ($contribution['contribution_status_id'] != $failedStatusId) {
+          $note = $failureCode . ' : ' . $failureMessage;
+          civicrm_api3('Contribution', 'create', ['id' => $contribution['id'], 'contribution_status_id' => $failedStatusId, 'note' => $note]);
+        }
         return;
 
-     // Subscription is updated. Delete existing recurring contribution and start a fresh one.
-     // This tells a story to site admins over editing a recurring contribution record.
-     case 'customer.subscription.updated':
+      case 'charge.refunded':
+        $chargeId = $this->retrieve('charge_id', 'String');
+        $refunded = $this->retrieve('refunded', 'Boolean');
+        $refundAmount = $this->retrieve('amount_refunded', 'Integer');
+        $contribution = civicrm_api3('Contribution', 'getsingle', ['trxn_id' => $chargeId]);
+        if ($refunded) {
+          $refundedStatusId = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Refunded');
+          if ($contribution['contribution_status_id'] != $refundedStatusId) {
+            civicrm_api3('Contribution', 'create', [
+              'id' => $contribution['id'],
+              'contribution_status_id' => $refundedStatusId
+            ]);
+          }
+          elseif ($refundAmount > 0) {
+            $partiallyRefundedStatusId = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Partially Refunded');
+            if ($contribution['contribution_status_id'] != $partiallyRefundedStatusId) {
+              civicrm_api3('Contribution', 'create', [
+                'id' => $contribution['id'],
+                'contribution_status_id' => $refundedStatusId
+              ]);
+            }
+          }
+        }
+        return;
+
+      case 'charge.succeeded':
+        $this->setInfo();
+        if ($this->previous_contribution_status_id == $pendingStatusId) {
+          $this->completeContribution();
+        }
+        return;
+
+      case 'customer.subscription.updated':
        $this->setInfo();
        if (empty($this->previous_plan_id)) {
          // Not a plan change...don't care.
          return;
        }
-       
-       $new_civi_invoice = md5(uniqid(rand(), TRUE));
 
-       if ($this->previous_contribution_status_id == $pendingStatusId) {
-         // Cancel the pending contribution.
-         civicrm_api3('Contribution', 'delete', array(
-           'id' => $this->previous_contribution_id,
-         ));
-       }
-
-       // Cancel the old recurring contribution.
-       civicrm_api3('ContributionRecur', 'cancel', array(
-         'id' => $this->contribution_recur_id
-       ));
-
-       $new_contribution_recur = civicrm_api3('ContributionRecur', 'create', array(
-          'contact_id' => $this->contact_id,
-          'invoice_id' => $new_civi_invoice,
+       civicrm_api3('ContributionRecur', 'create', [
+         'id' => $this->contribution_recur_id,
           'amount' => $this->plan_amount,
           'auto_renew' => 1,
           'created_date' => $this->plan_start,
           'frequency_unit' => $this->frequency_unit,
           'frequency_interval' => $this->frequency_interval,
-          'contribution_status_id' => "In Progress",
-          'payment_processor_id' =>  $this->ppid,
-          'financial_type_id' => $this->financial_type_id,
-          'payment_instrument_id' => $this->payment_instrument_id,
-          'is_test' => $this->test_mode,
-       ));
-       $new_contribution_recur_id = $new_contribution_recur['id'];
+       ]);
 
-       $new_contribution = civicrm_api3('Contribution', 'create', array(
-          'sequential' => 1,
-          'contact_id' => $this->contact_id,
-          'invoice_id' => $new_civi_invoice,
+       civicrm_api3('Contribution', 'create', [
+          'id' => $this->previous_contribution_id,
           'total_amount' => $this->plan_amount,
-          'contribution_recur_id' => $new_contribution_recur_id,
-          'contribution_status_id' => "Pending",
-          'financial_type_id' => $this->financial_type_id,
-          'payment_instrument_id' => $this->payment_instrument_id,
-          'note' => "Created by Stripe webhook.",
-          'is_test' => $this->test_mode,
-        ));
-
-        $new_contribution_id = $new_contribution['id'];
-
-        // Prepare escaped query params.
-        $query_params = array(
-          1 => array($new_contribution_recur_id, 'Integer'),
-          2 => array($this->subscription_id, 'String'),
-        );
-        CRM_Core_DAO::executeQuery("UPDATE civicrm_stripe_subscriptions
-          SET contribution_recur_id  = %1 where subscription_id = %2",
-          $query_params
-        );
-
-        // FIXME: MJW Do we need this custom handling for memberships here? Core should do all we need
-        if ($this->membership_id) { 
-          $plan_elements = explode("-", $this->plan_id);
-          $plan_name_elements = explode("-", $this->plan_name);
-          $new_membership_type_id = NULL;
-          if ("membertype_" == substr($plan_elements[0],0,11)) {
-            $new_membership_type_id = substr($plan_elements[0],strrpos($plan_elements[0],'_') + 1);
-          } else if  ("membertype_" == substr($plan_name_elements[0],0,11)) {
-             $new_membership_type_id = substr($plan_name_elements[0],strrpos($plan_name_elements[0],'_') + 1);
-          }
-
-          // Adjust to the new membership level.
-          if (!empty($new_membership_type_id)) {
-            civicrm_api3('Membership', 'create', array(
-              'id' => $this->membership_id,
-              'membership_type_id' => $new_membership_type_id,
-              'contribution_recur_id' => $new_contribution_recur_id,
-              'num_terms' => 0,
-            ));
-
-            // Create a new membership payment record.
-            civicrm_api3('MembershipPayment', 'create', array(
-              'membership_id' => $this->membership_id,
-              'contribution_id' => $new_contribution_id,
-            ));
-          }
-        }
+          'contribution_recur_id' => $this->contribution_recur_id,
+       ]);
         return;
     }
     // Unhandled event type.
@@ -464,6 +385,32 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   }
 
   /**
+   * Complete a pending contribution and update associated entities (recur/membership)
+   *
+   * @throws \CiviCRM_API3_Exception
+   */
+  public function completeContribution() {
+    // Update the contribution to include the fee.
+    civicrm_api3('Contribution', 'create', array(
+      'id' => $this->previous_contribution_id,
+      'total_amount' => $this->amount,
+      'fee_amount' => $this->fee,
+      'net_amount' => $this->net_amount,
+    ));
+    // The last one was not completed, so complete it.
+    civicrm_api3('Contribution', 'completetransaction', array(
+      'id' => $this->previous_contribution_id,
+      'trxn_date' => $this->receive_date,
+      'trxn_id' => $this->charge_id,
+      'total_amount' => $this->amount,
+      'net_amount' => $this->net_amount,
+      'fee_amount' => $this->fee,
+      'payment_processor_id' => $this->_paymentProcessor['id'],
+      'is_email_receipt' => $this->is_email_receipt,
+    ));
+  }
+
+    /**
    * Gather and set info as class properties.
    *
    * Given the data passed to us via the Stripe Event, try to determine
@@ -471,15 +418,8 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    * properties to be used later.
    *
    * @throws \CRM_Core_Exception
-   * @throws \CiviCRM_API3_Exception
    */
   public function setInfo() {
-    if (!$this->getLock()) {
-      return;
-    }
-
-    $this->test_mode = $this->retrieve('test_mode', 'Integer');
-
     $abort = FALSE;
     $this->customer_id = $this->retrieve('customer_id', 'String');
     $this->subscription_id = $this->retrieve('subscription_id', 'String', $abort);
@@ -496,7 +436,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
 
     // Gather info about the amount and fee.
     // Get the Stripe charge object if one exists. Null charge still needs processing.
-    if ( $this->charge_id !== null ) {
+    if ($this->charge_id !== null) {
       try {
         $charge = \Stripe\Charge::retrieve($this->charge_id);
         $balance_transaction_id = $charge->balance_transaction;
@@ -522,89 +462,26 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
 
     $this->net_amount = $this->amount - $this->fee;
 
-    // Additional processing of values is only relevant if there is a
-    // subscription id.
+    // Additional processing of values is only relevant if there is a subscription id.
     if ($this->subscription_id) {
       // Get info related to recurring contributions.
-      $sql = "SELECT contribution_recur_id,
-        financial_type_id, payment_instrument_id, contact_id
-        FROM civicrm_stripe_subscriptions s JOIN civicrm_contribution_recur r
-        ON s.contribution_recur_id = r.id
-        WHERE s.subscription_id = %1
-        AND s.processor_id = %2";
-      $query_params = array(
-        1 => array($this->subscription_id, 'String'),
-        2 => array($this->ppid, 'Integer'),
-      );
-      $dao = CRM_Core_DAO::executeQuery($sql, $query_params);
-      $dao->fetch();
-      if ($dao->N == 0 && $this->event_type == 'invoice.payment_succeeded') {
-        // Let's try a little harder - we might have not have properly recorded
-        // the subscription id when this recurring contribution was created.
-        $sql = "SELECT contribution_recur_id,
-          financial_type_id, payment_instrument_id, contact_id
-          FROM civicrm_stripe_subscriptions s JOIN civicrm_contribution_recur r
-          ON s.contribution_recur_id = r.id
-          WHERE s.customer_id = %1
-          AND s.processor_id = %2";
-        $query_params = array(
-          1 => array($this->customer_id, 'String'),
-          2 => array($this->ppid, 'Integer'),
-        );
-        $extra_dao = CRM_Core_DAO::executeQuery($sql, $query_params);
-        $extra_dao->fetch();
-        if ($extra_dao->N == 1) {
-          // We just found one subscription, so it must be the right one
-          // (if we find more than one subscription we can't be sure).
-          $dao = $extra_dao;
-        }
-        else {
-          // This is an unrecoverable error - without a contribution_recur record
-          // there is nothing we can do with an invoice.payment_succeeded
-          // event.
-          $this->exception('I cannot find contribution_recur record for subscription: ' . $this->subscription_id);
-        }
-      }
-
-      if ($dao->N == 1) {
-        $this->contribution_recur_id = $dao->contribution_recur_id;
-        $this->financial_type_id = $dao->financial_type_id;
-        $this->payment_instrument_id = $dao->payment_instrument_id;
-        $this->contact_id = $dao->contact_id;
+      try {
+        $contributionRecur = civicrm_api3('ContributionRecur', 'getsingle', ['trxn_id' => $this->subscription_id]);
+        $this->contribution_recur_id = $contributionRecur['id'];
 
         // Same approach as api repeattransaction. Find last contribution associated
         // with our recurring contribution.
-        $results = civicrm_api3('contribution', 'getsingle', array(
-         'return' => array('id', 'contribution_status_id', 'total_amount'),
-         'contribution_recur_id' => $this->contribution_recur_id,
-         'options' => array('limit' => 1, 'sort' => 'id DESC'),
-         'contribution_test' => $this->test_mode,
-        ));
-        $this->previous_contribution_id = $results['contribution_id'];
-        $this->previous_contribution_status_id = $results['contribution_status_id'];
-        $this->previous_contribution_total_amount = $results['total_amount'];
-
-        // Workaround for CRM-19945.
-        try {
-          $this->previous_completed_contribution_id = civicrm_api3('contribution', 'getvalue', array(
-            'return' => 'id',
-            'contribution_recur_id' => $this->contribution_recur_id,
-            'contribution_status_id' => array('IN' => array('Completed')),
-            'options' => array('limit' => 1, 'sort' => 'id DESC'),
-            'contribution_test' => $this->test_mode,
-          ));
-        } catch (Exception $e) {
-          // This is fine....could only be a pending in the db.
-        }
-
-        // Check for membership id.
-        // FIXME: MJW Not sure why we assign membership_id here
-        $membership = civicrm_api3('Membership', 'get', array(
+        $contribution = civicrm_api3('contribution', 'getsingle', array(
+          'return' => array('id', 'contribution_status_id', 'total_amount'),
           'contribution_recur_id' => $this->contribution_recur_id,
+          'options' => array('limit' => 1, 'sort' => 'id DESC'),
         ));
-        if ($membership['count'] == 1) {
-          $this->membership_id = $membership['id'];
-        }
+        $this->previous_contribution_id = $contribution['id'];
+        $this->previous_contribution_status_id = $contribution['contribution_status_id'];
+        $this->previous_contribution_total_amount = $contribution['total_amount'];
+      }
+      catch (Exception $e) {
+        $this->exception('Cannot find recurring contribution for subscription ID: ' . $this->subscription_id . '. ' . $e->getMessage());
       }
     }
   }

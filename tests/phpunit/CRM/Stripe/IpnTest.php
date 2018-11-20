@@ -151,7 +151,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       'installments' => $this->_installments
     );
     // Note - this will succeed. It is very hard to test a failed transaction.
-    // We will manipulate the event to make it a failed transactin below.
+    // We will manipulate the event to make it a failed transaction below.
     $this->doPayment($payment_extra_params);
 
     // Now check to see if an event was triggered and if so, process it.
