@@ -870,6 +870,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     $data = json_decode($data_raw);
     $ipnClass = new CRM_Core_Payment_StripeIPN($data);
     $ipnClass->main();
+    http_response_code(200);
   }
 
 

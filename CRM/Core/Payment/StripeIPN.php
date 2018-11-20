@@ -240,7 +240,6 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         }
         else {
           // The first contribution was completed, so create a new one.
-          
           // api contribution repeattransaction repeats the appropriate contribution if it is given
           // simply the recurring contribution id. It also updates the membership for us.
           civicrm_api3('Contribution', 'repeattransaction', array(
@@ -260,7 +259,6 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           'failure_count' => 0,
           'contribution_status_id' => 'In Progress'
         ));
-
         return;
 
       // Failed recurring payment.
@@ -489,7 +487,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   public function exception($message) {
     $errorMessage = 'StripeIPN Exception: Event: ' . $this->event_type . ' Error: ' . $message;
     Civi::log()->debug($errorMessage);
-    //throw new CRM_Core_Exception($errorMessage);
-    exit();
+    http_response_code(400);
+    exit(1);
   }
 }
