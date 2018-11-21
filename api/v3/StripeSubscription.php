@@ -1,12 +1,12 @@
 <?php
 
 /**
- * Stripe Customer API
+ * Stripe Subscription API
  *
  */
 
 /**
- * StripeCustomer.Get API specification
+ * StripeSubscription.Get API specification
  *
  * @param array $spec description of fields supported by this API call
  * @return void
@@ -28,6 +28,8 @@ function _civicrm_api3_stripe_subscription_get_spec(&$spec) {
 }
 
 /**
+ * @deprecated This StripeSubscription.get is deprecated as of 5.2 as we now using recurring contribution instead of civicrm_stripe_subscriptions
+ *
  * StripeSubscription.Get API
  *  This api will get entries from the civicrm_stripe_subscriptions table
  *
@@ -63,6 +65,7 @@ function civicrm_api3_stripe_subscription_get($params) {
     }
   }
 
+
   $query = "SELECT * FROM civicrm_stripe_subscriptions ";
   if (count($where)) {
     $whereClause = implode(' AND ', $where);
@@ -82,4 +85,30 @@ function civicrm_api3_stripe_subscription_get($params) {
     $results[] = $result;
   }
   return civicrm_api3_create_success($results);
+}
+
+function civicrm_api3_stripe_subscription_updatetransactionids() {
+  if (!CRM_Core_DAO::checkTableExists('civicrm_stripe_subscriptions')) {
+    throw new CiviCRM_API3_Exception('Table civicrm_stripe_subscriptions is not used in Stripe >=5.2 and does not exist on your install. This API will be removed in a future release.');
+  }
+
+  $sql = "SELECT subscription_id, contribution_recur_id FROM civicrm_stripe_subscriptions";
+  $dao = CRM_Core_DAO::executeQuery($sql);
+  $counts = [
+    'success' => 0,
+    'failed' => 0
+  ];
+  while ($dao->fetch()) {
+    if (!empty($dao->subscription_id) && !empty($dao->contribution_recur_id)) {
+      try {
+        civicrm_api3('ContributionRecur', 'create', ['id' => $dao->contribution_recur_id, 'trxn_id' => $dao->subscription_id]);
+        $counts['success']++;
+      }
+      catch (Exception $e) {
+        Civi::log()->debug('Error updating trxn_id for recur: ' . $dao->contribution_recur_id . ' trxn_id: ' . $dao->subscription_id);
+        $counts['failed']++;
+      }
+    }
+  }
+  return civicrm_api3_create_success($counts);
 }

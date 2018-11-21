@@ -383,4 +383,10 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
     return TRUE;
   }
 
+  public function upgrade_5020() {
+    $this->ctx->log->info('Applying Stripe update 5020.  Migrate civicrm_stripe_subscriptions data to recurring contributions.');
+    civicrm_api3('StripeSubscription', 'updatetransactionids', []);
+
+    return TRUE;
+  }
 }
