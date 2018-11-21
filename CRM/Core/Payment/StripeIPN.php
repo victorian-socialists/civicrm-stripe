@@ -20,6 +20,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   public $test_mode;
   public $event_type = NULL;
   public $subscription_id = NULL;
+  public $customer_id = NULL;
   public $charge_id = NULL;
   public $previous_plan_id = NULL;
   public $plan_id = NULL;
@@ -189,6 +190,31 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
       $this->exception("Could not find an entry for $name");
     }
     return $value;
+  }
+
+  /**
+   * Get a lock so we don't process browser return & ipn return at the same time.
+   *
+   * Paralell processing notably results in 2 receipts.
+   *
+   * Currently mysql 5.7.5+ will process a cross-session lock. If we can't do that
+   * then we should be tardy on the processing of the ipn response.
+   *
+   * @return bool
+   */
+  protected function getLock() {
+    $mysqlVersion = CRM_Core_DAO::singleValueQuery('SELECT VERSION()');
+    if (stripos($mysqlVersion, 'mariadb') === FALSE
+      && version_compare($mysqlVersion, '5.7.5', '>=')
+    ) {
+      $lock = Civi::lockManager()->acquire('data.contribute.contribution.' . $this->transaction_id);
+      return $lock->isAcquired();
+    }
+    if (empty(CRM_Core_Session::singleton()->getLoggedInContactID())) {
+      // So far the best way of telling the difference is the session.
+      sleep(30);
+    }
+    return TRUE;
   }
 
   /**
@@ -432,20 +458,6 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           }
         }
         return;
-
-      // Keep plans table in sync with Stripe when a plan is deleted.
-     case 'plan.deleted':
-       $this->setInfo();
-       $is_live = $this->test_mode == 1 ? 0 : 1;
-       $query_params = array(
-         1 => array($this->plan_id, 'String'),
-         2 => array($this->ppid, 'Integer'),
-         3 => array($is_live, 'Integer')
-       );
-       CRM_Core_DAO::executeQuery("DELETE FROM civicrm_stripe_plans WHERE
-         plan_id = %1 AND  processor_id = %2 and is_live = %3", $query_params);
-
-       return;
     }
     // Unhandled event type.
     return;
@@ -462,6 +474,10 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    * @throws \CiviCRM_API3_Exception
    */
   public function setInfo() {
+    if (!$this->getLock()) {
+      return;
+    }
+
     $this->test_mode = $this->retrieve('test_mode', 'Integer');
 
     $abort = FALSE;
@@ -514,7 +530,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         financial_type_id, payment_instrument_id, contact_id
         FROM civicrm_stripe_subscriptions s JOIN civicrm_contribution_recur r
         ON s.contribution_recur_id = r.id
-        WHERE subscription_id = %1
+        WHERE s.subscription_id = %1
         AND s.processor_id = %2";
       $query_params = array(
         1 => array($this->subscription_id, 'String'),
@@ -529,7 +545,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           financial_type_id, payment_instrument_id, contact_id
           FROM civicrm_stripe_subscriptions s JOIN civicrm_contribution_recur r
           ON s.contribution_recur_id = r.id
-          WHERE customer_id = %1
+          WHERE s.customer_id = %1
           AND s.processor_id = %2";
         $query_params = array(
           1 => array($this->customer_id, 'String'),
@@ -556,7 +572,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         $this->payment_instrument_id = $dao->payment_instrument_id;
         $this->contact_id = $dao->contact_id;
 
-        // Same approach as api repeattransaction. Find last contribution ascociated 
+        // Same approach as api repeattransaction. Find last contribution associated
         // with our recurring contribution.
         $results = civicrm_api3('contribution', 'getsingle', array(
          'return' => array('id', 'contribution_status_id', 'total_amount'),
