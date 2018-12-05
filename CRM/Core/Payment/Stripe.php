@@ -279,6 +279,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         'is_required' => TRUE,
         'month_field' => 'credit_card_exp_date_M',
         'year_field' => 'credit_card_exp_date_Y',
+        'extra' => ['class' => 'crm-form-select'],
       ),
 
       'credit_card_type' => array(
@@ -938,6 +939,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
 
   /**
    * Get url for users to manage this recurring contribution for this processor.
+   * FIXME: Remove and increment min version once https://github.com/civicrm/civicrm-core/pull/13215 is merged.
    *
    * @param int $entityID
    * @param null $entity
