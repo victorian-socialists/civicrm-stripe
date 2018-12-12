@@ -9,15 +9,11 @@ Stripe notifies CiviCRM every time a recurring contribution is processed / updat
 
 In order to take advantage of this feature, you must configure Stripe with the right "Webhook Endpoint".
 
-You can find the location of this setting in your Stripe Dashboard by clicking the API menu item on the left, and then choose the Webhook tab.
+To do this, log into Stripe Dashboard and from the menu on the left, choose Developers > Webhooks and click Add Endpoint.
 
-Then click Add Endpoint.
+At this point, you need to figure out the "URL to be called" value. To do this, you need to check what ID is assigned to the Stripe payment processor in CiviCRM.
 
-Now, you need to figure out what your end point is.
-
-To figure out the "URL to be called" value, you need to check what ID is assigned to your payment processor.
-
-To determine the correct setting, go back to your CiviCRM screen and click `Administer -> System Settings -> Payment Processor`
+To determine the ID, go back to CiviCRM and click `Administer -> System Settings -> Payment Processor`
 
 Click Edit next to the payment processor you are setting up.
 
