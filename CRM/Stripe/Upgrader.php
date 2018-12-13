@@ -389,4 +389,12 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
 
     return TRUE;
   }
+
+  public function upgrade_5021() {
+    $this->ctx->log->info('Applying Stripe update 5021.  Copy trxn_id to processor_id so we can cancel recurring contributions.');
+    civicrm_api3('StripeSubscription', 'copytrxnidtoprocessorid', []);
+
+    return TRUE;
+  }
+
 }
