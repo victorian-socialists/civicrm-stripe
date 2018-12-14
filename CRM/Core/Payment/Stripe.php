@@ -618,6 +618,9 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     $recurParams = [
       'id' => $params['contributionRecurID'],
       'trxn_id' => $stripeSubscription->id,
+      // FIXME processor_id is deprecated as it is not guaranteed to be unique, but currently (CiviCRM 5.9)
+      //  it is required by cancelSubscription (where it is called subscription_id)
+      'processor_id' => $stripeSubscription->id,
       'auto_renew' => 1,
       'cycle_day' => date('d'),
       'next_sched_contribution_date' => $this->calculateNextScheduledDate($params),
@@ -631,11 +634,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         $recurParams['end_date'] = $this->calculateEndDate($params);
       }
     }
-
-    // FIXME: Is this required?
-    // Add subscription_id so tests can properly work with recurring
-    // contributions. 
-    $params['subscription_id'] = $stripeSubscription->id;
 
     // Hook to allow modifying recurring contribution params
     CRM_Stripe_Hook::updateRecurringContribution($recurParams);
@@ -830,7 +828,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   public function cancelSubscription(&$message = '', $params = []) {
     $this->setAPIParams();
 
-    $contributionRecurId = CRM_Utils_Array::value('crid', $_GET);
+    $contributionRecurId = $this->getRecurringContributionId($params);
     try {
       $contributionRecur = civicrm_api3('ContributionRecur', 'getsingle', array(
         'id' => $contributionRecurId,
@@ -1019,6 +1017,40 @@ INNER JOIN civicrm_contribution con ON ( con.contribution_recur_id = rec.id )
 
     // Else default
     return isset($this->_paymentProcessor['url_recur']) ? $this->_paymentProcessor['url_recur'] : '';
+  }
+
+  /**
+   * Get the recurring contribution ID from parameters passed in to cancelSubscription
+   * Historical the data passed to cancelSubscription is pretty poor and doesn't include much!
+   *
+   * @param array $params
+   *
+   * @return int|null
+   */
+  protected function getRecurringContributionId($params) {
+    // Not yet passed, but could be added via core PR
+    $contributionRecurId = CRM_Utils_Array::value('contribution_recur_id', $params);
+    if (!empty($contributionRecurId)) {
+      return $contributionRecurId;
+    }
+
+    // Not yet passed, but could be added via core PR
+    $contributionId = CRM_Utils_Array::value('contribution_id', $params);
+    try {
+      return civicrm_api3('Contribution', 'getvalue', ['id' => $contributionId, 'return' => 'contribution_recur_id']);
+    }
+    catch (Exception $e) {
+      $subscriptionId = CRM_Utils_Array::value('subscriptionId', $params);
+      if (!empty($subscriptionId)) {
+        try {
+          return civicrm_api3('ContributionRecur', 'getvalue', ['processor_id' => $subscriptionId, 'return' => 'id']);
+        }
+        catch (Exception $e) {
+          return NULL;
+        }
+      }
+      return NULL;
+    }
   }
 
 }

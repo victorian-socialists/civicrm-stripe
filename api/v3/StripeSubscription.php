@@ -112,3 +112,31 @@ function civicrm_api3_stripe_subscription_updatetransactionids() {
   }
   return civicrm_api3_create_success($counts);
 }
+
+/**
+ * API function (used in 5021 upgrader) to copy trxn_id to processor_id in civicrm_contribution_recur table
+ * processor_id (named subscriptionId) is the only value available to cancelSubscription in 5.9 (and earlier).
+ * It is not ideal as processor_id is not guaranteed to be unique in the CiviCRM database (trxn_id is unique).
+ *
+ * @return array
+ */
+function civicrm_api3_stripe_subscription_copytrxnidtoprocessorid() {
+  $sql = "SELECT cr.trxn_id, cr.processor_id, cr.payment_processor_id, cpp.class_name FROM civicrm_contribution_recur cr
+LEFT JOIN civicrm_payment_processor AS cpp ON cr.payment_processor_id = cpp.id
+WHERE cpp.class_name = 'Payment_Stripe'";
+  $dao = CRM_Core_DAO::executeQuery($sql);
+  $counts = [
+    'updated' => 0,
+  ];
+  while ($dao->fetch()) {
+    if (!empty($dao->trxn_id) && empty($dao->processor_id)) {
+      $updateSQL = "UPDATE civicrm_contribution_recur
+SET processor_id=%1
+WHERE trxn_id=%1;";
+      $updateParams = [1 => [$dao->trxn_id, 'String']];
+      CRM_Core_DAO::executeQuery($updateSQL, $updateParams);
+      $counts['updated']++;
+    }
+  }
+  return civicrm_api3_create_success($counts);
+}

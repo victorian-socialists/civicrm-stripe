@@ -21,3 +21,4 @@ The api commands are:
 
 * `StripeCustomer.updatecontactids` - Used to migrate civicrm_stripe_customer table to match on contact_id instead of email address.
 * `StripeSubscription.updatetransactionids` - Used to migrate civicrm_stripe_subscriptions to use recurring contributions directly.
+* `StripeSubscription.copytrxnidtoprocessorid` - Used to copy trxn_id to processor_id in civicrm_contribution_recur table so we can use cancelSubscription. Hopefully this won't be needed in future versions of CiviCRM if we can pass more sensible values to the cancelSubscription function.
