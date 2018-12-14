@@ -17,7 +17,7 @@
 * Drop use of civicrm_stripe_plans table and just query Stripe each time. This prevents errors when they get out of sync
 
 ### Upgrading
-**You should upgrade directly from 5.0.**
+**Please upgrade to 5.0 if you are on ANY older version. Then upgrade directly to 5.2. You do not need to install 5.1 first.**
 
 Make sure you run the extension upgrades immediately after updating the code.  There are two MAJOR upgrade steps:
 1. Migrate civicrm_stripe_customers table to match on contact_id instead of email address. This can be re-run if necessary using StripeCustomer.updatecontactids API.
