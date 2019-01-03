@@ -204,25 +204,13 @@ function stripe_civicrm_buildForm($formName, &$form) {
  * Get the path of the webhook depending on the UF (eg Drupal, Joomla, Wordpress)
  *
  * @param bool $includeBaseUrl
+ * @param string $pp_id
  *
  * @return string
  */
-function stripe_get_webhook_path($includeBaseUrl = TRUE) {
-  $UFWebhookPaths = [
-    "Drupal"    => "civicrm/payment/ipn/NN",
-    "Joomla"    => "?option=com_civicrm&task=civicrm/payment/ipn/NN",
-    "WordPress" => "?page=CiviCRM&q=civicrm/payment/ipn/NN"
-  ];
-
-
-  // Use Drupal path as default if the UF isn't in the map above
-  $UFWebhookPath = (array_key_exists(CIVICRM_UF, $UFWebhookPaths)) ?
-    $UFWebhookPaths[CIVICRM_UF] :
-    $UFWebhookPaths['Drupal'];
-  if ($includeBaseUrl) {
-    return CIVICRM_UF_BASEURL . '/' . $UFWebhookPath;
-  }
-  return $UFWebhookPath;
+function stripe_get_webhook_path($includeBaseUrl = TRUE, $pp_id = 'NN') {
+  // Assuming frontend URL because that's how the function behaved before.
+  return CRM_Utils_System::url('civicrm/payment/ipn/' . $pp_id, NULL, $includeBaseUrl, NULL, TRUE, TRUE);
 }
 
 /*
@@ -233,4 +221,11 @@ function stripe_get_webhook_path($includeBaseUrl = TRUE) {
 function stripe_civicrm_idsException(&$skip) {
   // Path is always set to civicrm/payment/ipn (checked on Drupal/Joomla)
   $skip[] = 'civicrm/payment/ipn';
+}
+
+/**
+ * Implements hook_civicrm_check().
+ */
+function stripe_civicrm_check(&$messages) {
+  CRM_Stripe_Utils_Check_Webhook::check($messages);
 }
