@@ -440,23 +440,29 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
 
     // Additional processing of values is only relevant if there is a subscription id.
     if ($this->subscription_id) {
-      // Get info related to recurring contributions.
+      // Get the recurring contribution record associated with the Stripe subscription.
       try {
         $contributionRecur = civicrm_api3('ContributionRecur', 'getsingle', ['trxn_id' => $this->subscription_id]);
         $this->contribution_recur_id = $contributionRecur['id'];
-
-        // Same approach as api repeattransaction. Find last contribution associated
-        // with our recurring contribution.
+      }
+      catch (Exception $e) {
+        $this->exception('Cannot find recurring contribution for subscription ID: ' . $this->subscription_id . '. ' . $e->getMessage());
+      }
+    }
+    // If a recurring contribution has been found, get the most recent contribution belonging to it.
+    if ($this->contribution_recur_id) {
+      try {
+        // Same approach as api repeattransaction.
         $contribution = civicrm_api3('contribution', 'getsingle', array(
           'return' => array('id', 'contribution_status_id', 'total_amount', 'trxn_id'),
           'contribution_recur_id' => $this->contribution_recur_id,
-          'contribution_test' => $this->_paymentProcessor['is_test'],
+          'contribution_test' => isset($this->_paymentProcessor['is_test']) && $this->_paymentProcessor['is_test'] ? 1 : 0,
           'options' => array('limit' => 1, 'sort' => 'id DESC'),
         ));
         $this->previous_contribution = $contribution;
       }
       catch (Exception $e) {
-        $this->exception('Cannot find recurring contribution for subscription ID: ' . $this->subscription_id . '. ' . $e->getMessage());
+        $this->exception('Cannot find any contributions with recurring contribution ID: ' . $this->contribution_recur_id . '. ' . $e->getMessage());
       }
     }
   }
