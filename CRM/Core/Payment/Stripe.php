@@ -296,6 +296,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         'title' => 'Stripe Token',
         'attributes' => array(
           'id' => 'stripe-token',
+          'class' => 'payproc-metadata',
         ),
         'cc_field' => TRUE,
         'is_required' => TRUE,
@@ -306,6 +307,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         'title' => 'Stripe ID',
         'attributes' => array(
           'id' => 'stripe-id',
+          'class' => 'payproc-metadata',
         ),
         'cc_field' => TRUE,
         'is_required' => TRUE,
@@ -316,6 +318,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         'title' => 'Stripe Public Key',
         'attributes' => array(
           'id' => 'stripe-pub-key',
+          'class' => 'payproc-metadata',
         ),
         'cc_field' => TRUE,
         'is_required' => TRUE,

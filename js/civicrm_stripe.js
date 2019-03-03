@@ -57,6 +57,16 @@ CRM.$(function($) {
     // We will re-add it if the transaction goes through.
     onclickAction = $submit.attr('onclick');
     $submit.removeAttr('onclick');
+
+    // Quickform doesn't add hidden elements via standard method. On a form where payment processor may
+    //  be loaded via initial form load AND ajax (eg. backend live contribution page with payproc dropdown)
+    //  the processor metadata elements will appear twice (once on initial load, once via AJAX).  The ones loaded
+    //  via initial load will not be removed when AJAX loaded ones are added and the wrong stripe-pub-key etc will
+    //  be submitted.  This removes all elements with the class "payproc-metadata" from the form each time the
+    //  dropdown is changed.
+    $('select#payment_processor_id').on('change', function() {
+      $('input.payproc-metadata').remove();
+    });
   });
 
   // Re-prep form when we've loaded a new payproc
