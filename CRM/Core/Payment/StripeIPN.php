@@ -6,7 +6,7 @@
 
 class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
 
-  protected $_paymentProcessor;
+  use CRM_Core_Payment_StripeIPNTrait;
 
   /**
    * Transaction ID is the contribution in the redirect flow and a random number in the on-site->POST flow
@@ -77,20 +77,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
 
     // Determine the proper Stripe Processor ID so we can get the secret key
     // and initialize Stripe.
-
-    // The $_GET['processor_id'] value is set by CRM_Core_Payment::handlePaymentMethod.
-    $paymentProcessorId = (int) CRM_Utils_Array::value('processor_id', $_GET);
-    if (empty($paymentProcessorId)) {
-      $this->exception('Cannot determine payment processor id');
-    }
-
-    // Get the Stripe secret key.
-    try {
-      $this->_paymentProcessor = \Civi\Payment\System::singleton()->getById($paymentProcessorId)->getPaymentProcessor();
-    }
-    catch(Exception $e) {
-      $this->exception('Failed to get Stripe secret key');
-    }
+    $this->getPaymentProcessor();
 
     // Now re-retrieve the data from Stripe to ensure it's legit.
     \Stripe\Stripe::setApiKey($this->_paymentProcessor['user_name']);
