@@ -6,11 +6,7 @@
 
 class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
 
-  /**
-   *
-   * @var string
-   */
-  protected $_stripeAPIVersion = '2018-11-08';
+  use CRM_Core_Payment_StripeTrait;
 
   /**
    * We only need one instance of this object. So we use the singleton
@@ -449,8 +445,8 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       Civi::log()->debug('Stripe.js token was not passed!  Report this message to the site administrator. $params: ' . print_r($params, TRUE));
     }
 
-    $contactId = self::getContactId($params);
-    $email = self::getBillingEmail($params, $contactId);
+    $contactId = $this->getContactId($params);
+    $email = $this->getBillingEmail($params, $contactId);
 
     // See if we already have a stripe customer
     $customerParams = [
@@ -546,7 +542,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       if ($e instanceof \Stripe\Error\Card) {
         civicrm_api3('Note', 'create', [
           'entity_id' => $params['contributionID'],
-          'contact_id' => self::getContactId($params),
+          'contact_id' => $this->getContactId($params),
           'subject' => $err['type'],
           'note' => $err['code'],
           'entity_table' => 'civicrm_contribution',
@@ -876,185 +872,4 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     }
   }
 
-
-  /*******************************************************************
-   * THE FOLLOWING FUNCTIONS SHOULD BE REMOVED ONCE THEY ARE IN CORE
-   * getBillingEmail
-   * getContactId
-   ******************************************************************/
-
-  /**
-   * Get the billing email address
-   *
-   * @param array $params
-   * @param int $contactId
-   *
-   * @return string|NULL
-   */
-  protected static function getBillingEmail($params, $contactId) {
-    $billingLocationId = CRM_Core_BAO_LocationType::getBilling();
-
-    $emailAddress = CRM_Utils_Array::value("email-{$billingLocationId}", $params,
-      CRM_Utils_Array::value('email-Primary', $params,
-        CRM_Utils_Array::value('email', $params, NULL)));
-
-    if (empty($emailAddress) && !empty($contactId)) {
-      // Try and retrieve an email address from Contact ID
-      try {
-        $emailAddress = civicrm_api3('Email', 'getvalue', array(
-          'contact_id' => $contactId,
-          'return' => ['email'],
-        ));
-      }
-      catch (CiviCRM_API3_Exception $e) {
-        return NULL;
-      }
-    }
-    return $emailAddress;
-  }
-
-  /**
-   * Get the contact id
-   *
-   * @param array $params
-   *
-   * @return int ContactID
-   */
-  protected static function getContactId($params) {
-    $contactId = CRM_Utils_Array::value('contactID', $params,
-      CRM_Utils_Array::value('contact_id', $params,
-        CRM_Utils_Array::value('cms_contactID', $params,
-          CRM_Utils_Array::value('cid', $params, NULL
-          ))));
-    if (!empty($contactId)) {
-      return $contactId;
-    }
-    // FIXME: Ref: https://lab.civicrm.org/extensions/stripe/issues/16
-    // The problem is that when registering for a paid event, civicrm does not pass in the
-    // contact id to the payment processor (civicrm version 5.3). So, I had to patch your
-    // getContactId to check the session for a contact id. It's a hack and probably should be fixed in core.
-    // The code below is exactly what CiviEvent does, but does not pass it through to the next function.
-    $session = CRM_Core_Session::singleton();
-    return $session->get('transaction.userID', NULL);
-  }
-
-  /**
-   * Get url for users to manage this recurring contribution for this processor.
-   * FIXME: Remove and increment min version once https://github.com/civicrm/civicrm-core/pull/13215 is merged.
-   *
-   * @param int $entityID
-   * @param null $entity
-   * @param string $action
-   *
-   * @return string
-   */
-  public function subscriptionURL($entityID = NULL, $entity = NULL, $action = 'cancel') {
-    // Set URL
-    switch ($action) {
-      case 'cancel':
-        if (!$this->supports('cancelRecurring')) {
-          return NULL;
-        }
-        $url = 'civicrm/contribute/unsubscribe';
-        break;
-
-      case 'billing':
-        //in notify mode don't return the update billing url
-        if (!$this->supports('updateSubscriptionBillingInfo')) {
-          return NULL;
-        }
-        $url = 'civicrm/contribute/updatebilling';
-        break;
-
-      case 'update':
-        if (!$this->supports('changeSubscriptionAmount') && !$this->supports('editRecurringContribution')) {
-          return NULL;
-        }
-        $url = 'civicrm/contribute/updaterecur';
-        break;
-    }
-
-    $userId = CRM_Core_Session::singleton()->get('userID');
-    $contactID = 0;
-    $checksumValue = '';
-    $entityArg = '';
-
-    // Find related Contact
-    if ($entityID) {
-      switch ($entity) {
-        case 'membership':
-          $contactID = CRM_Core_DAO::getFieldValue("CRM_Member_DAO_Membership", $entityID, "contact_id");
-          $entityArg = 'mid';
-          break;
-
-        case 'contribution':
-          $contactID = CRM_Core_DAO::getFieldValue("CRM_Contribute_DAO_Contribution", $entityID, "contact_id");
-          $entityArg = 'coid';
-          break;
-
-        case 'recur':
-          $sql = "
-    SELECT DISTINCT con.contact_id
-      FROM civicrm_contribution_recur rec
-INNER JOIN civicrm_contribution con ON ( con.contribution_recur_id = rec.id )
-     WHERE rec.id = %1";
-          $contactID = CRM_Core_DAO::singleValueQuery($sql, array(1 => array($entityID, 'Integer')));
-          $entityArg = 'crid';
-          break;
-      }
-    }
-
-    // Add entity arguments
-    if ($entityArg != '') {
-      // Add checksum argument
-      if ($contactID != 0 && $userId != $contactID) {
-        $checksumValue = '&cs=' . CRM_Contact_BAO_Contact_Utils::generateChecksum($contactID, NULL, 'inf');
-      }
-      return CRM_Utils_System::url($url, "reset=1&{$entityArg}={$entityID}{$checksumValue}", TRUE, NULL, FALSE, TRUE);
-    }
-
-    // Else login URL
-    if ($this->supports('accountLoginURL')) {
-      return $this->accountLoginURL();
-    }
-
-    // Else default
-    return isset($this->_paymentProcessor['url_recur']) ? $this->_paymentProcessor['url_recur'] : '';
-  }
-
-  /**
-   * Get the recurring contribution ID from parameters passed in to cancelSubscription
-   * Historical the data passed to cancelSubscription is pretty poor and doesn't include much!
-   *
-   * @param array $params
-   *
-   * @return int|null
-   */
-  protected function getRecurringContributionId($params) {
-    // Not yet passed, but could be added via core PR
-    $contributionRecurId = CRM_Utils_Array::value('contribution_recur_id', $params);
-    if (!empty($contributionRecurId)) {
-      return $contributionRecurId;
-    }
-
-    // Not yet passed, but could be added via core PR
-    $contributionId = CRM_Utils_Array::value('contribution_id', $params);
-    try {
-      return civicrm_api3('Contribution', 'getvalue', ['id' => $contributionId, 'return' => 'contribution_recur_id']);
-    }
-    catch (Exception $e) {
-      $subscriptionId = CRM_Utils_Array::value('subscriptionId', $params);
-      if (!empty($subscriptionId)) {
-        try {
-          return civicrm_api3('ContributionRecur', 'getvalue', ['processor_id' => $subscriptionId, 'return' => 'id']);
-        }
-        catch (Exception $e) {
-          return NULL;
-        }
-      }
-      return NULL;
-    }
-  }
-
 }
-
