@@ -20,7 +20,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    *
    * @var int
    */
-  protected $is_email_receipt = 1;
+  public $is_email_receipt = 1;
 
   // By default, always retrieve the event from stripe to ensure we are
   // not being fed garbage. However, allow an override so when we are 
@@ -53,14 +53,14 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   /**
    * CRM_Core_Payment_StripeIPN constructor.
    *
-   * @param $inputData
+   * @param $ipnData
    * @param bool $verify
    *
    * @throws \CRM_Core_Exception
    */
-  public function __construct($inputData, $verify = TRUE) {
+  public function __construct($ipnData, $verify = TRUE) {
     $this->verify_event = $verify;
-    $this->setInputParameters($inputData);
+    $this->setInputParameters($ipnData);
     parent::__construct();
   }
 

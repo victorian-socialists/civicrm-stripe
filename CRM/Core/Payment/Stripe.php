@@ -9,12 +9,10 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   use CRM_Core_Payment_StripeTrait;
 
   /**
-   * We only need one instance of this object. So we use the singleton
-   * pattern and cache the instance in this variable
    *
-   * @var object
+   * @var string
    */
-  private static $_singleton = NULL;
+  protected $_stripeAPIVersion = '2019-02-19';
 
   /**
    * Mode of operation: live or test.
@@ -22,13 +20,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @var object
    */
   protected $_mode = NULL;
-
-  /**
-   * TRUE if we are dealing with a live transaction
-   *
-   * @var boolean
-   */
-  private $_islive = FALSE;
 
   /**
    * Constructor
@@ -40,7 +31,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    */
   public function __construct($mode, &$paymentProcessor) {
     $this->_mode = $mode;
-    $this->_islive = ($mode == 'live' ? 1 : 0);
     $this->_paymentProcessor = $paymentProcessor;
     $this->_processorName = ts('Stripe');
   }
@@ -178,7 +168,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       $planId = $params['membership_type_tag'] . $planId;
     }
 
-    if (!$this->_islive) {
+    if ($this->_paymentProcessor['is_test']) {
       $planId .= '-test';
     }
 
@@ -192,7 +182,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       if ($err['code'] == 'resource_missing') {
         $formatted_amount = number_format(($amount / 100), 2);
         $productName = "CiviCRM " . (isset($params['membership_name']) ? $params['membership_name'] . ' ' : '') . "every {$params['frequency_interval']} {$params['frequency_unit']}(s) {$formatted_amount}{$currency}";
-        if (!$this->_islive) {
+        if ($this->_paymentProcessor['is_test']) {
           $productName .= '-test';
         }
         $product = \Stripe\Product::create(array(
@@ -452,7 +442,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     $customerParams = [
       'contact_id' => $contactId,
       'card_token' => $card_token,
-      'is_live' => $this->_islive,
+      'is_live' => !$this->_paymentProcessor['is_test'],
       'processor_id' => $this->_paymentProcessor['id'],
       'email' => $email,
     ];
@@ -858,7 +848,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   }
 
   /**
-   * Process incoming notification.
+   * Process incoming payment notification (IPN).
    *
    * @throws \CRM_Core_Exception
    * @throws \CiviCRM_API3_Exception

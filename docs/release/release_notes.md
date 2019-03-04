@@ -1,3 +1,7 @@
+## Release 5.3
+There are no database changes in this release but you should update your Stripe webhook API version to 2019-02-19.
+
+
 ## Release 5.2
 *This release introduces a number of new features, standardises the behaviour of recurring contributions/memberships to match standard CiviCRM functionality and does a major cleanup of the backend code to improve stability and allow for new features.*
 

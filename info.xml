@@ -16,7 +16,7 @@
   <version>5.2</version>
   <develStage>stable</develStage>
   <compatibility>
-    <ver>5.3</ver>
+    <ver>5.10.3</ver>
   </compatibility>
   <comments>Original Author: Joshua Walker (drastik) - Drastik by Design.
     Jamie Mcclelland (ProgressiveTech) did a lot of the 5.x compatibility work.
