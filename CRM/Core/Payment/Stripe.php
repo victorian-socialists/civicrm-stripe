@@ -542,12 +542,12 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to create Stripe Charge: ' . $errorMessage);
     }
 
-    // Success!  Return some values for CiviCRM.
-    $params['trxn_id'] = $stripeCharge->id;
-    $params['payment_status_id'] = $completedStatusId;
+    // Success! Return some values for CiviCRM.
+    $newParams['id'] = $this->getContributionId($params);
+    $newParams['trxn_id'] = $stripeCharge->id;
+    $newParams['payment_status_id'] = $completedStatusId;
 
     // Return fees & net amount for Civi reporting.
-    // Uses new Balance Trasaction object.
     try {
       $stripeBalanceTransaction = \Stripe\BalanceTransaction::retrieve($stripeCharge->balance_transaction);
     }
@@ -556,8 +556,12 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       $errorMessage = self::handleErrorNotification($err, $params['stripe_error_url']);
       throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to retrieve Stripe Balance Transaction: ' . $errorMessage);
     }
-    $params['fee_amount'] = $stripeBalanceTransaction->fee / 100;
-    $params['net_amount'] = $stripeBalanceTransaction->net / 100;
+    $newParams['fee_amount'] = $stripeBalanceTransaction->fee / 100;
+    $newParams['net_amount'] = $stripeBalanceTransaction->net / 100;
+
+    civicrm_api3('Contribution', 'create', $newParams);
+    unset($newParams['id']);
+    $params = array_merge($params, $newParams);
 
     return $params;
   }

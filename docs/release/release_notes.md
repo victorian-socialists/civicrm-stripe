@@ -4,7 +4,7 @@ There are no database changes in this release but you should update your Stripe 
 * Update required Stripe API version from 2018-11-08 to 2019-02-19.
 * Update stripe-php from 6.19.5 to 6.30.4.
 * Make sure we clear processor specific metadata from payment form when switching payment processor (fixes https://lab.civicrm.org/extensions/stripe/issues/26).
-
+* Fix saving of fee amount and transaction ID on contribution record.
 
 ## Release 5.2
 *This release introduces a number of new features, standardises the behaviour of recurring contributions/memberships to match standard CiviCRM functionality and does a major cleanup of the backend code to improve stability and allow for new features.*
