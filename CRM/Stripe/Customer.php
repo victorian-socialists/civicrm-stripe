@@ -22,9 +22,10 @@ class CRM_Stripe_Customer {
     }
     $queryParams = [
       1 => [$params['contact_id'], 'String'],
-      2 => [$params['is_live'], 'Boolean'],
+      2 => [$params['is_live'] ? 1 : 0, 'Boolean'],
       3 => [$params['processor_id'], 'Positive'],
     ];
+    
 
     return CRM_Core_DAO::singleValueQuery("SELECT id
       FROM civicrm_stripe_customers
