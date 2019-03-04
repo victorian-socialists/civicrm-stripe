@@ -457,6 +457,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         $contribution = civicrm_api3('contribution', 'getsingle', array(
           'return' => array('id', 'contribution_status_id', 'total_amount', 'trxn_id'),
           'contribution_recur_id' => $this->contribution_recur_id,
+          'contribution_test' => $this->_paymentProcessor['is_test'],
           'options' => array('limit' => 1, 'sort' => 'id DESC'),
         ));
         $this->previous_contribution = $contribution;
