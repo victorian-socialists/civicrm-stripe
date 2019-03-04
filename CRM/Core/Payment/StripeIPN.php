@@ -15,13 +15,6 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    */
   protected $transaction_id;
 
-  /**
-   * Do we send an email receipt for each contribution?
-   *
-   * @var int
-   */
-  public $is_email_receipt = 1;
-
   // By default, always retrieve the event from stripe to ensure we are
   // not being fed garbage. However, allow an override so when we are 
   // testing, we can properly test a failed recurring contribution.
@@ -234,7 +227,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
             'trxn_id' => $this->charge_id,
             'total_amount' => $this->amount,
             'fee_amount' => $this->fee,
-            'is_email_receipt' => $this->is_email_receipt,
+            'is_email_receipt' => 0,
           ));
         }
 
@@ -257,7 +250,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
             'id' => $this->previous_contribution['id'],
             'contribution_status_id' => "Failed",
             'receive_date' => $failDate,
-            'is_email_receipt' => $this->is_email_receipt,
+            'is_email_receipt' => 0,
           ));
         }
         else {
@@ -266,7 +259,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
             'contribution_status_id' => 'Failed',
             'receive_date' => $failDate,
             'total_amount' => $this->amount,
-            'is_email_receipt' => $this->is_email_receipt,
+            'is_email_receipt' => 0,
           ];
           civicrm_api3('Contribution', 'repeattransaction', $contributionParams);
         }
@@ -389,7 +382,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
       'net_amount' => $this->net_amount,
       'fee_amount' => $this->fee,
       'payment_processor_id' => $this->_paymentProcessor['id'],
-      'is_email_receipt' => $this->is_email_receipt,
+      'is_email_receipt' => 0,
     ));
   }
 

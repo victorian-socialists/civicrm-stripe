@@ -128,7 +128,7 @@ class CRM_Stripe_BaseTest extends \PHPUnit_Framework_TestCase implements Headles
       'max_amount' => 1000,
       'receipt_from_email' => 'gaia@the.cosmos',
       'receipt_from_name' => 'Pachamama',
-      'is_email_receipt' => FALSE,  
+      'is_email_receipt' => 0,
       ), $params);
     $result = civicrm_api3('ContributionPage', 'create', $params);
     $this->assertEquals(0, $result['is_error']);
