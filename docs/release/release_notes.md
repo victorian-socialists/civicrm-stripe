@@ -1,11 +1,19 @@
 ## Release 5.3
 There are no database changes in this release but you should update your Stripe webhook API version to 2019-02-19.
 
+### Changes
 * Update required Stripe API version from 2018-11-08 to 2019-02-19.
-* Update stripe-php from 6.19.5 to 6.30.4.
+* Update stripe-php library from 6.19.5 to 6.30.4.
+
+### Fixes
 * Make sure we clear processor specific metadata from payment form when switching payment processor (fixes https://lab.civicrm.org/extensions/stripe/issues/26).
 * Fix saving of fee amount and transaction ID on contribution record.
-* Don't send out contribution receipts for IPNs.
+
+### Features
+* Add a Webhook System Check.
+* Send a friendly success response if we receive the test webhook.
+* Webhooks now work in test mode.
+* Use the parameter on the recurring contribution to decide whether to send out email receipts.
 
 ## Release 5.2
 *This release introduces a number of new features, standardises the behaviour of recurring contributions/memberships to match standard CiviCRM functionality and does a major cleanup of the backend code to improve stability and allow for new features.*
