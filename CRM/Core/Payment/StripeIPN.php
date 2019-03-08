@@ -74,6 +74,15 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
 
     // Now re-retrieve the data from Stripe to ensure it's legit.
     \Stripe\Stripe::setApiKey($this->_paymentProcessor['user_name']);
+
+    // Special case if this is the test webhook
+    if (substr($parameters->id, -15, 15) === '_00000000000000') {
+      http_response_code(200);
+      $test = (boolean) $this->_paymentProcessor['is_test'] ? '(Test processor)' : '(Live processor)';
+      echo "Test webhook from Stripe ({$parameters->id}) received successfully by CiviCRM {$test}.";
+      exit();
+    }
+
     if ($this->verify_event) {
       $this->_inputParameters = \Stripe\Event::retrieve($parameters->id);
     }
