@@ -20,6 +20,13 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   // testing, we can properly test a failed recurring contribution.
   protected $verify_event = TRUE;
 
+  /**
+   * Do we send an email receipt for each contribution?
+   *
+   * @var int
+   */
+  protected $is_email_receipt = NULL;
+
   // Properties of the event.
   protected $event_type = NULL;
   protected $subscription_id = NULL;
@@ -55,6 +62,47 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
     $this->verify_event = $verify;
     $this->setInputParameters($ipnData);
     parent::__construct();
+  }
+
+  /**
+   * Set the value of is_email_receipt to use when a new contribution is received for a recurring contribution
+   * This is used for the API Stripe.Ipn function.  If not set, we respect the value set on the ContributionRecur entity.
+   *
+   * @param int $sendReceipt The value of is_email_receipt
+   */
+  public function setSendEmailReceipt($sendReceipt) {
+    switch ($sendReceipt) {
+      case 0:
+        $this->is_email_receipt = 0;
+        break;
+
+      case 1:
+        $this->is_email_receipt = 1;
+        break;
+
+      default:
+        $this->is_email_receipt = 0;
+    }
+  }
+
+  /**
+   * Get the value of is_email_receipt to use when a new contribution is received for a recurring contribution
+   * This is used for the API Stripe.Ipn function.  If not set, we respect the value set on the ContributionRecur entity.
+   *
+   * @return int
+   * @throws \CiviCRM_API3_Exception
+   */
+  public function getSendEmailReceipt() {
+    if (isset($this->is_email_receipt)) {
+      return (int) $this->is_email_receipt;
+    }
+    if (!empty($this->contribution_recur_id)) {
+      $this->is_email_receipt = civicrm_api3('ContributionRecur', 'getvalue', [
+        'return' => ["is_email_receipt"],
+        'id' => $this->contribution_recur_id,
+      ]);
+    }
+    return (int) $this->is_email_receipt;
   }
 
   /**
@@ -236,7 +284,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
             'trxn_id' => $this->charge_id,
             'total_amount' => $this->amount,
             'fee_amount' => $this->fee,
-            'is_email_receipt' => 0,
+            'is_email_receipt' => $this->getSendEmailReceipt(),
           ));
         }
 
@@ -391,7 +439,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
       'net_amount' => $this->net_amount,
       'fee_amount' => $this->fee,
       'payment_processor_id' => $this->_paymentProcessor['id'],
-      'is_email_receipt' => 0,
+      'is_email_receipt' => $this->getSendEmailReceipt(),
     ));
   }
 
