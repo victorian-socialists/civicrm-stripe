@@ -1,4 +1,9 @@
+## Releae 5.3.1
+* Fix issue with event/membership payments failing to record in CiviCRM (introduced in 5.3).
+
 ## Release 5.3
+**All users should upgrade to 5.3.1 due to an issue with event/membership payments**
+
 There are no database changes in this release but you should update your Stripe webhook API version to 2019-02-19.
 
 ### Changes

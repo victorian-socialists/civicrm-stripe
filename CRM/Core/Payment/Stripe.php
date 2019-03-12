@@ -542,11 +542,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to create Stripe Charge: ' . $errorMessage);
     }
 
-    // Success! Return some values for CiviCRM.
-    $newParams['id'] = $this->getContributionId($params);
-    $newParams['trxn_id'] = $stripeCharge->id;
-    $newParams['payment_status_id'] = $completedStatusId;
-
     // Return fees & net amount for Civi reporting.
     try {
       $stripeBalanceTransaction = \Stripe\BalanceTransaction::retrieve($stripeCharge->balance_transaction);
@@ -556,11 +551,20 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       $errorMessage = self::handleErrorNotification($err, $params['stripe_error_url']);
       throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to retrieve Stripe Balance Transaction: ' . $errorMessage);
     }
+
+    // Success!
+    // For contribution workflow we have a contributionId so we can set parameters directly.
+    // For events/membership workflow we have to return the parameters and they might get set...
+    $newParams['trxn_id'] = $stripeCharge->id;
+    $newParams['payment_status_id'] = $completedStatusId;
     $newParams['fee_amount'] = $stripeBalanceTransaction->fee / 100;
     $newParams['net_amount'] = $stripeBalanceTransaction->net / 100;
 
-    civicrm_api3('Contribution', 'create', $newParams);
-    unset($newParams['id']);
+    if ($this->getContributionId($params)) {
+      $newParams['id'] = $this->getContributionId($params);
+      civicrm_api3('Contribution', 'create', $newParams);
+      unset($newParams['id']);
+    }
     $params = array_merge($params, $newParams);
 
     return $params;
