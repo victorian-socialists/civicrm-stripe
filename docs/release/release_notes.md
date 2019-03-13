@@ -1,3 +1,7 @@
+## Release 5.3.2
+* Fix retrieving email receipt parameter on stripe IPN which stopped contributions from being marked as completed.
+* Fix webhook check for wordpress so we don't get false positives when everything is configured ok.
+
 ## Releae 5.3.1
 * Fix issue with event/membership payments failing to record in CiviCRM (introduced in 5.3).
 
