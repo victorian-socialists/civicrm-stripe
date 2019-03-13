@@ -210,7 +210,25 @@ function stripe_civicrm_buildForm($formName, &$form) {
  */
 function stripe_get_webhook_path($includeBaseUrl = TRUE, $pp_id = 'NN') {
   // Assuming frontend URL because that's how the function behaved before.
-  return CRM_Utils_System::url('civicrm/payment/ipn/' . $pp_id, NULL, $includeBaseUrl, NULL, TRUE, TRUE);
+  // @fixme this doesn't return the right webhook path on Wordpress (often includes an extra path between .com and ? eg. abc.com/xxx/?page=CiviCRM
+  // return CRM_Utils_System::url('civicrm/payment/ipn/' . $pp_id, NULL, $includeBaseUrl, NULL, FALSE, TRUE);
+
+  $UFWebhookPaths = [
+    "Drupal"    => "civicrm/payment/ipn/NN",
+    "Joomla"    => "?option=com_civicrm&task=civicrm/payment/ipn/NN",
+    "WordPress" => "?page=CiviCRM&q=civicrm/payment/ipn/NN"
+  ];
+
+
+  // Use Drupal path as default if the UF isn't in the map above
+  $UFWebhookPath = (array_key_exists(CIVICRM_UF, $UFWebhookPaths)) ?
+    $UFWebhookPaths[CIVICRM_UF] :
+    $UFWebhookPaths['Drupal'];
+  if ($includeBaseUrl) {
+    $sepChar = (substr(CIVICRM_UF_BASEURL, -1) == '/') ? '' : '/';
+    return CIVICRM_UF_BASEURL . $sepChar . $UFWebhookPath;
+  }
+  return $UFWebhookPath;
 }
 
 /*

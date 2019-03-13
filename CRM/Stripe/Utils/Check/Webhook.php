@@ -67,10 +67,10 @@ class CRM_Stripe_Utils_Check_Webhook {
       else {
         $messages[] = new CRM_Utils_Check_Message(
           'stripe_webhook',
-          E::ts('The %1 (%2) Payment Processor does not have a webhook configured. This is only required for recurring contributions. You can review from your Stripe account, under Developers > Webhooks. The webhook URL is: %3', [
+          E::ts('The %1 (%2) Payment Processor does not have a valid webhook configured for this website. This is only required for recurring contributions. You can review from your Stripe account, under Developers > Webhooks. The webhook URL is: %3', [
             1 => $pp['name'],
             2 => $pp['id'],
-            3 => $webhook_path,
+            3 => urldecode($webhook_path),
           ]),
           E::ts('Stripe - Webhook'),
           \Psr\Log\LogLevel::WARNING,
