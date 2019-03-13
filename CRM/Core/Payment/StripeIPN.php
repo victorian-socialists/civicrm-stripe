@@ -98,7 +98,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
     }
     if (!empty($this->contribution_recur_id)) {
       $this->is_email_receipt = civicrm_api3('ContributionRecur', 'getvalue', [
-        'return' => ["is_email_receipt"],
+        'return' => "is_email_receipt",
         'id' => $this->contribution_recur_id,
       ]);
     }
