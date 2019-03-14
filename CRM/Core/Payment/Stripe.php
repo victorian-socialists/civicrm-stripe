@@ -381,12 +381,13 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    *
    * @param array $params
    *   Assoc array of input parameters for this transaction.
-   *
    * @param string $component
    *
    * @return array
    *   Result array
    *
+   * @throws \CRM_Core_Exception
+   * @throws \CiviCRM_API3_Exception
    * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
   public function doPayment(&$params, $component = 'contribute') {

@@ -50,7 +50,7 @@ class CRM_Stripe_Customer {
     $queryParams = [
       1 => [$params['contact_id'], 'String'],
       2 => [$params['customer_id'], 'String'],
-      3 => [$params['is_live'], 'Boolean'],
+      3 => [$params['is_live'] ? 1 : 0, 'Boolean'],
       4 => [$params['processor_id'], 'Integer'],
     ];
     CRM_Core_DAO::executeQuery("INSERT INTO civicrm_stripe_customers
@@ -124,7 +124,7 @@ class CRM_Stripe_Customer {
 
     $queryParams = [
       1 => [$params['contact_id'], 'String'],
-      2 => [$params['is_live'], 'Boolean'],
+      2 => [$params['is_live'] ? 1 : 0, 'Boolean'],
       3 => [$params['processor_id'], 'Integer'],
     ];
     $sql = "DELETE FROM civicrm_stripe_customers
