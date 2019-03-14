@@ -185,7 +185,7 @@ CRM.$(function($) {
       }
     });
 
-    var isWebform = getIsWebform();
+    var isWebform = getIsWebform($form);
 
     // For CiviCRM Webforms.
     if (isWebform) {
@@ -222,7 +222,7 @@ CRM.$(function($) {
         return false;
       }
 
-      var isWebform = getIsWebform();
+      var isWebform = getIsWebform($form);
 
       // Handle multiple payment options and Stripe not being chosen.
       if (isWebform) {
@@ -341,17 +341,19 @@ CRM.$(function($) {
     }
   }
 
-  function getIsWebform() {
-    return $('.webform-client-form').length;
+  function getIsWebform(form) {
+    // Pass in the billingForm object
+    // If the form has the webform-client-form class then it's a drupal webform!
+    return form.hasClass('webform-client-form');
   }
 
   function getBillingForm() {
     // If we have a stripe billing form on the page
     var $billingForm = $('input#stripe-pub-key').closest('form');
-    if (!$billingForm.length && getIsWebform()) {
+    //if (!$billingForm.length && getIsWebform()) {
       // If we are in a webform
-      $billingForm = $('.webform-client-form');
-    }
+    //  $billingForm = $('.webform-client-form');
+    //}
     if (!$billingForm.length) {
       // If we have multiple payment processors to select and stripe is not currently loaded
       $billingForm = $('input[name=hidden_processor]').closest('form');
@@ -361,7 +363,7 @@ CRM.$(function($) {
 
   function getBillingSubmit() {
     $form = getBillingForm();
-    var isWebform = getIsWebform();
+    var isWebform = getIsWebform($form);
 
     if (isWebform) {
       $submit = $form.find('[type="submit"].webform-submit');
