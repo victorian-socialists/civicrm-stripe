@@ -33,6 +33,52 @@ class CRM_Stripe_Customer {
   }
 
   /**
+   * Find the details (contact_id, is_live, processor_id) for an existing Stripe customer in the CiviCRM database
+   *
+   * @param string $stripeCustomerId
+   *
+   * @return array|null
+   */
+  public static function getParamsForCustomerId($stripeCustomerId) {
+    $queryParams = [
+      1 => [$stripeCustomerId, 'String'],
+    ];
+
+    $dao = CRM_Core_DAO::executeQuery("SELECT contact_id, is_live, processor_id
+      FROM civicrm_stripe_customers
+      WHERE id = %1", $queryParams);
+    $dao->fetch();
+    return [
+      'contact_id' => $dao->contact_id,
+      'is_live' => $dao->is_live,
+      'processor_id' => $dao->processor_id,
+    ];
+  }
+
+  /**
+   * Find the details (contact_id, is_live, processor_id) for an existing Stripe customer in the CiviCRM database
+   *
+   * @param string $stripeCustomerId
+   *
+   * @return array|null
+   */
+  public static function getAll($isLive, $processorId) {
+    $queryParams = [
+      1 => [$isLive ? 1 : 0, 'Boolean'],
+      2 => [$processorId, 'Integer'],
+    ];
+
+    $customerIds = [];
+    $dao = CRM_Core_DAO::executeQuery("SELECT id
+      FROM civicrm_stripe_customers
+      WHERE is_live = %1 AND processor_id = %2", $queryParams);
+    while ($dao->fetch()) {
+      $customerIds[] = $dao->id;
+    }
+    return $customerIds;
+  }
+
+  /**
    * Add a new Stripe customer to the CiviCRM database
    *
    * @param $params
