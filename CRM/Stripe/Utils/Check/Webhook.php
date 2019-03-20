@@ -25,7 +25,23 @@ class CRM_Stripe_Utils_Check_Webhook {
       $webhook_path = str_replace('NN', $pp['id'], $webhook_path);
 
       \Stripe\Stripe::setApiKey($sk);
-      $webhooks = \Stripe\WebhookEndpoint::all(["limit" => 100]);
+      try {
+        $webhooks = \Stripe\WebhookEndpoint::all(["limit" => 100]);
+      }
+      catch (\Stripe\Error\Authentication $e) {
+        $messages[] = new CRM_Utils_Check_Message(
+          'stripe_webhook',
+          E::ts('The %1 (%2) Payment Processor has an invalid API key', [
+            1 => $pp['name'],
+            2 => $pp['id'],
+          ]),
+          E::ts('Stripe - API Key'),
+          \Psr\Log\LogLevel::ERROR,
+          'fa-money'
+        );
+
+        continue;
+      }
 
       if (empty($webhooks->data)) {
         $messages[] = new CRM_Utils_Check_Message(
