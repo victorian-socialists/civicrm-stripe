@@ -161,20 +161,34 @@ class CRM_Stripe_Customer {
    * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
   public static function delete($params) {
-    $requiredParams = ['contact_id', 'is_live', 'processor_id'];
+    $requiredParams = ['is_live', 'processor_id'];
     foreach ($requiredParams as $required) {
       if (empty($required)) {
         throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (delete): Missing required parameter: ' . $required);
       }
     }
+    if (empty($params['contact_id']) && empty($params['id'])) {
+      throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (delete): Missing required parameter: contact_id or id');
+    }
 
-    $queryParams = [
-      1 => [$params['contact_id'], 'String'],
-      2 => [$params['is_live'] ? 1 : 0, 'Boolean'],
-      3 => [$params['processor_id'], 'Integer'],
-    ];
-    $sql = "DELETE FROM civicrm_stripe_customers
+    if (!empty($params['id'])) {
+      $queryParams = [
+        1 => [$params['id'], 'String'],
+        2 => [$params['is_live'] ? 1 : 0, 'Boolean'],
+        3 => [$params['processor_id'], 'Integer'],
+      ];
+      $sql = "DELETE FROM civicrm_stripe_customers
+            WHERE id = %1 AND is_live = %2 AND processor_id = %3";
+    }
+    else {
+      $queryParams = [
+        1 => [$params['contact_id'], 'String'],
+        2 => [$params['is_live'] ? 1 : 0, 'Boolean'],
+        3 => [$params['processor_id'], 'Integer'],
+      ];
+      $sql = "DELETE FROM civicrm_stripe_customers
             WHERE contact_id = %1 AND is_live = %2 AND processor_id = %3";
+    }
     CRM_Core_DAO::executeQuery($sql, $queryParams);
   }
 

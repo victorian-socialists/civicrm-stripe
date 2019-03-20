@@ -82,6 +82,41 @@ function civicrm_api3_stripe_customer_get($params) {
 }
 
 /**
+ * StripeCustomer.Get API specification
+ *
+ * @param array $spec description of fields supported by this API call
+ * @return void
+ * @see http://wiki.civicrm.org/confluence/display/CRMDOC/API+Architecture+Standards
+ */
+function _civicrm_api3_stripe_customer_delete_spec(&$spec) {
+  $spec['id']['title'] = ts("Stripe Customer ID");
+  $spec['id']['type'] = CRM_Utils_Type::T_STRING;
+  $spec['contact_id']['title'] = ts("CiviCRM Contact ID");
+  $spec['contact_id']['type'] = CRM_Utils_Type::T_INT;
+  $spec['is_live']['title'] = ts("Is live processor");
+  $spec['is_live']['type'] = CRM_Utils_Type::T_BOOLEAN;
+  $spec['is_live']['api.required'] = TRUE;
+  $spec['processor_id']['title'] = ts("Payment Processor ID");
+  $spec['processor_id']['type'] = CRM_Utils_Type::T_INT;
+  $spec['processor_id']['api.required'] = TRUE;
+}
+
+/**
+ * StripeCustomer.delete API
+ *  This api will delete a stripe customer from CiviCRM
+ *
+ * @param array $params
+ * @see civicrm_api3_create_success
+ *
+ * @throws \Civi\Payment\Exception\PaymentProcessorException
+ * @return array
+ */
+function civicrm_api3_stripe_customer_delete($params) {
+  CRM_Stripe_Customer::delete($params);
+  return civicrm_api3_create_success([]);
+}
+
+/**
  * Stripe.Customer.Updatecontactids API
  *  This api will update the civicrm_stripe_customers table and add contact IDs for all known email addresses
  *
