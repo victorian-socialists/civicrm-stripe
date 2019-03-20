@@ -73,8 +73,9 @@ CRM.$(function($) {
   $( document ).ajaxComplete(function( event, xhr, settings ) {
     // /civicrm/payment/form? occurs when a payproc is selected on page
     // /civicrm/contact/view/participant occurs when payproc is first loaded on event credit card payment
-    if ((settings.url.match("/civicrm/payment/form?"))
-       || (settings.url.match("/civicrm/contact/view/participant?"))) {
+    // On wordpress these are urlencoded
+    if ((settings.url.match("civicrm(\/|%2F)payment(\/|%2F)form") != null)
+      || (settings.url.match("civicrm(\/|\%2F)contact(\/|\%2F)view(\/|\%2F)participant") != null)) {
       // See if there is a payment processor selector on this form
       // (e.g. an offline credit card contribution page).
       if ($('#payment_processor_id').length > 0) {
