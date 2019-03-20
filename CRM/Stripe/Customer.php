@@ -62,16 +62,24 @@ class CRM_Stripe_Customer {
    *
    * @return array|null
    */
-  public static function getAll($isLive, $processorId) {
+  public static function getAll($isLive, $processorId, $options = []) {
     $queryParams = [
       1 => [$isLive ? 1 : 0, 'Boolean'],
       2 => [$processorId, 'Integer'],
     ];
 
+    $limitClause = '';
+    if ($limit = CRM_Utils_Array::value('limit', $options)) {
+      $limitClause = "LIMIT $limit";
+      if ($offset = CRM_Utils_Array::value('offset', $options)) {
+        $limitClause .= " OFFSET $offset";
+      }
+    }
+
     $customerIds = [];
     $dao = CRM_Core_DAO::executeQuery("SELECT id
       FROM civicrm_stripe_customers
-      WHERE is_live = %1 AND processor_id = %2", $queryParams);
+      WHERE is_live = %1 AND processor_id = %2 {$limitClause}", $queryParams);
     while ($dao->fetch()) {
       $customerIds[] = $dao->id;
     }

@@ -225,7 +225,7 @@ function civicrm_api3_stripe_customer_updatestripemetadata($params) {
     if (!isset($params['is_live']) || !isset($params['processor_id'])) {
       throw new CiviCRM_API3_Exception('Missing required parameters is_live and/or processor_id when using without a customer id');
     }
-    $customerIds = CRM_Stripe_Customer::getAll($params['is_live'], $params['processor_id']);
+    $customerIds = CRM_Stripe_Customer::getAll($params['is_live'], $params['processor_id'], $params['options']);
   }
   else {
     $customerIds = [$params['id']];
