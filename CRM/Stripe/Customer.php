@@ -13,7 +13,7 @@ class CRM_Stripe_Customer {
   public static function find($params) {
     $requiredParams = ['is_live', 'processor_id'];
     foreach ($requiredParams as $required) {
-      if (empty($required)) {
+      if (empty($params[$required])) {
         throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (find): Missing required parameter: ' . $required);
       }
     }
@@ -96,7 +96,7 @@ class CRM_Stripe_Customer {
   public static function add($params) {
     $requiredParams = ['contact_id', 'customer_id', 'is_live', 'processor_id'];
     foreach ($requiredParams as $required) {
-      if (empty($required)) {
+      if (empty($params[$required])) {
         throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (add): Missing required parameter: ' . $required);
       }
     }
@@ -123,7 +123,7 @@ class CRM_Stripe_Customer {
     $requiredParams = ['contact_id', 'card_token', 'is_live', 'processor_id'];
     // $optionalParams = ['email'];
     foreach ($requiredParams as $required) {
-      if (empty($required)) {
+      if (empty($params[$required])) {
         throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (create): Missing required parameter: ' . $required);
       }
     }
@@ -171,7 +171,7 @@ class CRM_Stripe_Customer {
   public static function delete($params) {
     $requiredParams = ['is_live', 'processor_id'];
     foreach ($requiredParams as $required) {
-      if (empty($required)) {
+      if (empty($params[$required])) {
         throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (delete): Missing required parameter: ' . $required);
       }
     }
