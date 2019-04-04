@@ -28,7 +28,7 @@ class CRM_Stripe_Customer {
 
     return CRM_Core_DAO::singleValueQuery("SELECT id
       FROM civicrm_stripe_customers
-      WHERE contact_id = %1 AND processor_id = %3", $queryParams);
+      WHERE contact_id = %1 AND processor_id = %2", $queryParams);
   }
 
   /**
@@ -76,7 +76,7 @@ class CRM_Stripe_Customer {
     $customerIds = [];
     $dao = CRM_Core_DAO::executeQuery("SELECT id
       FROM civicrm_stripe_customers
-      WHERE processor_id = %2 {$limitClause}", $queryParams);
+      WHERE processor_id = %1 {$limitClause}", $queryParams);
     while ($dao->fetch()) {
       $customerIds[] = $dao->id;
     }
@@ -180,7 +180,7 @@ class CRM_Stripe_Customer {
         2 => [$params['processor_id'], 'Integer'],
       ];
       $sql = "DELETE FROM civicrm_stripe_customers
-            WHERE id = %1 AND processor_id = %3";
+            WHERE id = %1 AND processor_id = %2";
     }
     else {
       $queryParams = [
@@ -188,7 +188,7 @@ class CRM_Stripe_Customer {
         2 => [$params['processor_id'], 'Integer'],
       ];
       $sql = "DELETE FROM civicrm_stripe_customers
-            WHERE contact_id = %1 AND processor_id = %3";
+            WHERE contact_id = %1 AND processor_id = %2";
     }
     CRM_Core_DAO::executeQuery($sql, $queryParams);
   }
