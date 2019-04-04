@@ -19,8 +19,6 @@ function _civicrm_api3_stripe_customer_get_spec(&$spec) {
   $spec['id']['type'] = CRM_Utils_Type::T_STRING;
   $spec['contact_id']['title'] = ts("CiviCRM Contact ID");
   $spec['contact_id']['type'] = CRM_Utils_Type::T_INT;
-  $spec['is_live']['title'] = ts("Is live processor");
-  $spec['is_live']['type'] = CRM_Utils_Type::T_BOOLEAN;
   $spec['processor_id']['title'] = ts("Payment Processor ID");
   $spec['processor_id']['type'] = CRM_Utils_Type::T_INT;
 }
@@ -51,11 +49,6 @@ function civicrm_api3_stripe_customer_get($params) {
         $index++;
         break;
 
-      case 'is_live':
-        $where[$index] = "{$key}=%{$index}";
-        $whereParam[$index] = [$value, 'Boolean'];
-        $index++;
-        break;
     }
   }
 
@@ -70,7 +63,6 @@ function civicrm_api3_stripe_customer_get($params) {
     $result = [
       'id' => $dao->id,
       'contact_id' => $dao->contact_id,
-      'is_live' => $dao->is_live,
       'processor_id' => $dao->processor_id,
     ];
     if ($dao->email) {
@@ -93,9 +85,6 @@ function _civicrm_api3_stripe_customer_delete_spec(&$spec) {
   $spec['id']['type'] = CRM_Utils_Type::T_STRING;
   $spec['contact_id']['title'] = ts("CiviCRM Contact ID");
   $spec['contact_id']['type'] = CRM_Utils_Type::T_INT;
-  $spec['is_live']['title'] = ts("Is live processor");
-  $spec['is_live']['type'] = CRM_Utils_Type::T_BOOLEAN;
-  $spec['is_live']['api.required'] = TRUE;
   $spec['processor_id']['title'] = ts("Payment Processor ID");
   $spec['processor_id']['type'] = CRM_Utils_Type::T_INT;
   $spec['processor_id']['api.required'] = TRUE;
@@ -198,8 +187,6 @@ function _civicrm_api3_stripe_customer_updatestripemetadata_spec(&$spec) {
   $spec['id']['api.required'] = FALSE;
   $spec['dryrun']['api.required'] = TRUE;
   $spec['dryrun']['type'] = CRM_Utils_Type::T_BOOLEAN;
-  $spec['is_live']['api.required'] = FALSE;
-  $spec['is_live']['type'] = CRM_Utils_Type::T_BOOLEAN;
   $spec['processor_id']['api.required'] = FALSE;
   $spec['processor_id']['type'] = CRM_Utils_Type::T_INT;
 }
@@ -222,10 +209,10 @@ function civicrm_api3_stripe_customer_updatestripemetadata($params) {
   // Check params
   if (empty($params['id'])) {
     // We're doing an update on all stripe customers
-    if (!isset($params['is_live']) || !isset($params['processor_id'])) {
-      throw new CiviCRM_API3_Exception('Missing required parameters is_live and/or processor_id when using without a customer id');
+    if (!isset($params['processor_id'])) {
+      throw new CiviCRM_API3_Exception('Missing required parameters processor_id when using without a customer id');
     }
-    $customerIds = CRM_Stripe_Customer::getAll($params['is_live'], $params['processor_id'], $params['options']);
+    $customerIds = CRM_Stripe_Customer::getAll($params['processor_id'], $params['options']);
   }
   else {
     $customerIds = [$params['id']];

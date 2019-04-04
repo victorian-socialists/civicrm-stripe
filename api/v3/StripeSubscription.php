@@ -19,8 +19,6 @@ function _civicrm_api3_stripe_subscription_get_spec(&$spec) {
   $spec['customer_id']['type'] = CRM_Utils_Type::T_STRING;
   $spec['contribution_recur_id']['title'] = ts("Contribution Recur ID");
   $spec['contribution_recur_id']['type'] = CRM_Utils_Type::T_INT;
-  $spec['is_live']['title'] = ts("Is live processor");
-  $spec['is_live']['type'] = CRM_Utils_Type::T_BOOLEAN;
   $spec['processor_id']['title'] = ts("Payment Processor ID");
   $spec['processor_id']['type'] = CRM_Utils_Type::T_INT;
   $spec['end_time_id']['title'] = ts("End Time");
@@ -57,11 +55,6 @@ function civicrm_api3_stripe_subscription_get($params) {
         $index++;
         break;
 
-      case 'is_live':
-        $where[$index] = "{$key}=%{$index}";
-        $whereParam[$index] = [$value, 'Boolean'];
-        $index++;
-        break;
     }
   }
 
@@ -78,7 +71,6 @@ function civicrm_api3_stripe_subscription_get($params) {
       'subscription_id' => $dao->subscription_id,
       'customer_id' => $dao->customer_id,
       'contribution_recur_id' => $dao->contribution_recur_id,
-      'is_live' => $dao->is_live,
       'processor_id' => $dao->processor_id,
       'end_time' => $dao->end_time,
     ];

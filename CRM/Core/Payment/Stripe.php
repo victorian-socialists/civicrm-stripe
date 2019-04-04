@@ -443,7 +443,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     $customerParams = [
       'contact_id' => $contactId,
       'card_token' => $card_token,
-      'is_live' => !$this->_paymentProcessor['is_test'],
       'processor_id' => $this->_paymentProcessor['id'],
       'email' => $email,
     ];
