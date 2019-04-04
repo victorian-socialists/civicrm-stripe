@@ -1,3 +1,12 @@
+## Release 5.4
+* Fix drupal webform detection so it doesn't generate a false positive if we also have a webform on the same page.
+* Fix Stripe create customer in test mode.
+* Fix offline (live) event payments for Wordpress.
+
+* Add StripeCustomer.updatestripemetadata API.
+* Add a system check for invalid API key.
+* Add StripeCustomer.delete to delete a customer from CiviCRM.
+
 ## Release 5.3.2
 * Fix retrieving email receipt parameter on stripe IPN which stopped contributions from being marked as completed.
 * Fix webhook check for wordpress so we don't get false positives when everything is configured ok.

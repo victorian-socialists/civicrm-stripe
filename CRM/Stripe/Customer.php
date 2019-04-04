@@ -13,7 +13,7 @@ class CRM_Stripe_Customer {
   public static function find($params) {
     $requiredParams = ['is_live', 'processor_id'];
     foreach ($requiredParams as $required) {
-      if (empty($required)) {
+      if (empty($params[$required])) {
         throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (find): Missing required parameter: ' . $required);
       }
     }
@@ -33,6 +33,60 @@ class CRM_Stripe_Customer {
   }
 
   /**
+   * Find the details (contact_id, is_live, processor_id) for an existing Stripe customer in the CiviCRM database
+   *
+   * @param string $stripeCustomerId
+   *
+   * @return array|null
+   */
+  public static function getParamsForCustomerId($stripeCustomerId) {
+    $queryParams = [
+      1 => [$stripeCustomerId, 'String'],
+    ];
+
+    $dao = CRM_Core_DAO::executeQuery("SELECT contact_id, is_live, processor_id
+      FROM civicrm_stripe_customers
+      WHERE id = %1", $queryParams);
+    $dao->fetch();
+    return [
+      'contact_id' => $dao->contact_id,
+      'is_live' => $dao->is_live,
+      'processor_id' => $dao->processor_id,
+    ];
+  }
+
+  /**
+   * Find the details (contact_id, is_live, processor_id) for an existing Stripe customer in the CiviCRM database
+   *
+   * @param string $stripeCustomerId
+   *
+   * @return array|null
+   */
+  public static function getAll($isLive, $processorId, $options = []) {
+    $queryParams = [
+      1 => [$isLive ? 1 : 0, 'Boolean'],
+      2 => [$processorId, 'Integer'],
+    ];
+
+    $limitClause = '';
+    if ($limit = CRM_Utils_Array::value('limit', $options)) {
+      $limitClause = "LIMIT $limit";
+      if ($offset = CRM_Utils_Array::value('offset', $options)) {
+        $limitClause .= " OFFSET $offset";
+      }
+    }
+
+    $customerIds = [];
+    $dao = CRM_Core_DAO::executeQuery("SELECT id
+      FROM civicrm_stripe_customers
+      WHERE is_live = %1 AND processor_id = %2 {$limitClause}", $queryParams);
+    while ($dao->fetch()) {
+      $customerIds[] = $dao->id;
+    }
+    return $customerIds;
+  }
+
+  /**
    * Add a new Stripe customer to the CiviCRM database
    *
    * @param $params
@@ -42,7 +96,7 @@ class CRM_Stripe_Customer {
   public static function add($params) {
     $requiredParams = ['contact_id', 'customer_id', 'is_live', 'processor_id'];
     foreach ($requiredParams as $required) {
-      if (empty($required)) {
+      if (empty($params[$required])) {
         throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (add): Missing required parameter: ' . $required);
       }
     }
@@ -50,7 +104,7 @@ class CRM_Stripe_Customer {
     $queryParams = [
       1 => [$params['contact_id'], 'String'],
       2 => [$params['customer_id'], 'String'],
-      3 => [$params['is_live'], 'Boolean'],
+      3 => [$params['is_live'] ? 1 : 0, 'Boolean'],
       4 => [$params['processor_id'], 'Integer'],
     ];
     CRM_Core_DAO::executeQuery("INSERT INTO civicrm_stripe_customers
@@ -69,7 +123,7 @@ class CRM_Stripe_Customer {
     $requiredParams = ['contact_id', 'card_token', 'is_live', 'processor_id'];
     // $optionalParams = ['email'];
     foreach ($requiredParams as $required) {
-      if (empty($required)) {
+      if (empty($params[$required])) {
         throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (create): Missing required parameter: ' . $required);
       }
     }
@@ -115,20 +169,34 @@ class CRM_Stripe_Customer {
    * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
   public static function delete($params) {
-    $requiredParams = ['contact_id', 'is_live', 'processor_id'];
+    $requiredParams = ['is_live', 'processor_id'];
     foreach ($requiredParams as $required) {
-      if (empty($required)) {
+      if (empty($params[$required])) {
         throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (delete): Missing required parameter: ' . $required);
       }
     }
+    if (empty($params['contact_id']) && empty($params['id'])) {
+      throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (delete): Missing required parameter: contact_id or id');
+    }
 
-    $queryParams = [
-      1 => [$params['contact_id'], 'String'],
-      2 => [$params['is_live'], 'Boolean'],
-      3 => [$params['processor_id'], 'Integer'],
-    ];
-    $sql = "DELETE FROM civicrm_stripe_customers
+    if (!empty($params['id'])) {
+      $queryParams = [
+        1 => [$params['id'], 'String'],
+        2 => [$params['is_live'] ? 1 : 0, 'Boolean'],
+        3 => [$params['processor_id'], 'Integer'],
+      ];
+      $sql = "DELETE FROM civicrm_stripe_customers
+            WHERE id = %1 AND is_live = %2 AND processor_id = %3";
+    }
+    else {
+      $queryParams = [
+        1 => [$params['contact_id'], 'String'],
+        2 => [$params['is_live'] ? 1 : 0, 'Boolean'],
+        3 => [$params['processor_id'], 'Integer'],
+      ];
+      $sql = "DELETE FROM civicrm_stripe_customers
             WHERE contact_id = %1 AND is_live = %2 AND processor_id = %3";
+    }
     CRM_Core_DAO::executeQuery($sql, $queryParams);
   }
 
