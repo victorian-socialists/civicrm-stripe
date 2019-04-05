@@ -200,6 +200,16 @@ function civicrm_api3_stripe_subscription_import($params) {
   $stripeInvoices = \Stripe\Invoice::all($invoiceParams);
   foreach ($stripeInvoices->data as $stripeInvoice) {
     if (CRM_Stripe_Api::getObjectParam('subscription_id', $stripeInvoice) === $params['subscription_id']) {
+      if (!empty(CRM_Stripe_Api::getObjectParam('description', $stripeInvoice))) {
+        $sourceText = CRM_Stripe_Api::getObjectParam('description', $stripeInvoice);
+      }
+      elseif (!empty($params['contribution_source'])) {
+        $sourceText = $params['contribution_source'];
+      }
+      else {
+        $sourceText = 'Stripe: Manual import via API';
+      }
+
       $contributionParams = [
         'contact_id' => $params['contact_id'],
         'total_amount' => CRM_Stripe_Api::getObjectParam('amount', $stripeInvoice),
@@ -210,7 +220,7 @@ function civicrm_api3_stripe_subscription_import($params) {
         'payment_instrument_id' => !empty($params['payment_instrument_id']) ? $params['payment_instrument_id'] : 'Credit Card',
         'financial_type_id' => !empty($params['financial_type_id']) ? $params['financial_type_id'] : 'Donation',
         'is_test' => isset($paymentProcessor['is_test']) && $paymentProcessor['is_test'] ? 1 : 0,
-        'contribution_source' => CRM_Stripe_Api::getObjectParam('description', $stripeInvoice),
+        'contribution_source' => $sourceText,
         'contribution_recur_id' => $contributionRecur['id'],
       ];
 
@@ -270,7 +280,7 @@ function _civicrm_api3_stripe_subscription_import_spec(&$spec) {
   $spec['membership_id']['title'] = ts("Membership ID");
   $spec['membership_id']['type'] = CRM_Utils_Type::T_INT;
   $spec['financial_type_id'] = [
-    'title' => 'Financial ID (ignored if more than one line item)',
+    'title' => 'Financial Type ID',
     'name' => 'financial_type_id',
     'type' => CRM_Utils_Type::T_INT,
     'pseudoconstant' => [
@@ -280,5 +290,9 @@ function _civicrm_api3_stripe_subscription_import_spec(&$spec) {
     ],
   ];
   $spec['payment_instrument_id']['api.aliases'] = ['payment_instrument'];
+  $spec['contribution_source'] = [
+    'title' => 'Contribution Source (optional description for contribution)',
+    'type' => CRM_Utils_Type::T_STRING,
+  ];
 }
 
