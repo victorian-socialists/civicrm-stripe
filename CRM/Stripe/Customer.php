@@ -109,13 +109,12 @@ class CRM_Stripe_Customer {
 
   /**
    * @param $params
-   * @param $paymentProcessor
    *
    * @return \Stripe\ApiResource
    * @throws \CiviCRM_API3_Exception
    * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
-  public static function create($params, $paymentProcessor) {
+  public static function create($params) {
     $requiredParams = ['contact_id', 'card_token', 'processor_id'];
     // $optionalParams = ['email'];
     foreach ($requiredParams as $required) {

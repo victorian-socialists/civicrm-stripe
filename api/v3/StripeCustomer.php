@@ -74,7 +74,7 @@ function civicrm_api3_stripe_customer_get($params) {
 }
 
 /**
- * StripeCustomer.Get API specification
+ * StripeCustomer.delete API specification
  *
  * @param array $spec description of fields supported by this API call
  * @return void
@@ -104,6 +104,41 @@ function civicrm_api3_stripe_customer_delete($params) {
   CRM_Stripe_Customer::delete($params);
   return civicrm_api3_create_success([]);
 }
+
+/**
+ * StripeCustomer.create API specification
+ *
+ * @param array $spec description of fields supported by this API call
+ * @return void
+ * @see http://wiki.civicrm.org/confluence/display/CRMDOC/API+Architecture+Standards
+ */
+function _civicrm_api3_stripe_customer_create_spec(&$spec) {
+  $spec['id']['title'] = ts("Stripe Customer ID");
+  $spec['id']['type'] = CRM_Utils_Type::T_STRING;
+  $spec['id']['api.required'] = TRUE;
+  $spec['contact_id']['title'] = ts("CiviCRM Contact ID");
+  $spec['contact_id']['type'] = CRM_Utils_Type::T_INT;
+  $spec['contact_id']['api.required'] = TRUE;
+  $spec['processor_id']['title'] = ts("Payment Processor ID");
+  $spec['processor_id']['type'] = CRM_Utils_Type::T_INT;
+  $spec['processor_id']['api.required'] = TRUE;
+}
+
+/**
+ * StripeCustomer.create API
+ *  This api will add a stripe customer to CiviCRM
+ *
+ * @param array $params
+ * @see civicrm_api3_create_success
+ *
+ * @throws \Civi\Payment\Exception\PaymentProcessorException
+ * @return array
+ */
+function civicrm_api3_stripe_customer_create($params) {
+  CRM_Stripe_Customer::add($params);
+  return civicrm_api3_create_success([]);
+}
+
 
 /**
  * Stripe.Customer.Updatecontactids API

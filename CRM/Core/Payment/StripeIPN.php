@@ -151,102 +151,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    * @throws \CRM_Core_Exception
    */
   public function retrieve($name, $type, $abort = TRUE) {
-    $className = get_class($this->_inputParameters->data->object);
-    $value = NULL;
-    switch ($className) {
-      case 'Stripe\Charge':
-        switch ($name) {
-          case 'charge_id':
-            $value = $this->_inputParameters->data->object->id;
-            break;
-
-          case 'failure_code':
-            $value = $this->_inputParameters->data->object->failure_code;
-            break;
-
-          case 'failure_message':
-            $value = $this->_inputParameters->data->object->failure_message;
-            break;
-
-          case 'refunded':
-            $value = $this->_inputParameters->data->object->refunded;
-            break;
-
-          case 'amount_refunded':
-            $value = $this->_inputParameters->data->object->amount_refunded;
-            break;
-        }
-        break;
-
-      case 'Stripe\Invoice':
-        switch ($name) {
-          case 'charge_id':
-            $value = $this->_inputParameters->data->object->charge;
-            break;
-
-          case 'invoice_id':
-            $value = $this->_inputParameters->data->object->id;
-            break;
-
-          case 'receive_date':
-            $value = date("Y-m-d H:i:s", $this->_inputParameters->data->object->date);
-            break;
-
-          case 'subscription_id':
-            $value = $this->_inputParameters->data->object->subscription;
-            break;
-        }
-        break;
-
-      case 'Stripe\Subscription':
-        switch ($name) {
-          case 'frequency_interval':
-            $value = $this->_inputParameters->data->object->plan->interval_count;
-            break;
-
-          case 'frequency_unit':
-            $value = $this->_inputParameters->data->object->plan->interval;
-            break;
-
-          case 'plan_amount':
-            $value = $this->_inputParameters->data->object->plan->amount / 100;
-            break;
-
-          case 'plan_id':
-            $value = $this->_inputParameters->data->object->plan->id;
-            break;
-
-          case 'plan_name':
-            $value = $this->_inputParameters->data->object->plan->name;
-            break;
-
-          case 'plan_start':
-            $value = date("Y-m-d H:i:s", $this->_inputParameters->data->object->start);
-            break;
-
-          case 'subscription_id':
-            $value = $this->_inputParameters->data->object->id;
-            break;
-        }
-        break;
-    }
-
-    // Common parameters
-    switch ($name) {
-      case 'customer_id':
-        $value = $this->_inputParameters->data->object->customer;
-        break;
-
-      case 'event_type':
-        $value = $this->_inputParameters->type;
-        break;
-
-      case 'previous_plan_id':
-        if (preg_match('/\.updated$/', $this->_inputParameters->type)) {
-          $value = $this->_inputParameters->data->previous_attributes->plan->id;
-        }
-        break;
-    }
+    $value = CRM_Stripe_Api::getObjectParam($name, $type, $this->_inputParameters->data->object);
 
     $value = CRM_Utils_Type::validate($value, $type, FALSE);
     if ($abort && $value === NULL) {
@@ -262,7 +167,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    */
   public function main() {
     // Collect and determine all data about this event.
-    $this->event_type = $this->retrieve('event_type', 'String');
+    $this->event_type = CRM_Stripe_Api::getParam('event_type', $this->_inputParameters);
 
     $pendingStatusId = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending');
 
@@ -454,13 +359,17 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    */
   public function setInfo() {
     $abort = FALSE;
-    $this->customer_id = $this->retrieve('customer_id', 'String');
+    $this->customer_id = CRM_Stripe_Api::getParam('customer_id', $this->_inputParameters);
+    if (empty($this->customer_id)) {
+      $this->exception('Missing customer_id!');
+    }
+
+    $this->previous_plan_id = CRM_Stripe_Api::getParam('previous_plan_id', $this->_inputParameters);
     $this->subscription_id = $this->retrieve('subscription_id', 'String', $abort);
     $this->invoice_id = $this->retrieve('invoice_id', 'String', $abort);
     $this->receive_date = $this->retrieve('receive_date', 'String', $abort);
     $this->charge_id = $this->retrieve('charge_id', 'String', $abort);
     $this->plan_id = $this->retrieve('plan_id', 'String', $abort);
-    $this->previous_plan_id = $this->retrieve('previous_plan_id', 'String', $abort);
     $this->plan_amount = $this->retrieve('plan_amount', 'String', $abort);
     $this->frequency_interval = $this->retrieve('frequency_interval', 'String', $abort);
     $this->frequency_unit = $this->retrieve('frequency_unit', 'String', $abort);
