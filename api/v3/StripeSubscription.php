@@ -156,7 +156,7 @@ function civicrm_api3_stripe_subscription_import($params) {
 
   // Create the stripe customer in CiviCRM
   $customerParams = [
-    'id' => CRM_Stripe_Api::getObjectParam('customer_id', $stripeSubscription),
+    'customer_id' => CRM_Stripe_Api::getObjectParam('customer_id', $stripeSubscription),
     'contact_id' => $params['contact_id'],
     'processor_id' => (int) $params['payment_processor_id'],
   ];
