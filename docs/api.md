@@ -17,9 +17,14 @@ The api commands are:
    * `ppid` - Use the given Payment Processor ID. By default, uses the saved, live Stripe payment processor and throws an error if there is more than one.
    * `noreceipt` - Set to 1 if you want to suppress the generation of receipts or set to 0 or leave out to send receipts normally.
 
-### Additionally for upgrading:
+## StripeCustomer
 
 * `StripeCustomer.updatecontactids` - Used to migrate civicrm_stripe_customer table to match on contact_id instead of email address.
 * `StripeCustomer.updatestripemetadata` - Used to update stripe customers that were created using an older version of the extension (adds name to description and contact_id as a metadata field).
+
+## StripeSubscription
 * `StripeSubscription.updatetransactionids` - Used to migrate civicrm_stripe_subscriptions to use recurring contributions directly.
 * `StripeSubscription.copytrxnidtoprocessorid` - Used to copy trxn_id to processor_id in civicrm_contribution_recur table so we can use cancelSubscription. Hopefully this won't be needed in future versions of CiviCRM if we can pass more sensible values to the cancelSubscription function.
+* `StripeSubscription.import` - Use to import subscriptions into CiviCRM that are in Stripe but not CiviCRM.  
+Accepts various parameters but requires: Payment Processor ID, Stripe subscription ID and CiviCRM contact ID.
+![StripeSubscription.import](/images/StripeSubscription.import.png) 
