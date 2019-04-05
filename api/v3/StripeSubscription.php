@@ -243,12 +243,30 @@ function civicrm_api3_stripe_subscription_import($params) {
   }
 
   // Link to membership record
+  // By default we'll match the latest active membership, unless membership_id is passed in.
   if (!empty($params['membership_id'])) {
     $membershipParams = [
       'id' => $params['membership_id'],
       'contribution_recur_id' => $contributionRecur['id'],
     ];
     $membership = civicrm_api3('Membership', 'create', $membershipParams);
+  }
+  elseif (!empty($params['membership_auto'])) {
+    $membershipParams = [
+      'contact_id' => $params['contact_id'],
+      'options' => ['limit' => 1, 'sort' => "id DESC"],
+      'contribution_recur_id' => ['IS NULL' => 1],
+      'is_test' => !empty($paymentProcessor['is_test']) ? 1 : 0,
+      'active_only' => 1,
+    ];
+    $membership = civicrm_api3('Membership', 'get', $membershipParams);
+    if (!empty($membership['id'])) {
+      $membershipParams = [
+        'id' => $membership['id'],
+        'contribution_recur_id' => $contributionRecur['id'],
+      ];
+      $membership = civicrm_api3('Membership', 'create', $membershipParams);
+    }
   }
 
   $results = [
@@ -279,6 +297,9 @@ function _civicrm_api3_stripe_subscription_import_spec(&$spec) {
   $spec['contribution_id']['type'] = CRM_Utils_Type::T_INT;
   $spec['membership_id']['title'] = ts("Membership ID");
   $spec['membership_id']['type'] = CRM_Utils_Type::T_INT;
+  $spec['membership_auto']['title'] = ts("Link to existing membership automatically");
+  $spec['membership_auto']['type'] = CRM_Utils_Type::T_BOOLEAN;
+  $spec['membership_auto']['api.default'] = TRUE;
   $spec['financial_type_id'] = [
     'title' => 'Financial Type ID',
     'name' => 'financial_type_id',
