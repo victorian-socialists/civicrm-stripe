@@ -344,8 +344,8 @@ CRM.$(function($) {
 
   function getIsWebform(form) {
     // Pass in the billingForm object
-    // If the form has the webform-client-form class then it's a drupal webform!
-    return form.hasClass('webform-client-form');
+    // If the form has the webform-client-form (drupal 7) or webform-submission-form (drupal 8) class then it's a drupal webform!
+    return form.hasClass('webform-client-form') || form.hasClass('webform-submission-form');
   }
 
   function getBillingForm() {
@@ -368,6 +368,10 @@ CRM.$(function($) {
 
     if (isWebform) {
       $submit = $form.find('[type="submit"].webform-submit');
+      if (!$submit.length) {
+        // drupal 8 webform
+        $submit = $form.find('[type="submit"].webform-button--submit');
+      }
     }
     else {
       $submit = $form.find('[type="submit"].validate');
