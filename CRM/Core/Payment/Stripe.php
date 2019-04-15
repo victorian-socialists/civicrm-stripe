@@ -119,17 +119,13 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return string errorMessage (or statusbounce if URL is specified)
    */
   public static function handleErrorNotification($err, $bounceURL = NULL) {
-    $errorMessage = 'Payment Response: <br />' .
-      'Type: ' . $err['type'] . '<br />' .
-      'Code: ' . $err['code'] . '<br />' .
-      'Message: ' . $err['message'] . '<br />';
-
-    Civi::log()->debug('Stripe Payment Error: ' . $errorMessage);
+    $debugMsg = $err['type'] . ' ' . $err['code'] . ' ' . $err['message'];
+    Civi::log()->debug('Stripe Payment Error: ' . $debugMsg);
 
     if ($bounceURL) {
-      CRM_Core_Error::statusBounce($errorMessage, $bounceURL, 'Payment Error');
+      CRM_Core_Error::statusBounce($err['message'], $bounceURL, 'Payment Error');
     }
-    return $errorMessage;
+    return $debugMsg;
   }
 
   /**
@@ -445,13 +441,15 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'card_token' => $card_token,
       'processor_id' => $this->_paymentProcessor['id'],
       'email' => $email,
+      // Include this to allow redirect within session on payment failure
+      'stripe_error_url' => $params['stripe_error_url'],
     ];
 
     $stripeCustomerId = CRM_Stripe_Customer::find($customerParams);
 
     // Customer not in civicrm database.  Create a new Customer in Stripe.
     if (!isset($stripeCustomerId)) {
-      $stripeCustomer = CRM_Stripe_Customer::create($customerParams, $this);
+      $stripeCustomer = CRM_Stripe_Customer::create($customerParams);
     }
     else {
       // Customer was found in civicrm database, fetch from Stripe.
@@ -472,7 +470,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         // Customer doesn't exist, create a new one
         CRM_Stripe_Customer::delete($customerParams);
         try {
-          $stripeCustomer = CRM_Stripe_Customer::create($customerParams, $this);
+          $stripeCustomer = CRM_Stripe_Customer::create($customerParams);
         }
         catch (Exception $e) {
           // We still failed to create a customer
