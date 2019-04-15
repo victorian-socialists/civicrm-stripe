@@ -527,14 +527,17 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     }
     catch (Exception $e) {
       $err = self::parseStripeException('charge_create', $e, FALSE);
+
       if ($e instanceof \Stripe\Error\Card) {
-        civicrm_api3('Note', 'create', [
-          'entity_id' => $params['contributionID'],
-          'contact_id' => $this->getContactId($params),
-          'subject' => $err['type'],
-          'note' => $err['code'],
-          'entity_table' => 'civicrm_contribution',
-        ]);
+        if ($this->getContributionId($params)) {
+          civicrm_api3('Note', 'create', [
+            'entity_id' => $this->getContributionId($params),
+            'contact_id' => $this->getContactId($params),
+            'subject' => $err['type'],
+            'note' => $err['code'],
+            'entity_table' => 'civicrm_contribution',
+          ]);
+        }
       }
       $errorMessage = self::handleErrorNotification($err, $params['stripe_error_url']);
       throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to create Stripe Charge: ' . $errorMessage);
