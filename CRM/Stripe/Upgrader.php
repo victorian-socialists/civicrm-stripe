@@ -397,4 +397,14 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
     return TRUE;
   }
 
+  public function upgrade_5022() {
+    $this->ctx->log->info('Applying Stripe update 5021.  Remove is_live NOT NULL constraint as we don\'t use this parameter any more');
+    if (CRM_Core_BAO_SchemaHandler::checkIfFieldExists('civicrm_stripe_customers', 'is_live', FALSE)) {
+      CRM_Core_DAO::executeQuery('ALTER TABLE `civicrm_stripe_customers`
+        MODIFY COLUMN `is_live` tinyint(4) COMMENT "Whether this is a live or test transaction"');
+    }
+
+    return TRUE;
+  }
+
 }
