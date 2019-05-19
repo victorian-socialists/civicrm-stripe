@@ -151,7 +151,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    * @throws \CRM_Core_Exception
    */
   public function retrieve($name, $type, $abort = TRUE) {
-    $value = CRM_Stripe_Api::getObjectParam($name, $type, $this->_inputParameters->data->object);
+    $value = CRM_Stripe_Api::getObjectParam($name, $this->_inputParameters->data->object);
 
     $value = CRM_Utils_Type::validate($value, $type, FALSE);
     if ($abort && $value === NULL) {
@@ -359,7 +359,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    */
   public function setInfo() {
     $abort = FALSE;
-    $this->customer_id = CRM_Stripe_Api::getParam('customer_id', $this->_inputParameters);
+    $this->customer_id = CRM_Stripe_Api::getObjectParam('customer_id', $this->_inputParameters->data->object);
     if (empty($this->customer_id)) {
       $this->exception('Missing customer_id!');
     }
