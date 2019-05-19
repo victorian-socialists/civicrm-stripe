@@ -28,12 +28,14 @@ class CRM_Stripe_Utils_Check_Webhook {
       try {
         $webhooks = \Stripe\WebhookEndpoint::all(["limit" => 100]);
       }
-      catch (\Stripe\Error\Authentication $e) {
+      catch (Exception $e) {
+        $error = $e->getMessage();
         $messages[] = new CRM_Utils_Check_Message(
           'stripe_webhook',
-          E::ts('The %1 (%2) Payment Processor has an invalid API key', [
+          E::ts('The %1 (%2) Payment Processor has an error: %3', [
             1 => $pp['name'],
             2 => $pp['id'],
+            3 => $error,
           ]),
           E::ts('Stripe - API Key'),
           \Psr\Log\LogLevel::ERROR,
