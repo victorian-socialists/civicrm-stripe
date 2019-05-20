@@ -1,7 +1,7 @@
 <?php
 
 class CRM_Stripe_Api {
-  
+
   public static function getObjectParam($name, $stripeObject) {
     $className = get_class($stripeObject);
     switch ($className) {
@@ -33,7 +33,7 @@ class CRM_Stripe_Api {
             return (string) $stripeObject->id;
 
           case 'receive_date':
-            return date("Y-m-d H:i:s", $stripeObject->date);
+            return $stripeObject->date ? date("Y-m-d H:i:s", $stripeObject->date) : NULL;
 
           case 'subscription_id':
             return (string) $stripeObject->subscription;
@@ -51,7 +51,7 @@ class CRM_Stripe_Api {
             return (string) mb_strtoupper($stripeObject->currency);
 
           case 'status_id':
-            if ((bool)$stripeObject->paid) {
+            if ((bool) $stripeObject->paid) {
               return 'Completed';
             }
             else {
@@ -85,7 +85,7 @@ class CRM_Stripe_Api {
             return (string) $stripeObject->plan->name;
 
           case 'plan_start':
-            return date("Y-m-d H:i:s", $stripeObject->start);
+            return $stripeObject->start ? date("Y-m-d H:i:s", $stripeObject->start) : NULL;
 
           case 'cycle_day':
             return date("d", $stripeObject->billing_cycle_anchor);
