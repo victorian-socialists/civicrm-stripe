@@ -39,20 +39,6 @@ function stripe_civicrm_uninstall() {
  * Implementation of hook_civicrm_enable().
  */
 function stripe_civicrm_enable() {
-  $UFWebhookPath = stripe_get_webhook_path(TRUE);
-  CRM_Core_Session::setStatus(
-    "
-    <br />Don't forget to set up Webhooks in Stripe so that recurring contributions are ended!
-    <br />Webhook path to enter in Stripe:
-    <br/><em>$UFWebhookPath</em>
-    <br />Replace NN with the actual payment processor ID configured on your site.
-    <br />
-    ",
-    'Stripe Payment Processor',
-    'info',
-    ['expires' => 0]
-  );
-
   _stripe_civix_civicrm_enable();
 }
 
@@ -84,28 +70,6 @@ function stripe_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
  * is installed, disabled, uninstalled.
  */
 function stripe_civicrm_managed(&$entities) {
-  $entities[] = array(
-    'module' => 'com.drastikbydesign.stripe',
-    'name' => 'Stripe',
-    'entity' => 'PaymentProcessorType',
-    'params' => array(
-      'version' => 3,
-      'name' => 'Stripe',
-      'title' => 'Stripe',
-      'description' => 'Stripe Payment Processor',
-      'class_name' => 'Payment_Stripe',
-      'billing_mode' => 'form',
-      'user_name_label' => 'Secret Key',
-      'password_label' => 'Publishable Key',
-      'url_site_default' => 'https://api.stripe.com/v2',
-      'url_recur_default' => 'https://api.stripe.com/v2',
-      'url_site_test_default' => 'https://api.stripe.com/v2',
-      'url_recur_test_default' => 'https://api.stripe.com/v2',
-      'is_recur' => 1,
-      'payment_type' => 1
-    ),
-  );
-
   _stripe_civix_civicrm_managed($entities);
 }
 
@@ -201,49 +165,8 @@ function stripe_civicrm_buildForm($formName, &$form) {
 }
 
 /**
- * Get the path of the webhook depending on the UF (eg Drupal, Joomla, Wordpress)
- *
- * @param bool $includeBaseUrl
- * @param string $pp_id
- *
- * @return string
- */
-function stripe_get_webhook_path($includeBaseUrl = TRUE, $pp_id = 'NN') {
-  // Assuming frontend URL because that's how the function behaved before.
-  // @fixme this doesn't return the right webhook path on Wordpress (often includes an extra path between .com and ? eg. abc.com/xxx/?page=CiviCRM
-  // return CRM_Utils_System::url('civicrm/payment/ipn/' . $pp_id, NULL, $includeBaseUrl, NULL, FALSE, TRUE);
-
-  $UFWebhookPaths = [
-    "Drupal"    => "civicrm/payment/ipn/NN",
-    "Joomla"    => "?option=com_civicrm&task=civicrm/payment/ipn/NN",
-    "WordPress" => "?page=CiviCRM&q=civicrm/payment/ipn/NN"
-  ];
-
-
-  // Use Drupal path as default if the UF isn't in the map above
-  $UFWebhookPath = (array_key_exists(CIVICRM_UF, $UFWebhookPaths)) ?
-    $UFWebhookPaths[CIVICRM_UF] :
-    $UFWebhookPaths['Drupal'];
-  if ($includeBaseUrl) {
-    $sepChar = (substr(CIVICRM_UF_BASEURL, -1) == '/') ? '' : '/';
-    return CIVICRM_UF_BASEURL . $sepChar . $UFWebhookPath;
-  }
-  return $UFWebhookPath;
-}
-
-/*
- * Implementation of hook_idsException.
- *
- * Ensure webhooks don't get caught in the IDS check.
- */
-function stripe_civicrm_idsException(&$skip) {
-  // Path is always set to civicrm/payment/ipn (checked on Drupal/Joomla)
-  $skip[] = 'civicrm/payment/ipn';
-}
-
-/**
  * Implements hook_civicrm_check().
  */
 function stripe_civicrm_check(&$messages) {
-  CRM_Stripe_Utils_Check_Webhook::check($messages);
+  $messages = CRM_Stripe_Webhook::check();
 }

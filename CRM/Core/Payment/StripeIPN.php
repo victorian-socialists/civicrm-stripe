@@ -171,6 +171,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
 
     $pendingStatusId = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending');
 
+    // NOTE: If you add an event here make sure you add it to the webhook or it will never be received!
     switch($this->event_type) {
       // Successful recurring payment.
       case 'invoice.payment_succeeded':

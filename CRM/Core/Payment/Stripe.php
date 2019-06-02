@@ -12,7 +12,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    *
    * @var string
    */
-  protected $_stripeAPIVersion = '2019-02-19';
+  const API_VERSION = '2019-02-19';
 
   /**
    * Mode of operation: live or test.
@@ -21,6 +21,9 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    */
   protected $_mode = NULL;
 
+  public static function getApiVersion() {
+    return self::API_VERSION;
+  }
   /**
    * Constructor
    *
@@ -36,6 +39,64 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   }
 
   /**
+   * @param array $paymentProcessor
+   *
+   * @return string
+   */
+  public static function getSecretKey($paymentProcessor) {
+    return trim(CRM_Utils_Array::value('user_name', $paymentProcessor));
+  }
+
+  /**
+   * @param array $paymentProcessor
+   *
+   * @return string
+   */
+  public static function getPublicKey($paymentProcessor) {
+    return trim(CRM_Utils_Array::value('password', $paymentProcessor));
+  }
+
+  /**
+   * Given a payment processor id, return the public key
+   *
+   * @param $paymentProcessorId
+   *
+   * @return string
+   */
+  public static function getPublicKeyById($paymentProcessorId) {
+    try {
+      $paymentProcessor = civicrm_api3('PaymentProcessor', 'getsingle', [
+        'id' => $paymentProcessorId,
+      ]);
+      $key = self::getPublicKey($paymentProcessor);
+    }
+    catch (CiviCRM_API3_Exception $e) {
+      return '';
+    }
+    return $key;
+  }
+
+  /**
+   * Given a payment processor id, return the secret key
+   *
+   * @param $paymentProcessorId
+   *
+   * @return string
+   */
+  public static function getSecretKeyById($paymentProcessorId) {
+    try {
+      $paymentProcessor = civicrm_api3('PaymentProcessor', 'getsingle', [
+        'id' => $paymentProcessorId,
+      ]);
+      $key = self::getSecretKey($paymentProcessor);
+    }
+    catch (CiviCRM_API3_Exception $e) {
+      return '';
+    }
+    return $key;
+  }
+
+  /**
    * This function checks to see if we have the right config values.
    *
    * @return null|string
@@ -43,14 +104,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    */
   public function checkConfig() {
     $error = array();
-
-    if (empty($this->_paymentProcessor['user_name'])) {
-      $error[] = ts('The "Secret Key" is not set in the Stripe Payment Processor settings.');
-    }
-
-    if (empty($this->_paymentProcessor['password'])) {
-      $error[] = ts('The "Publishable Key" is not set in the Stripe Payment Processor settings.');
-    }
 
     if (!empty($error)) {
       return implode('<p>', $error);
@@ -106,8 +159,8 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   public function setAPIParams() {
     // Set plugin info and API credentials.
     \Stripe\Stripe::setAppInfo('CiviCRM', CRM_Utils_System::version(), CRM_Utils_System::baseURL());
-    \Stripe\Stripe::setApiKey($this->_paymentProcessor['user_name']);
-    \Stripe\Stripe::setApiVersion($this->_stripeAPIVersion);
+    \Stripe\Stripe::setApiKey(self::getSecretKey($this->_paymentProcessor));
+    \Stripe\Stripe::setApiVersion(self::getApiVersion());
   }
 
   /**
@@ -341,32 +394,12 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   public function buildForm(&$form) {
     // Set default values
     $paymentProcessorId = CRM_Utils_Array::value('id', $form->_paymentProcessor);
-    $publishableKey = CRM_Core_Payment_Stripe::getPublishableKey($paymentProcessorId);
+    $publishableKey = CRM_Core_Payment_Stripe::getPublicKeyById($paymentProcessorId);
     $defaults = [
       'stripe_id' => $paymentProcessorId,
       'stripe_pub_key' => $publishableKey,
     ];
     $form->setDefaults($defaults);
-  }
-
-   /**
-   * Given a payment processor id, return the publishable key (password field)
-   *
-   * @param $paymentProcessorId
-   *
-   * @return string
-   */
-  public static function getPublishableKey($paymentProcessorId) {
-    try {
-      $publishableKey = (string) civicrm_api3('PaymentProcessor', 'getvalue', array(
-        'return' => "password",
-        'id' => $paymentProcessorId,
-      ));
-    }
-    catch (CiviCRM_API3_Exception $e) {
-      return '';
-    }
-    return $publishableKey;
   }
 
   /**
