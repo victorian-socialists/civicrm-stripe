@@ -21,6 +21,10 @@ class CRM_Stripe_Api {
 
           case 'amount_refunded':
             return (int) $stripeObject->amount_refunded / 100;
+            
+          case 'customer_id':
+            return (string) $stripeObject->customer;
+
         }
         break;
 
@@ -60,6 +64,10 @@ class CRM_Stripe_Api {
 
           case 'description':
             return (string) $stripeObject->description;
+        
+          case 'customer_id':
+            return (string) $stripeObject->customer;
+
 
         }
         break;
