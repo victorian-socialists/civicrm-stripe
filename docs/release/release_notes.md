@@ -1,11 +1,25 @@
 ## Release 5.4
+This release fixes multiple bugs and introduces a few small features.
+
+**A major feature for this release is the automatic management of webhooks:**
+Note that when you upgrade you may end up with duplicate webhooks in Stripe with slightly different addresses (particularly on Wordpress where the path should be urlencoded).  Just delete the older (duplicate) webhooks manually from your Stripe dashboard.
+
 * Fix drupal webform detection so it doesn't generate a false positive if we also have a webform on the same page.
 * Fix Stripe create customer in test mode.
 * Fix offline (live) event payments for Wordpress.
+* If payment fails and we have no contribution don't crash when trying to create a note.
+* Fix null dates returning as December 31, 1969.
 
+* Support Drupal 8 Webform.
+* Automatically manage and create webhooks.
 * Add StripeCustomer.updatestripemetadata API.
 * Add a system check for invalid API key.
 * Add StripeCustomer.delete to delete a customer from CiviCRM.
+* Add StripeSubscription.import API to import subscriptions into CiviCRM.
+* Add Stripe.cleanup API.
+* Report all Stripe errors, not just authentication when running status checks.
+
+* Remove `is_live` field from `civicrm_stripe_customer` - we can get this from the payment processor ID.
 
 ## Release 5.3.2
 * Fix retrieving email receipt parameter on stripe IPN which stopped contributions from being marked as completed.
