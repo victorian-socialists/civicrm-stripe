@@ -1,9 +1,11 @@
 <?php
-
-/*
- * Payment Processor class for Stripe
+/**
+ * https://civicrm.org/licensing
  */
 
+/**
+ * Class CRM_Core_Payment_Stripe
+ */
 class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
 
   use CRM_Core_Payment_StripeTrait;

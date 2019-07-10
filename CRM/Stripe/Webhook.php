@@ -22,7 +22,7 @@ class CRM_Stripe_Webhook {
     foreach ($result['values'] as $paymentProcessor) {
       $webhook_path = self::getWebhookPath($paymentProcessor['id']);
 
-      \Stripe::setApiKey(CRM_Core_Payment_Stripe::getSecretKey($paymentProcessor));
+      \Stripe\Stripe::setApiKey(CRM_Core_Payment_Stripe::getSecretKey($paymentProcessor));
       try {
         $webhooks = \Stripe\WebhookEndpoint::all(["limit" => 100]);
       }
