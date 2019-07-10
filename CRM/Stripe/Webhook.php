@@ -4,7 +4,7 @@ use CRM_Stripe_ExtensionUtil as E;
 
 class CRM_Stripe_Webhook {
 
-  use CRM_Stripe_Webhook_Trait;
+  use CRM_Stripe_WebhookTrait;
 
   /**
    * Checks whether the payment processors have a correctly configured
@@ -20,7 +20,7 @@ class CRM_Stripe_Webhook {
     ]);
 
     foreach ($result['values'] as $paymentProcessor) {
-      $webhook_path = self::getWebhookPath(TRUE, $paymentProcessor['id']);
+      $webhook_path = self::getWebhookPath($paymentProcessor['id']);
 
       \Stripe::setApiKey(CRM_Core_Payment_Stripe::getSecretKey($paymentProcessor));
       try {
@@ -88,7 +88,7 @@ class CRM_Stripe_Webhook {
 
     $params = [
       'enabled_events' => self::getDefaultEnabledEvents(),
-      'url' => self::getWebhookPath(TRUE, $paymentProcessorId),
+      'url' => self::getWebhookPath($paymentProcessorId),
       'api_version' => CRM_Core_Payment_Stripe::getApiVersion(),
       'connect' => FALSE,
     ];
