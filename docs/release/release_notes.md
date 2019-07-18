@@ -8,7 +8,9 @@ Note that when you upgrade you may end up with duplicate webhooks in Stripe with
 * Fix Stripe create customer in test mode.
 * Fix offline (live) event payments for Wordpress.
 * If payment fails and we have no contribution don't crash when trying to create a note.
-* Fix null dates returning as December 31, 1969.
+* Fix null dates returning as December 31, 1969 or 1 Jan 1970 (depending on your
+    timezone) - also see the commandline script in `utils/fix-issue-44.php` to
+    correct your Contributions data.
 
 * Support Drupal 8 Webform.
 * Automatically manage and create webhooks.
