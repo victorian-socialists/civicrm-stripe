@@ -168,5 +168,5 @@ function stripe_civicrm_buildForm($formName, &$form) {
  * Implements hook_civicrm_check().
  */
 function stripe_civicrm_check(&$messages) {
-  $messages = CRM_Stripe_Webhook::check();
+  CRM_Stripe_Webhook::check($messages);
 }

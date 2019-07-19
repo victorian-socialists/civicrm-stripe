@@ -12,8 +12,13 @@ class CRM_Stripe_Webhook {
    * for now, avoid having false alerts that will annoy people).
    *
    * @see stripe_civicrm_check()
+   *
+   * @param array $messages
+   *
+   * @return array
+   * @throws \CiviCRM_API3_Exception
    */
-  public static function check() {
+  public static function check($messages) {
     $result = civicrm_api3('PaymentProcessor', 'get', [
       'class_name' => 'Payment_Stripe',
       'is_active' => 1,
@@ -48,7 +53,26 @@ class CRM_Stripe_Webhook {
         if ($wh->url == $webhook_path) {
           $found_wh = TRUE;
           // Check and update webhook
-          self::checkAndUpdateWebhook($wh);
+          try {
+            self::checkAndUpdateWebhook($wh);
+          }
+          catch (Exception $e) {
+            $messages[] = new CRM_Utils_Check_Message(
+              'stripe_webhook',
+              E::ts('Could not update existing webhook - to fix this delete the existing webhook from your stripe account and re-run this check.<br/>The webhook URL is: %3', [
+                1 => $paymentProcessor['name'],
+                2 => $paymentProcessor['id'],
+                3 => urldecode($webhook_path),
+              ]) . '.<br/>Error from Stripe: <em>' . $e->getMessage() . '</em>',
+              E::ts('Stripe Webhook: %1 (%2)', [
+                  1 => $paymentProcessor['name'],
+                  2 => $paymentProcessor['id'],
+                ]
+              ),
+              \Psr\Log\LogLevel::WARNING,
+              'fa-money'
+            );
+          }
         }
       }
 
@@ -75,7 +99,6 @@ class CRM_Stripe_Webhook {
         }
       }
     }
-    return $messages;
   }
 
   /**
@@ -102,7 +125,7 @@ class CRM_Stripe_Webhook {
    */
   public static function checkAndUpdateWebhook($webhook) {
     $update = FALSE;
-    if ($webhook['api_version'] !== CRM_Core_Payment_Stripe::API_VERSION) {
+    if (empty($webhook['api_version']) || ($webhook['api_version'] !== CRM_Core_Payment_Stripe::API_VERSION)) {
       $update = TRUE;
       $params['api_version'] = CRM_Core_Payment_Stripe::API_VERSION;
     }
