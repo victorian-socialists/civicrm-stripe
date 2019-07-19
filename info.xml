@@ -7,7 +7,7 @@
     <url desc="Main Extension Page">https://lab.civicrm.org/extensions/stripe</url>
     <url desc="Support">https://lab.civicrm.org/extensions/stripe/issues</url>
   </urls>
-  <license>AGPL</license>
+  <license>AGPL-3.0</license>
   <maintainer>
     <author>Matthew Wire (MJW Consulting)</author>
     <email>mjw@mjwconsult.co.uk</email>
