@@ -7,24 +7,23 @@ class CRM_Stripe_Webhook {
   use CRM_Stripe_WebhookTrait;
 
   /**
-   * Checks whether the payment processors have a correctly configured
-   * webhook (we may want to check the test processors too, at some point, but
-   * for now, avoid having false alerts that will annoy people).
+   * Checks whether the payment processors have a correctly configured webhook
    *
    * @see stripe_civicrm_check()
    *
    * @param array $messages
+   * @param bool $attemptFix If TRUE, try to fix the webhook.
    *
-   * @return array
    * @throws \CiviCRM_API3_Exception
    */
-  public static function check($messages) {
+  public static function check(&$messages, $attemptFix = FALSE) {
     $result = civicrm_api3('PaymentProcessor', 'get', [
       'class_name' => 'Payment_Stripe',
       'is_active' => 1,
     ]);
 
     foreach ($result['values'] as $paymentProcessor) {
+      $messageTexts = [];
       $webhook_path = self::getWebhookPath($paymentProcessor['id']);
 
       \Stripe\Stripe::setApiKey(CRM_Core_Payment_Stripe::getSecretKey($paymentProcessor));
@@ -35,12 +34,11 @@ class CRM_Stripe_Webhook {
         $error = $e->getMessage();
         $messages[] = new CRM_Utils_Check_Message(
           'stripe_webhook',
-          E::ts('The %1 (%2) Payment Processor has an error: %3', [
+          $error,
+          E::ts('Stripe Payment Processor: %1 (%2)', [
             1 => $paymentProcessor['name'],
             2 => $paymentProcessor['id'],
-            3 => $error,
           ]),
-          E::ts('Stripe - API Key'),
           \Psr\Log\LogLevel::ERROR,
           'fa-money'
         );
@@ -54,49 +52,62 @@ class CRM_Stripe_Webhook {
           $found_wh = TRUE;
           // Check and update webhook
           try {
-            self::checkAndUpdateWebhook($wh);
+            $updates = self::checkWebhook($wh);
+            if ($updates) {
+              if ($attemptFix) {
+                // We should try to update the webhook.
+                $messageTexts[] = E::ts('Unable to update the webhook %1. To correct this please delete the webhook at Stripe and then revisit this page which will recreate it correctly.',
+                  [1 => urldecode($webhook_path)]
+                );
+                \Stripe\WebhookEndpoint::update($wh['id'], $updates);
+              }
+              else {
+                $messageTexts[] = E::ts('Problems detected with Stripe webhook %1. Please visit <a href="%2">Fix Stripe Webhook</a> to fix.', [
+                  1 => urldecode($webhook_path),
+                  2 => CRM_Utils_System::url('civicrm/stripe/fix-webhook'),
+                ]);
+              }
+            }
           }
           catch (Exception $e) {
-            $messages[] = new CRM_Utils_Check_Message(
-              'stripe_webhook',
-              E::ts('Could not update existing webhook - to fix this delete the existing webhook from your stripe account and re-run this check.<br/>The webhook URL is: %3', [
-                1 => $paymentProcessor['name'],
-                2 => $paymentProcessor['id'],
-                3 => urldecode($webhook_path),
-              ]) . '.<br/>Error from Stripe: <em>' . $e->getMessage() . '</em>',
-              E::ts('Stripe Webhook: %1 (%2)', [
-                  1 => $paymentProcessor['name'],
-                  2 => $paymentProcessor['id'],
-                ]
-              ),
-              \Psr\Log\LogLevel::WARNING,
-              'fa-money'
+            $messageTexts[] = E::ts('Could not check/update existing webhooks, got error from stripe <em>%1</em>', [
+                1 => htmlspecialchars($e->getMessage())
+              ]
             );
           }
         }
       }
 
       if (!$found_wh) {
-        try {
-          self::createWebhook($paymentProcessor['id']);
+        if ($attemptFix) {
+          try {
+            // Try to create one.
+            self::createWebhook($paymentProcessor['id']);
+          }
+          catch (Exception $e) {
+            $messageTexts[] = E::ts('Could not create webhook, got error from stripe <em>%1</em>', [
+              1 => htmlspecialchars($e->getMessage())
+            ]);
+          }
         }
-        catch (Exception $e) {
-          $messages[] = new CRM_Utils_Check_Message(
-            'stripe_webhook',
-            E::ts('Could not create webhook. You can review from your Stripe account, under Developers > Webhooks.<br/>The webhook URL is: %3', [
-              1 => $paymentProcessor['name'],
-              2 => $paymentProcessor['id'],
-              3 => urldecode($webhook_path),
-            ]) . '.<br/>Error from Stripe: <em>' . $e->getMessage() . '</em>',
-            E::ts('Stripe Webhook: %1 (%2)', [
-                1 => $paymentProcessor['name'],
-                2 => $paymentProcessor['id'],
-              ]
-            ),
-            \Psr\Log\LogLevel::WARNING,
-            'fa-money'
-          );
+        else {
+          $messageTexts[] = E::ts('Stripe Webhook missing! Please visit <a href="%1">Fix Stripe Webhook</a> to fix.', [
+            1 => CRM_Utils_System::url('civicrm/stripe/fix-webhook'),
+          ]);
         }
+      }
+
+      foreach ($messageTexts as $messageText) {
+        $messages[] = new CRM_Utils_Check_Message(
+          'stripe_webhook',
+          $messageText,
+          E::ts('Stripe Payment Processor Webhook: %1 (%2)', [
+            1 => $paymentProcessor['name'],
+            2 => $paymentProcessor['id'],
+          ]),
+          \Psr\Log\LogLevel::WARNING,
+          'fa-money'
+        );
       }
     }
   }
@@ -118,24 +129,25 @@ class CRM_Stripe_Webhook {
     \Stripe\WebhookEndpoint::create($params);
   }
 
+
   /**
    * Check and update existing webhook
    *
    * @param array $webhook
+   * @return array of correction params. Empty array if it's OK.
    */
-  public static function checkAndUpdateWebhook($webhook) {
-    $update = FALSE;
+  public static function checkWebhook($webhook) {
+    $params = [];
+
     if (empty($webhook['api_version']) || ($webhook['api_version'] !== CRM_Core_Payment_Stripe::API_VERSION)) {
-      $update = TRUE;
       $params['api_version'] = CRM_Core_Payment_Stripe::API_VERSION;
     }
+
     if (array_diff(self::getDefaultEnabledEvents(), $webhook['enabled_events'])) {
-      $update = TRUE;
       $params['enabled_events'] = self::getDefaultEnabledEvents();
     }
-    if ($update) {
-      \Stripe\WebhookEndpoint::update($webhook['id'], $params);
-    }
+
+    return $params;
   }
 
   /**

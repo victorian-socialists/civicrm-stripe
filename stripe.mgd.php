@@ -16,7 +16,7 @@ return [
       'description' => 'Stripe Payment Processor',
       'class_name' => 'Payment_Stripe',
       'user_name_label' => 'Secret Key',
-      'password_label' => 'Public Key',
+      'password_label' => 'Publishable key',
       'url_site_default' => 'https://api.stripe.com/v2',
       'url_recur_default' => 'https://api.stripe.com/v2',
       'url_site_test_default' => 'https://api.stripe.com/v2',

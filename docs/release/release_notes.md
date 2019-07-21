@@ -1,3 +1,7 @@
+## Release 5.4.1
+* Don't overwrite system messages when performing webhook checks.
+* Add form to handle creating/updating webhooks instead of automatically during system check (Thanks @artfulrobot)
+
 ## Release 5.4
 This release fixes multiple bugs and introduces a few small features.
 

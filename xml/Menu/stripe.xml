@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<menu>
+  <item>
+    <path>civicrm/stripe/fix-webhook</path>
+    <page_callback>CRM_Stripe_Form_UpdateWebhook</page_callback>
+    <title>Check and Fix Stripe Webhooks</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
+</menu>
