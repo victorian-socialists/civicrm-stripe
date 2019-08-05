@@ -42,7 +42,7 @@ Application Fees: *Write*
 **Orders resources**  
 SKUs: *Write*  
 **Webhook resources**  
-Webhook Endpoints: *Read* (required for the webhook system check)  
+Webhook Endpoints: *Write* (required for the webhook system check/auto-create webhooks)  
 ![Example Stripe API Permissions](images/example_api_perms.png)
 
 
