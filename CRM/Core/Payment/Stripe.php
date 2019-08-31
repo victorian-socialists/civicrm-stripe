@@ -3,6 +3,8 @@
  * https://civicrm.org/licensing
  */
 
+use CRM_Stripe_ExtensionUtil as E;
+
 /**
  * Class CRM_Core_Payment_Stripe
  */
@@ -262,11 +264,11 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    */
   public function getPaymentFormFields() {
     return array(
-      'credit_card_type',
-      'credit_card_number',
-      'cvv2',
-      'credit_card_exp_date',
-      'stripe_token',
+      //'credit_card_type',
+      //'credit_card_number',
+      //'cvv2',
+      //'credit_card_exp_date',
+      //'stripe_token',
       'stripe_pub_key',
       'stripe_id',
     );
@@ -402,6 +404,11 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'stripe_pub_key' => $publishableKey,
     ];
     $form->setDefaults($defaults);
+
+    // Add help and javascript
+    CRM_Core_Region::instance('billing-block')->add(
+      ['template' => 'CRM/Core/Payment/Stripe/Card.tpl', 'weight' => -1]);
+    CRM_Core_Resources::singleton()->addStyleFile(E::LONG_NAME, 'css/elements.css', 0, 'html-header');
   }
 
   /**
@@ -422,13 +429,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
   public function doPayment(&$params, $component = 'contribute') {
-    if (array_key_exists('credit_card_number', $params)) {
-      $cc = $params['credit_card_number'];
-      if (!empty($cc) && substr($cc, 0, 8) != '00000000') {
-        Civi::log()->debug(ts('ALERT! Unmasked credit card received in back end. Please report this error to the site administrator.'));
-      }
-    }
-
     $completedStatusId = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Completed');
     $pendingStatusId = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending');
 
@@ -456,11 +456,8 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     $amount = self::getAmount($params);
 
     // Use Stripe.js instead of raw card details.
-    if (!empty($params['stripe_token'])) {
-      $card_token = $params['stripe_token'];
-    }
-    else if(!empty(CRM_Utils_Array::value('stripe_token', $_POST, NULL))) {
-      $card_token = CRM_Utils_Array::value('stripe_token', $_POST, NULL);
+    if(!empty(CRM_Utils_Array::value('stripeToken', $_POST, NULL))) {
+      $cardToken = CRM_Utils_Array::value('stripeToken', $_POST, NULL);
     }
     else {
       CRM_Core_Error::statusBounce(ts('Unable to complete payment! Please this to the site administrator with a description of what you were trying to do.'));
@@ -473,7 +470,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     // See if we already have a stripe customer
     $customerParams = [
       'contact_id' => $contactId,
-      'card_token' => $card_token,
+      'card_token' => $cardToken,
       'processor_id' => $this->_paymentProcessor['id'],
       'email' => $email,
       // Include this to allow redirect within session on payment failure
@@ -514,7 +511,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         }
       }
 
-      $stripeCustomer->card = $card_token;
+      $stripeCustomer->card = $cardToken;
       try {
         $stripeCustomer->save();
       }
@@ -554,7 +551,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       $stripeChargeParams['customer'] = $stripeCustomer->id;
     }
     else {
-      $stripeChargeParams['card'] = $card_token;
+      $stripeChargeParams['card'] = $cardToken;
     }
 
     try {
