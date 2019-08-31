@@ -46,7 +46,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return string
    */
   public static function getSecretKey($paymentProcessor) {
-    return trim(CRM_Utils_Array::value('user_name', $paymentProcessor));
+    return trim(CRM_Utils_Array::value('password', $paymentProcessor));
   }
 
   /**
@@ -55,7 +55,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return string
    */
   public static function getPublicKey($paymentProcessor) {
-    return trim(CRM_Utils_Array::value('password', $paymentProcessor));
+    return trim(CRM_Utils_Array::value('user_name', $paymentProcessor));
   }
 
   /**

@@ -1,3 +1,9 @@
+## Release 6.0 (not yet released)
+
+* Stripe API Version: 2019-08-14
+* Switch publishable key/secret key in settings (upgrader does this automatically) so they are now "correct" per CiviCRM settings pages.
+
+
 ## Release 5.4.1
 * Don't overwrite system messages when performing webhook checks.
 * Add form to handle creating/updating webhooks instead of automatically during system check (Thanks @artfulrobot)

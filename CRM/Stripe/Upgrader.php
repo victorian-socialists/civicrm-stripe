@@ -1,8 +1,8 @@
 <?php
 /**
  * Collection of upgrade steps.
- * DO NOT USE a naming scheme other than upgrade_N, where N is an integer.  
- * Naming scheme upgrade_X_Y_Z is offically wrong!  
+ * DO NOT USE a naming scheme other than upgrade_N, where N is an integer.
+ * Naming scheme upgrade_X_Y_Z is offically wrong!
  * https://chat.civicrm.org/civicrm/pl/usx3pfjzjbrhzpewuggu1e6ftw
  */
 class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
@@ -70,14 +70,14 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
     $config = CRM_Core_Config::singleton();
     $dbName = DB::connect($config->dsn)->_db;
 
-    $null_count =  CRM_Core_DAO::executeQuery('SELECT COUNT(*) FROM civicrm_stripe_customers where processor_id IS NULL') + 
+    $null_count =  CRM_Core_DAO::executeQuery('SELECT COUNT(*) FROM civicrm_stripe_customers where processor_id IS NULL') +
       CRM_Core_DAO::executeQuery('SELECT COUNT(*) FROM civicrm_stripe_plans where processor_id IS NULL') +
       CRM_Core_DAO::executeQuery('SELECT COUNT(*) FROM civicrm_stripe_subscriptions where processor_id IS NULL');
     if ( $null_count == 0 ) {
       $this->ctx->log->info('Skipped civicrm_stripe update 5002.  No nulls found in column processor_id in our tables.');
       return TRUE;
-    } 
-    else { 
+    }
+    else {
       try {
         // Set processor ID if there's only one.
         $processorCount = civicrm_api3('PaymentProcessorType', 'get', array(
@@ -109,7 +109,7 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
     return TRUE;
   }
 
- 
+
  /**
    * Add subscription_id column to civicrm_stripe_subscriptions table.
    *
@@ -134,7 +134,7 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
         }
       return TRUE;
     }
-   
+
  /**
    * Populates the subscription_id column in table civicrm_stripe_subscriptions.
    *
@@ -145,11 +145,11 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
     $config = CRM_Core_Config::singleton();
     $dbName = DB::connect($config->dsn)->_db;
 
-    $null_count =  CRM_Core_DAO::executeQuery('SELECT COUNT(*) FROM civicrm_stripe_subscriptions where subscription_id IS NULL'); 
+    $null_count =  CRM_Core_DAO::executeQuery('SELECT COUNT(*) FROM civicrm_stripe_subscriptions where subscription_id IS NULL');
     if ( $null_count == 0 ) {
       $this->ctx->log->info('Skipped civicrm_stripe update 5004.  No nulls found in column subscription_id in our civicrm_stripe_subscriptions table.');
-    } 
-    else { 
+    }
+    else {
     $customer_infos = CRM_Core_DAO::executeQuery("SELECT customer_id,processor_id
       FROM `civicrm_stripe_subscriptions`;");
       while ( $customer_infos->fetch() ) {
@@ -161,7 +161,7 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
              'id' => $processor_id,
              ));
           }
-          catch (Exception $e) { 
+          catch (Exception $e) {
             Civi::log()->debug('Update 5004 failed. Has Stripe been removed as a payment processor?', $out = false);
             return;
           }
@@ -171,7 +171,7 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
              'customer'=> $customer_id,
              'limit'=>1,
             ));
-          } 
+          }
           catch (Exception $e) {
             // Don't quit here.  A missing customer in Stipe is OK.  They don't exist, so they can't have a subscription.
             Civi::log()->debug('Cannot find Stripe API key: ' . $e->getMessage());
@@ -233,14 +233,14 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
       while ( $subscriptions->fetch() ) {
         $test_mode = (int)!$subscriptions->is_live;
         try {
-          // Fetch the recurring contribution Id. 
+          // Fetch the recurring contribution Id.
           $recur_id = civicrm_api3('Contribution', 'getvalue', array(
             'sequential' => 1,
             'return' => "contribution_recur_id",
             'invoice_id' => $subscriptions->invoice_id,
             'contribution_test' => $test_mode,
           ));
-        } 
+        }
         catch (CiviCRM_API3_Exception $e) {
           // Don't quit here. If we can't find the recurring ID for a single customer, make a note in the error log and carry on.
           Civi::log()->debug('Recurring contribution search: ' . $e->getMessage());
@@ -285,11 +285,11 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
            'sequential' => 1,
            'return' => "contact_id",
            'is_billing' => 1,
-           'email' => $customer->email, 
+           'email' => $customer->email,
            'api.ContributionRecur.get' => array('return' => "id", 'contact_id' => "\$value.contact_id", 'contribution_status_id' => "In Progress"),
           ));
-         } 
-        catch (CiviCRM_API3_Exception $e) { 
+         }
+        catch (CiviCRM_API3_Exception $e) {
         // Uh oh, that didn't work.  Try to retrieve the recurring id using the primary email.
           $contact = civicrm_api3('Contact', 'get', array(
            'sequential' => 1,
@@ -300,7 +300,7 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
         }
 
         if (!empty($contact['values'][0]['api.ContributionRecur.get']['values'][0]['id'])) {
-         $recur_id = $contact['values'][0]['api.ContributionRecur.get']['values'][0]['id']; 
+         $recur_id = $contact['values'][0]['api.ContributionRecur.get']['values'][0]['id'];
              $p = array(
               1 => array($recur_id, 'Integer'),
               2 => array($subscriptions->customer_id, 'String'),
@@ -404,6 +404,27 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
         MODIFY COLUMN `is_live` tinyint(4) COMMENT "Whether this is a live or test transaction"');
     }
 
+    return TRUE;
+  }
+
+  public function upgrade_5023() {
+    $this->ctx->log->info('Applying Stripe update 5023.  Swap over public/secret key settings');
+    $stripeProcessors = civicrm_api3('PaymentProcessor', 'get', [
+      'payment_processor_type_id' => "Stripe",
+    ]);
+    foreach ($stripeProcessors['values'] as $processor) {
+      if ((substr($processor['user_name'], 0, 3) === 'sk_')
+          && (substr($processor['password'], 0, 3) === 'pk_')) {
+        // Need to switch over parameters
+        $createParams = [
+          'id' => $processor['id'],
+          'user_name' => $processor['password'],
+          'password' => $processor['user_name'],
+        ];
+        civicrm_api3('PaymentProcessor', 'create', $createParams);
+      }
+    }
+    CRM_Utils_System::flushCache();
     return TRUE;
   }
 
