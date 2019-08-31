@@ -149,9 +149,10 @@ function civicrm_api3_stripe_subscription_import($params) {
 
   $paymentProcessor = \Civi\Payment\System::singleton()->getById($params['payment_processor_id'])->getPaymentProcessor();
 
-  // Now re-retrieve the data from Stripe to ensure it's legit.
-  \Stripe\Stripe::setApiKey($paymentProcessor['user_name']);
+  $processor = new CRM_Core_Payment_Stripe('', $paymentProcessor);
+  $processor->setAPIParams();
 
+  // Now re-retrieve the data from Stripe to ensure it's legit.
   $stripeSubscription = \Stripe\Subscription::retrieve($params['subscription_id']);
 
   // Create the stripe customer in CiviCRM

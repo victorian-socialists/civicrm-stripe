@@ -16,7 +16,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   protected $transaction_id;
 
   // By default, always retrieve the event from stripe to ensure we are
-  // not being fed garbage. However, allow an override so when we are 
+  // not being fed garbage. However, allow an override so when we are
   // testing, we can properly test a failed recurring contribution.
   protected $verify_event = TRUE;
 
@@ -39,7 +39,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   protected $frequency_unit = NULL;
   protected $plan_name = NULL;
   protected $plan_start = NULL;
-       
+
   // Derived properties.
   protected $contribution_recur_id = NULL;
   protected $event_id = NULL;
@@ -119,10 +119,10 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
     // Determine the proper Stripe Processor ID so we can get the secret key
     // and initialize Stripe.
     $this->getPaymentProcessor();
+    $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $this->_paymentProcessor['id']]));
+    $processor->setAPIParams();
 
     // Now re-retrieve the data from Stripe to ensure it's legit.
-    \Stripe\Stripe::setApiKey($this->_paymentProcessor['user_name']);
-
     // Special case if this is the test webhook
     if (substr($parameters->id, -15, 15) === '_00000000000000') {
       http_response_code(200);
@@ -194,7 +194,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           ));
         }
 
-        // Successful charge & more to come. 
+        // Successful charge & more to come.
         civicrm_api3('ContributionRecur', 'create', array(
           'id' => $this->contribution_recur_id,
           'failure_count' => 0,
@@ -353,7 +353,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    * Gather and set info as class properties.
    *
    * Given the data passed to us via the Stripe Event, try to determine
-   * as much as we can about this event and set that information as 
+   * as much as we can about this event and set that information as
    * properties to be used later.
    *
    * @throws \CRM_Core_Exception

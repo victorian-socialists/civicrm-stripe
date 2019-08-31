@@ -26,7 +26,9 @@ class CRM_Stripe_Webhook {
       $messageTexts = [];
       $webhook_path = self::getWebhookPath($paymentProcessor['id']);
 
-      \Stripe\Stripe::setApiKey(CRM_Core_Payment_Stripe::getSecretKey($paymentProcessor));
+      $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $paymentProcessor['id']]));
+      $processor->setAPIParams();
+
       try {
         $webhooks = \Stripe\WebhookEndpoint::all(["limit" => 100]);
       }
@@ -118,7 +120,8 @@ class CRM_Stripe_Webhook {
    * @param int $paymentProcessorId
    */
   public static function createWebhook($paymentProcessorId) {
-    \Stripe\Stripe::setApiKey(CRM_Core_Payment_Stripe::getSecretKeyById($paymentProcessorId));
+    $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $paymentProcessorId]));
+    $processor->setAPIParams();
 
     $params = [
       'enabled_events' => self::getDefaultEnabledEvents(),

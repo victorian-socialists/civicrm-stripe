@@ -51,7 +51,8 @@ while ($dao->fetch()) {
   if (!$paymentProcessor) {
     echo "Failed to find a stripe payment processor for recurring contrib $dao->contribution_recur_id\n";
   }
-  Stripe::setApiKey(CRM_Core_Payment_Stripe::getSecretKey($paymentProcessor));
+  $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $paymentProcessor['id']]));
+  $processor->setAPIParams();
 
   try {
     $results = Charge::retrieve(['id' => $dao->trxn_id]);

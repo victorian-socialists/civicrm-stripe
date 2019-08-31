@@ -33,10 +33,11 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    *
    * @param string $mode
    *   The mode of operation: live or test.
+   * @param array $paymentProcessor
    *
    * @return void
    */
-  public function __construct($mode, &$paymentProcessor) {
+  public function __construct($mode, $paymentProcessor) {
     $this->_mode = $mode;
     $this->_paymentProcessor = $paymentProcessor;
     $this->_processorName = ts('Stripe');
