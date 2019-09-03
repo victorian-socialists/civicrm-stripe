@@ -4,7 +4,7 @@ Please do help improve this documentation by submitting a PR or contacting me.
 ## Configuration
 
 ### Stripe
-Create an API key by logging in to your Stripe dashboard and selecting [API keys](https://dashboard.stripe.com/account/apikeys) from the left navigation.  You can use the standard key, or you can click "Create rrestricted key" to have a more limited key.  Example key restrictions are listed below.
+Create an API key by logging in to your Stripe dashboard and selecting [API keys](https://dashboard.stripe.com/account/apikeys) from the left navigation.  You can use the standard key, or you can click "Create restricted key" to have a more limited key.  Example key restrictions are listed below.
 
 ### CiviCRM
 All configuration is in the standard Payment Processors settings area in CiviCRM admin (**Administer menu » System Settings » Payment Processors**).
