@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <extension key="com.drastikbydesign.stripe" type="module">
   <file>stripe</file>
-  <name>Stripe</name>
+  <name>Stripe (SCA payments development version)</name>
   <description>Stripe Payment Processor</description>
   <urls>
     <url desc="Main Extension Page">https://lab.civicrm.org/extensions/stripe</url>
@@ -12,15 +12,18 @@
     <author>Matthew Wire (MJW Consulting)</author>
     <email>mjw@mjwconsult.co.uk</email>
   </maintainer>
-  <releaseDate>2019-08-31</releaseDate>
-  <version>6.0.dev</version>
-  <develStage>beta</develStage>
+  <releaseDate>2019-09-03</releaseDate>
+  <version>6.0.alpha1</version>
+  <develStage>alpha</develStage>
   <compatibility>
     <ver>5.13</ver>
   </compatibility>
   <comments>Original Author: Joshua Walker (drastik) - Drastik by Design.
     Jamie Mcclelland (ProgressiveTech) did a lot of the 5.x compatibility work.
   </comments>
+  <requires>
+    <ext>mjwshared</ext>
+  </requires>
   <civix>
     <namespace>CRM/Stripe</namespace>
   </civix>

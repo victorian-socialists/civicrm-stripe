@@ -9,34 +9,80 @@ CRM.$(function($) {
   var form;
   var submitButton;
 
-  function stripeTokenHandler(token) {
-    debugging('stripeTokenHandler');
+  function paymentIntentSuccessHandler(paymentIntent) {
+    debugging('paymentIntent confirmation success');
+
     // Insert the token ID into the form so it gets submitted to the server
     var hiddenInput = document.createElement('input');
     hiddenInput.setAttribute('type', 'hidden');
-    hiddenInput.setAttribute('name', 'stripeToken');
-    hiddenInput.setAttribute('value', token.id);
+    hiddenInput.setAttribute('name', 'paymentIntentID');
+    hiddenInput.setAttribute('value', paymentIntent.id);
     form.appendChild(hiddenInput);
 
     // Submit the form
     form.submit();
   }
 
-  function createToken() {
-    debugging('createToken');
-    stripe.createToken(card).then(function(result) {
+  function displayError(result) {
+    // Display error.message in your UI.
+    debugging('error: ' + result.error.message);
+    // Inform the user if there was an error
+    var errorElement = document.getElementById('card-errors');
+    errorElement.style.display = 'block';
+    errorElement.textContent = result.error.message;
+    document.querySelector('#billing-payment-block').scrollIntoView();
+    window.scrollBy(0, -50);
+    submitButton.removeAttribute('disabled');
+  }
+
+  function handleCardPayment() {
+    debugging('handle card payment');
+    stripe.createPaymentMethod('card', card).then(function (result) {
       if (result.error) {
-        debugging('createToken failed');
-        // Inform the user if there was an error
-        var errorElement = document.getElementById('card-errors');
-        errorElement.style.display = 'block';
-        errorElement.textContent = result.error.message;
-        submitButton.removeAttribute('disabled');
-        document.querySelector('#billing-payment-block').scrollIntoView();
-        window.scrollBy(0, -50);
+        // Show error in payment form
+        displayError(result);
+      }
+      else {
+        // Send paymentMethod.id to server
+        var url = CRM.url('civicrm/stripe/confirm-payment');
+        $.post(url, {
+          payment_method_id: result.paymentMethod.id,
+          amount: getTotalAmount(),
+          currency: CRM.vars.stripe.currency,
+          id: CRM.vars.stripe.id,
+        }).then(function (result) {
+          // Handle server response (see Step 3)
+          handleServerResponse(result);
+        });
+      }
+    });
+  }
+
+  function handleServerResponse(result) {
+    debugging('handleServerResponse');
+    if (result.error) {
+      // Show error from server on payment form
+      displayError(result);
+    } else if (result.requires_action) {
+      // Use Stripe.js to handle required card action
+      handleAction(result);
+    } else {
+      // All good, we can submit the form
+      paymentIntentSuccessHandler(result.paymentIntent);
+    }
+  }
+
+  function handleAction(response) {
+    stripe.handleCardAction(
+      response.payment_intent_client_secret
+    ).then(function(result) {
+      if (result.error) {
+        // Show error in payment form
+        displayError(result);
       } else {
-        // Send the token to your server
-        stripeTokenHandler(result.token);
+        // The card action has been handled
+        // The PaymentIntent can be confirmed again on the server
+        paymentIntentSuccessHandler(result.paymentIntent);
       }
     });
   }
@@ -78,7 +124,7 @@ CRM.$(function($) {
         // There is. Check if the selected payment processor is different
         // from the one we think we should be using.
         var ppid = $('#payment_processor_id').val();
-        if (ppid != $('#stripe-id').val()) {
+        if (ppid != CRM.vars.stripe.id) {
           debugging('payment processor changed to id: ' + ppid);
           // It is! See if the new payment processor is also a Stripe
           // Payment processor. First, find out what the stripe
@@ -102,11 +148,11 @@ CRM.$(function($) {
               if (pub_key) {
                 // It is a stripe payment processor, so update the key.
                 debugging("Setting new stripe key to: " + pub_key);
-                $('#stripe-pub-key').val(pub_key);
+                CRM.vars.stripe.publishableKey = pub_key;
               }
               else {
                 debugging("New payment processor is not Stripe, setting stripe-pub-key to null");
-                $('#stripe-pub-key').val(null);
+                CRM.vars.stripe.publishableKey = null;
               }
               // Now reload the billing block.
               loadStripeBillingBlock();
@@ -120,13 +166,11 @@ CRM.$(function($) {
 
   function loadStripeBillingBlock() {
     // Setup Stripe.Js
-    var $stripePubKey = $('#stripe-pub-key');
-
-    if (!$stripePubKey.length) {
+    if (typeof CRM.vars.stripe === 'undefined') {
       return;
     }
 
-    stripe = Stripe($('#stripe-pub-key').val());
+    stripe = Stripe(CRM.vars.stripe.publishableKey);
     var elements = stripe.elements();
 
     var style = {
@@ -139,9 +183,15 @@ CRM.$(function($) {
     card = elements.create('card', {style: style});
     card.mount('#card-element');
 
-    // Get the form containing payment details
+    // Hide the CiviCRM postcode field so it will still be submitted but will contain the value set in the stripe card-element.
+    document.getElementsByClassName('billing_postal_code-' + CRM.vars.stripe.billingAddressID + '-section')[0].setAttribute('hidden', true);
+    card.addEventListener('change', function(event) {
+      updateFormElementsFromCreditCardDetails(event);
+    });
+
+      // Get the form containing payment details
     form = getBillingForm();
-    if (!form.length) {
+    if (typeof form.length === 'undefined' || form.length === 0) {
       debugging('No billing form!');
       return;
     }
@@ -151,23 +201,17 @@ CRM.$(function($) {
     //  add a flag that we can set to stop payment submission
     form.dataset.submitdontprocess = false;
 
-    var button = document.createElement("input");
-    button.type = "submit";
-    button.value = "im a button";
-    button.classList.add('cancel');
-    form.appendChild(button);
-
     // Find submit buttons which should not submit payment
     var nonPaymentSubmitButtons = form.querySelectorAll('[type="submit"][formnovalidate="1"], ' +
       '[type="submit"][formnovalidate="formnovalidate"], ' +
       '[type="submit"].cancel, ' +
       '[type="submit"].webform-previous'), i;
-      for (i = 0; i < nonPaymentSubmitButtons.length; ++i) {
-        nonPaymentSubmitButtons[i].addEventListener('click', function () {
-          debugging('adding submitdontprocess');
-          form.dataset.submitdontprocess = true;
-        });
-      }
+    for (i = 0; i < nonPaymentSubmitButtons.length; ++i) {
+      nonPaymentSubmitButtons[i].addEventListener('click', function () {
+        debugging('adding submitdontprocess');
+        form.dataset.submitdontprocess = true;
+      });
+    }
 
     submitButton.addEventListener('click', function(event) {
       // Take over the click function of the form.
@@ -179,12 +223,7 @@ CRM.$(function($) {
       return submit(event);
     });
 
-    // Add a keypress handler to set flag if enter is pressed
-    //form.querySelector('input#discountcode').keypress( function(e) {
-//      if (e.which === 13) {
-  //      form.dataset.submitdontprocess = true;
-    //  }
-    //});
+    addSupportForCiviDiscount();
 
     // For CiviCRM Webforms.
     if (getIsDrupalWebform()) {
@@ -219,9 +258,14 @@ CRM.$(function($) {
       var stripeProcessorId;
       var chosenProcessorId;
 
+      if (typeof CRM.vars.stripe !== 'undefined') {
+        stripeProcessorId = CRM.vars.stripe.id;
+      }
+
       // Handle multiple payment options and Stripe not being chosen.
+      // @fixme this needs refactoring as some is not relevant anymore (with stripe 6.0)
       if (getIsDrupalWebform()) {
-        stripeProcessorId = $('#stripe-id').val();
+        stripeProcessorId = CRM.vars.stripe.id;
         // this element may or may not exist on the webform, but we are dealing with a single (stripe) processor enabled.
         if (!$('input[name="submitted[civicrm_1_contribution_1_contribution_payment_processor_id]"]').length) {
           chosenProcessorId = stripeProcessorId;
@@ -232,8 +276,8 @@ CRM.$(function($) {
       else {
         // Most forms have payment_processor-section but event registration has credit_card_info-section
         if ((form.querySelector(".crm-section.payment_processor-section") !== null)
-            || (form.querySelector(".crm-section.credit_card_info-section") !== null)) {
-          stripeProcessorId = $('#stripe-id').val();
+          || (form.querySelector(".crm-section.credit_card_info-section") !== null)) {
+          stripeProcessorId = CRM.vars.stripe.id;
           if (form.querySelector('input[name="payment_processor_id"]:checked') !== null) {
             chosenProcessorId = form.querySelector('input[name="payment_processor_id"]:checked').value;
           }
@@ -245,8 +289,8 @@ CRM.$(function($) {
       // - Is the Stripe processor ID defined?
       // - Is selected processor ID and stripe ID undefined? If we only have stripe ID, then there is only one (stripe) processor on the page
       if ((chosenProcessorId === 0)
-          || (stripeProcessorId == null)
-          || ((chosenProcessorId == null) && (stripeProcessorId == null))) {
+        || (stripeProcessorId == null)
+        || ((chosenProcessorId == null) && (stripeProcessorId == null))) {
         debugging('Not a Stripe transaction, or pay-later');
         return true;
       }
@@ -255,7 +299,7 @@ CRM.$(function($) {
       }
 
       // Don't handle submits generated by non-stripe processors
-      if (!$('input#stripe-pub-key').length || !($('input#stripe-pub-key').val())) {
+      if (typeof CRM.vars.stripe.publishableKey === 'undefined') {
         debugging('submit missing stripe-pub-key element or value');
         return true;
       }
@@ -282,15 +326,10 @@ CRM.$(function($) {
         }
       }
 
-      // This is ONLY triggered in the following circumstances on a CiviCRM contribution page:
-      // - With a priceset that allows a 0 amount to be selected.
-      // - When Stripe is the ONLY payment processor configured on the page.
-      if (typeof calculateTotalFee == 'function') {
-        var totalFee = calculateTotalFee();
-        if (totalFee == '0') {
-          debugging("Total amount is 0");
-          return true;
-        }
+      var totalFee = getTotalAmount();
+      if (totalFee == '0') {
+        debugging("Total amount is 0");
+        return true;
       }
 
       // Lock to prevent multiple submissions
@@ -307,8 +346,7 @@ CRM.$(function($) {
       submitButton.setAttribute('disabled', true);
 
       // Create a token when the form is submitted.
-      createToken();
-      debugging('Created Stripe token');
+      handleCardPayment();
 
       return true;
     }
@@ -324,7 +362,7 @@ CRM.$(function($) {
 
   function getBillingForm() {
     // If we have a stripe billing form on the page
-    var billingFormID = $('input#stripe-pub-key').closest('form').prop('id');
+    var billingFormID = $('div#card-element').closest('form').prop('id');
     if (!billingFormID.length) {
       // If we have multiple payment processors to select and stripe is not currently loaded
       billingFormID = $('input[name=hidden_processor]').closest('form').prop('id');
@@ -348,9 +386,43 @@ CRM.$(function($) {
     return submit;
   }
 
+  function getTotalAmount() {
+    // This is ONLY triggered in the following circumstances on a CiviCRM contribution page:
+    // - With a priceset that allows a 0 amount to be selected.
+    // - When Stripe is the ONLY payment processor configured on the page.
+    var totalFee = null;
+    if (typeof calculateTotalFee == 'function') {
+      totalFee = calculateTotalFee();
+    }
+    return totalFee;
+  }
+
+  function updateFormElementsFromCreditCardDetails(event) {
+    if (!event.complete) {
+      return;
+    }
+    document.getElementById('billing_postal_code-' + CRM.vars.stripe.billingAddressID).value = event.value.postalCode;
+  }
+
+  function addSupportForCiviDiscount() {
+    // Add a keypress handler to set flag if enter is pressed
+    cividiscountElements = form.querySelectorAll('input#discountcode');
+    for (i = 0; i < cividiscountElements.length; ++i) {
+      cividiscountElements[i].addEventListener('keydown', function (e) {
+        if (e.keyCode === 13) {
+          e.preventDefault();
+          debugging('adding submitdontprocess');
+          form.dataset.submitdontprocess = true;
+        }
+      });
+    }
+  }
+
   function debugging (errorCode) {
     // Uncomment the following to debug unexpected returns.
-    console.log(new Date().toISOString() + ' civicrm_stripe.js: ' + errorCode);
+    if (CRM.vars.stripe.jsDebug === true) {
+      console.log(new Date().toISOString() + ' civicrm_stripe.js: ' + errorCode);
+    }
   }
 
 });

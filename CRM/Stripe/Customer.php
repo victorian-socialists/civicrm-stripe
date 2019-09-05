@@ -24,7 +24,7 @@ class CRM_Stripe_Customer {
       1 => [$params['contact_id'], 'String'],
       2 => [$params['processor_id'], 'Positive'],
     ];
-    
+
 
     return CRM_Core_DAO::singleValueQuery("SELECT id
       FROM civicrm_stripe_customers
@@ -108,13 +108,14 @@ class CRM_Stripe_Customer {
   }
 
   /**
-   * @param $params
+   * @param array $params
+   * @param \CRM_Core_Payment_Stripe $stripe
    *
    * @return \Stripe\ApiResource
    * @throws \CiviCRM_API3_Exception
    * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
-  public static function create($params) {
+  public static function create($params, $stripe) {
     $requiredParams = ['contact_id', 'card_token', 'processor_id'];
     // $optionalParams = ['email'];
     foreach ($requiredParams as $required) {
@@ -140,7 +141,7 @@ class CRM_Stripe_Customer {
     }
     catch (Exception $e) {
       $err = CRM_Core_Payment_Stripe::parseStripeException('create_customer', $e, FALSE);
-      $errorMessage = CRM_Core_Payment_Stripe::handleErrorNotification($err, $params['stripe_error_url']);
+      $errorMessage = $stripe->handleErrorNotification($err, $params['stripe_error_url']);
       throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to create Stripe Customer: ' . $errorMessage);
     }
 

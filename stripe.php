@@ -74,6 +74,13 @@ function stripe_civicrm_managed(&$entities) {
 }
 
 /**
+ * Implements hook_civicrm_alterSettingsFolders().
+ */
+function stripe_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
+  _stripe_civix_civicrm_alterSettingsFolders($metaDataFolders);
+}
+
+/**
    * Implementation of hook_civicrm_validateForm().
    *
    * Prevent server validation of cc fields
@@ -169,4 +176,19 @@ function stripe_civicrm_buildForm($formName, &$form) {
  */
 function stripe_civicrm_check(&$messages) {
   CRM_Stripe_Webhook::check($messages);
+}
+
+/**
+ * Implements hook_civicrm_navigationMenu().
+ */
+function stripe_civicrm_navigationMenu(&$menu) {
+  _stripe_civix_insert_navigation_menu($menu, 'Administer/CiviContribute', array(
+    'label' => E::ts('Stripe Settings'),
+    'name' => 'stripe_settings',
+    'url' => 'civicrm/admin/setting/stripe',
+    'permission' => 'administer CiviCRM',
+    'operator' => 'OR',
+    'separator' => 0,
+  ));
+  _stripe_civix_navigationMenu($menu);
 }
