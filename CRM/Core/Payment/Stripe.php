@@ -435,8 +435,13 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     try {
       $intent = \Stripe\PaymentIntent::retrieve($paymentIntentID);
       $intent->description = $params['description'] . ' # Invoice ID: ' . CRM_Utils_Array::value('invoiceID', $params);
-      $intent->confirm();
-      $intent->capture(['amount_to_capture' => $this->getAmount($params)]);
+      switch ($intent->status) {
+        case 'requires_confirmation':
+          $intent->confirm();
+        case 'requires_capture':
+          $intent->capture(['amount_to_capture' => $this->getAmount($params)]);
+          break;
+      }
     }
     catch (Exception $e) {
       $this->handleError($e->getCode(), $e->getMessage(), $params['stripe_error_url']);
