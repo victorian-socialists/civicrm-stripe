@@ -306,7 +306,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   public function buildForm(&$form) {
     $jsVars = [
       'id' => $form->_paymentProcessor['id'],
-      'currency' => $form->_values['currency'],
+      'currency' => $this->getDefaultCurrencyForForm($form),
       'billingAddressID' => CRM_Core_BAO_LocationType::getBilling(),
       'publishableKey' => CRM_Core_Payment_Stripe::getPublicKeyById($form->_paymentProcessor['id']),
       'jsDebug' => TRUE,
