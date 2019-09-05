@@ -123,7 +123,9 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return bool
    */
   public function supportsBackOffice() {
-    return TRUE;
+    // @fixme Make this work again with stripe elements / 6.0
+    return FALSE;
+    // return TRUE;
   }
 
   /**
@@ -131,6 +133,11 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return bool
    */
   public function supportsEditRecurringContribution() {
+    return FALSE;
+  }
+
+  public function supportsRecurring() {
+    // @fixme: Test and make this work for stripe elements / 6.0
     return FALSE;
   }
 
@@ -316,7 +323,9 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     // Add help and javascript
     CRM_Core_Region::instance('billing-block')->add(
       ['template' => 'CRM/Core/Payment/Stripe/Card.tpl', 'weight' => -1]);
-    CRM_Core_Resources::singleton()->addStyleFile(E::LONG_NAME, 'css/elements.css', 0, 'html-header');
+    CRM_Core_Resources::singleton()
+      ->addStyleFile(E::LONG_NAME, 'css/elements.css', 0, 'page-header')
+      ->addScriptFile('com.drastikbydesign.stripe', 'js/civicrm_stripe.js');
   }
 
   /**

@@ -1,6 +1,5 @@
 {* https://civicrm.org/licensing *}
 
-<script src="https://js.stripe.com/v3/"></script>
 <label for="card-element">
   <legend>Credit or debit card</legend>
 </label>
