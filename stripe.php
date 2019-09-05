@@ -172,6 +172,30 @@ function stripe_civicrm_buildForm($formName, &$form) {
 }
 
 /**
+ * Implements hook_civicrm_postProcess().
+ *
+ * @param string $formName
+ * @param \CRM_Core_Form $form
+ */
+function stripe_civicrm_postProcess($formName, &$form) {
+  // We're only interested in forms that have a paymentprocessor
+  if (empty($form->get('paymentProcessor')) || ($form->get('paymentProcessor')['class_name'] !== 'Payment_Stripe')) {
+    return;
+  }
+
+  // Retrieve the paymentIntentID that was posted along with the form and add it to the form params
+  //  This allows multi-page checkout to work (eg. register->confirm->thankyou)
+  $params = $form->get('params');
+  if (isset($params[0])) {
+    $paymentIntentID = CRM_Utils_Request::retrieveValue('paymentIntentID', 'String');
+    if ($paymentIntentID) {
+      $params[0]['paymentIntentID'] = $paymentIntentID;
+      $form->set('params', $params);
+    }
+  }
+}
+
+/**
  * Implements hook_civicrm_check().
  */
 function stripe_civicrm_check(&$messages) {

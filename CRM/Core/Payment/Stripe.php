@@ -340,8 +340,8 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     $params = $this->beginDoPayment($params);
 
     // Get the passed in paymentIntent
-    if(!empty(CRM_Utils_Array::value('paymentIntentID', $_POST, NULL))) {
-      $paymentIntentID = CRM_Utils_Array::value('paymentIntentID', $_POST, NULL);
+    if(!empty(CRM_Utils_Array::value('paymentIntentID', $params))) {
+      $paymentIntentID = CRM_Utils_Array::value('paymentIntentID', $params);
     }
     else {
       CRM_Core_Error::statusBounce(E::ts('Unable to complete payment! Missing paymentIntent ID.'));
