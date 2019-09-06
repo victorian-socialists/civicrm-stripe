@@ -8,12 +8,14 @@ Latest releases can be found here: https://civicrm.org/extensions/stripe-payment
 View this extension in the [Extension Directory](https://civicrm.org/extensions/stripe-payment-processor).
 
 ## Compatibility / Requirements
-* CiviCRM 5.10+
-* PHP 7.0+
+* CiviCRM 5.13+
+* PHP 7.1+
 * Jquery 1.10 (Use jquery_update module on Drupal).
 * Drupal 7 / Joomla / Wordpress (latest supported release). *Not currently tested with other CMS but it may work.*
-* Stripe API version: 2019-02-19
+* Stripe API version: 2019-08-14
 * Drupal webform_civicrm 7.x-4.22+ (if using webform integration)
+
+If using test mode with drupal webform_civicrm you need this patch: https://github.com/colemanw/webform_civicrm/pull/266
 
 ## Credits
 Current Maintainer: Matthew Wire - https://www.mjwconsult.co.uk

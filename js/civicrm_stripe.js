@@ -249,17 +249,14 @@ CRM.$(function($) {
     // For CiviCRM Webforms.
     if (getIsDrupalWebform()) {
       // We need the action field for back/submit to work and redirect properly after submission
-      if (!($('#action').length)) {
-        form.append($('<input type="hidden" name="op" id="action" />'));
-      }
-      var $actions = form.querySelector('[type=submit]');
+
       $('[type=submit]').click(function() {
-        $('#action').val(this.value);
+        addDrupalWebformActionElement(this.value);
       });
       // If enter pressed, use our submit function
       form.addEventListener('keydown', function (e) {
         if (e.keyCode === 13) {
-          $('#action').val(this.value);
+          addDrupalWebformActionElement(this.value);
           submit(event);
         }
       });
@@ -451,6 +448,21 @@ CRM.$(function($) {
     if ((typeof(CRM.vars.stripe) === 'undefined') || (Boolean(CRM.vars.stripe.jsDebug) === true)) {
       console.log(new Date().toISOString() + ' civicrm_stripe.js: ' + errorCode);
     }
+  }
+
+  function addDrupalWebformActionElement(submitAction) {
+    var hiddenInput = null;
+    if (document.getElementById('action') !== null) {
+      hiddenInput = document.getElementById('action');
+    }
+    else {
+      hiddenInput = document.createElement('input');
+    }
+    hiddenInput.setAttribute('type', 'hidden');
+    hiddenInput.setAttribute('name', 'op');
+    hiddenInput.setAttribute('id', 'action');
+    hiddenInput.setAttribute('value', submitAction);
+    form.appendChild(hiddenInput);
   }
 
 });
