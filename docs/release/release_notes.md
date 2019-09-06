@@ -2,6 +2,8 @@
 
 **This is a major new release. You cannot rollback once you've upgraded.**
 
+**This extension REQUIRES the mjwshared extension available here: https://lab.civicrm.org/extensions/mjwshared**
+
 * Use Stripe Elements: https://stripe.com/payments/elements.
 * Use PaymentIntents and comply with the European SCA directive (https://stripe.com/docs/strong-customer-authentication).
 * Require Stripe API Version: 2019-08-14 and ensure that all codepaths specify the API version.
