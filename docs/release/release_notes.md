@@ -1,3 +1,18 @@
+## Release 6.0.alpha2
+
+* Support Drupal Webform CiviCRM.
+* Support Event Registration.
+* Support Confirm/Thankyou pages on contribution pages / events.
+* Support cards using 3dsecure and cards not using 3dsecure.
+
+### Not Supported (should be in final 6.0 release):
+* Recurring payments.
+* Backend payments.
+
+## Release 6.0.alpha1
+
+* ONLY contribution pages with no confirm pages are supported.
+
 ## Release 6.0 (not yet released)
 
 **This is a major new release. You cannot rollback once you've upgraded.**
@@ -8,6 +23,7 @@
 * Use PaymentIntents and comply with the European SCA directive (https://stripe.com/docs/strong-customer-authentication).
 * Require Stripe API Version: 2019-08-14 and ensure that all codepaths specify the API version.
 * Switch publishable key/secret key in settings (upgrader does this automatically) so they are now "correct" per CiviCRM settings pages.
+* Support cards using 3dsecure and cards not using 3dsecure (workflows with Stripe are slightly different but both are now handled).
 
 ## Release 5.4.1
 * Don't overwrite system messages when performing webhook checks.

@@ -17,6 +17,12 @@ View this extension in the [Extension Directory](https://civicrm.org/extensions/
 
 If using test mode with drupal webform_civicrm you need this patch: https://github.com/colemanw/webform_civicrm/pull/266
 
+## Troubleshooting
+Under *Administer->CiviContribute->Stripe Settings* you can find a setting:
+* Enable Stripe Javascript debugging?
+
+This can be switched on to output debug info to the browser console and can be used to debug problems with submitting your payments.
+
 ## Credits
 Current Maintainer: Matthew Wire - https://www.mjwconsult.co.uk
 
