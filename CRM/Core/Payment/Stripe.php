@@ -318,12 +318,12 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'publishableKey' => CRM_Core_Payment_Stripe::getPublicKeyById($form->_paymentProcessor['id']),
       'jsDebug' => TRUE,
     ];
-    CRM_Core_Resources::singleton()->addVars(E::SHORT_NAME, $jsVars);
+    \Civi::resources()->addVars(E::SHORT_NAME, $jsVars);
 
     // Add help and javascript
     CRM_Core_Region::instance('billing-block')->add(
       ['template' => 'CRM/Core/Payment/Stripe/Card.tpl', 'weight' => -1]);
-    CRM_Core_Resources::singleton()
+    \Civi::resources()
       ->addStyleFile(E::LONG_NAME, 'css/elements.css', 0, 'page-header')
       ->addScriptFile('com.drastikbydesign.stripe', 'js/civicrm_stripe.js');
   }

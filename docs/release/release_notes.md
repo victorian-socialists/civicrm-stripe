@@ -1,8 +1,11 @@
 ## Release 6.0 (not yet released)
 
-* Stripe API Version: 2019-08-14
-* Switch publishable key/secret key in settings (upgrader does this automatically) so they are now "correct" per CiviCRM settings pages.
+**This is a major new release. You cannot rollback once you've upgraded.**
 
+* Use Stripe Elements: https://stripe.com/payments/elements.
+* Use PaymentIntents and comply with the European SCA directive (https://stripe.com/docs/strong-customer-authentication).
+* Require Stripe API Version: 2019-08-14 and ensure that all codepaths specify the API version.
+* Switch publishable key/secret key in settings (upgrader does this automatically) so they are now "correct" per CiviCRM settings pages.
 
 ## Release 5.4.1
 * Don't overwrite system messages when performing webhook checks.

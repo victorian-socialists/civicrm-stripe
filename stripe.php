@@ -160,7 +160,7 @@ function stripe_civicrm_buildForm($formName, &$form) {
 
   // Load stripe.js on all civi forms per stripe requirements
   if (!isset(\Civi::$statics[E::LONG_NAME]['stripeJSLoaded'])) {
-    CRM_Core_Resources::singleton()->addScriptUrl('https://js.stripe.com/v3');
+    \Civi::resources()->addScriptUrl('https://js.stripe.com/v3');
     \Civi::$statics[E::LONG_NAME]['stripeJSLoaded'] = TRUE;
   }
 }
@@ -194,6 +194,7 @@ function stripe_civicrm_postProcess($formName, &$form) {
  */
 function stripe_civicrm_check(&$messages) {
   CRM_Stripe_Webhook::check($messages);
+  CRM_Stripe_Check::checkRequirements($messages);
 }
 
 /**
