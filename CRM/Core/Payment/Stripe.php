@@ -319,13 +319,18 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'jsDebug' => TRUE,
     ];
     \Civi::resources()->addVars(E::SHORT_NAME, $jsVars);
+    // Assign to smarty so we can add via Card.tpl for drupal webform because addVars doesn't work in that context
+    $form->assign('stripeJSVars', $jsVars);
 
     // Add help and javascript
     CRM_Core_Region::instance('billing-block')->add(
       ['template' => 'CRM/Core/Payment/Stripe/Card.tpl', 'weight' => -1]);
-    \Civi::resources()
-      ->addStyleFile(E::LONG_NAME, 'css/elements.css', 0, 'page-header')
-      ->addScriptFile('com.drastikbydesign.stripe', 'js/civicrm_stripe.js');
+    // Add CSS via region (it won't load on drupal webform if added via \Civi::resources()->addStyleFile)
+    CRM_Core_Region::instance('billing-block')->add([
+      'styleUrl' => \Civi::resources()->getUrl(E::LONG_NAME, 'css/elements.css'),
+      'weight' => -1,
+    ]);
+    \Civi::resources()->addScriptFile(E::LONG_NAME, 'js/civicrm_stripe.js');
   }
 
   /**

@@ -137,8 +137,7 @@ function stripe_civicrm_alterContent( &$content, $context, $tplName, &$object ) 
   if (($context == 'form' && !empty($object->_paymentProcessor['class_name']))
     || (($context == 'page') && !empty($object->_isPaymentProcessor))) {
     if (!isset(\Civi::$statics[E::LONG_NAME]['stripeJSLoaded']) || $object instanceof CRM_Financial_Form_Payment) {
-      $stripeJSURL = CRM_Core_Resources::singleton()
-        ->getUrl('com.drastikbydesign.stripe', 'js/civicrm_stripe.js');
+      $stripeJSURL = \Civi::resources()->getUrl(E::LONG_NAME, 'js/civicrm_stripe.js');
       $content .= "<script src='{$stripeJSURL}'></script>";
       \Civi::$statics[E::LONG_NAME]['stripeJSLoaded'] = TRUE;
     }

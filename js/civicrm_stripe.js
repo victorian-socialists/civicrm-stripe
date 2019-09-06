@@ -94,7 +94,7 @@ CRM.$(function($) {
     window.onbeforeunload = null;
 
     // Load Stripe onto the form.
-    loadStripeBillingBlock();
+    checkAndLoad();
 
     // Store and remove any onclick Action currently assigned to the form.
     // We will re-add it if the transaction goes through.
@@ -156,21 +156,35 @@ CRM.$(function($) {
                 CRM.vars.stripe.publishableKey = null;
               }
               // Now reload the billing block.
-              loadStripeBillingBlock();
+              checkAndLoad();
             });
           });
         }
       }
-      loadStripeBillingBlock();
+      checkAndLoad();
     }
   });
 
-  function loadStripeBillingBlock() {
-    // Setup Stripe.Js
+  function checkAndLoad() {
     if (typeof CRM.vars.stripe === 'undefined') {
+      debugging('CRM.vars.stripe not defined!');
       return;
     }
 
+    if (typeof Stripe === 'undefined') {
+      debugging('Stripe.js is not loaded!');
+
+      $.getScript("https://js.stripe.com/v3", function () {
+        debugging("Script loaded and executed.");
+        loadStripeBillingBlock();
+      });
+    }
+    else {
+      loadStripeBillingBlock();
+    }
+  }
+
+  function loadStripeBillingBlock() {
     stripe = Stripe(CRM.vars.stripe.publishableKey);
     var elements = stripe.elements();
 
@@ -237,12 +251,13 @@ CRM.$(function($) {
         $('#action').val(this.value);
       });
       // If enter pressed, use our submit function
-      form.keypress(function(event) {
-        if (event.which === 13) {
+      form.addEventListener('keydown', function (e) {
+        if (e.keyCode === 13) {
           $('#action').val(this.value);
           submit(event);
         }
       });
+
       $('#billingcheckbox:input').hide();
       $('label[for="billingcheckbox"]').hide();
     }
@@ -376,7 +391,7 @@ CRM.$(function($) {
     var submit = null;
     if (getIsDrupalWebform()) {
       submit = form.querySelector('[type="submit"].webform-submit');
-      if (!submit.length) {
+      if (!submit) {
         // drupal 8 webform
         submit = form.querySelector('[type="submit"].webform-button--submit');
       }
@@ -388,12 +403,18 @@ CRM.$(function($) {
   }
 
   function getTotalAmount() {
-    // This is ONLY triggered in the following circumstances on a CiviCRM contribution page:
-    // - With a priceset that allows a 0 amount to be selected.
-    // - When Stripe is the ONLY payment processor configured on the page.
     var totalFee = null;
     if (typeof calculateTotalFee == 'function') {
+      // This is ONLY triggered in the following circumstances on a CiviCRM contribution page:
+      // - With a priceset that allows a 0 amount to be selected.
+      // - When Stripe is the ONLY payment processor configured on the page.
       totalFee = calculateTotalFee();
+    }
+    else if (getIsDrupalWebform()) {
+      // This is how webform civicrm calculates the amount in webform_civicrm_payment.js
+      $('.line-item:visible', '#wf-crm-billing-items').each(function() {
+        totalFee += parseFloat($(this).data('amount'));
+      });
     }
     return totalFee;
   }
@@ -421,7 +442,7 @@ CRM.$(function($) {
 
   function debugging (errorCode) {
     // Uncomment the following to debug unexpected returns.
-    if (CRM.vars.stripe.jsDebug === true) {
+    if ((typeof(CRM.vars.stripe) === 'undefined') || (Boolean(CRM.vars.stripe.jsDebug) === true)) {
       console.log(new Date().toISOString() + ' civicrm_stripe.js: ' + errorCode);
     }
   }
