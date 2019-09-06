@@ -8,6 +8,7 @@ CRM.$(function($) {
   var card;
   var form;
   var submitButton;
+  var stripeLoading = false;
 
   function paymentIntentSuccessHandler(paymentIntent) {
     debugging('paymentIntent confirmation success');
@@ -172,10 +173,15 @@ CRM.$(function($) {
     }
 
     if (typeof Stripe === 'undefined') {
+      if (stripeLoading) {
+        return;
+      }
+      stripeLoading = true;
       debugging('Stripe.js is not loaded!');
 
       $.getScript("https://js.stripe.com/v3", function () {
         debugging("Script loaded and executed.");
+        stripeLoading = false;
         loadStripeBillingBlock();
       });
     }
