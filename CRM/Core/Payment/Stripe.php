@@ -142,6 +142,15 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   }
 
   /**
+   * Does this payment processor support refund?
+   *
+   * @return bool
+   */
+  public function supportsRefund() {
+    return TRUE;
+  }
+
+  /**
    * We can configure a start date for a smartdebit mandate
    * @return bool
    */
@@ -556,6 +565,38 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     // Update the contribution status
 
     return $params;
+  }
+
+  /**
+   * Submit a refund payment
+   *
+   * @param array $params
+   *   Assoc array of input parameters for this transaction.
+   *
+   * @throws \Civi\Payment\Exception\PaymentProcessorException
+   */
+  public function doRefund(&$params) {
+    $requiredParams = ['charge_id', 'payment_processor_id'];
+    foreach ($requiredParams as $required) {
+      if (!isset($params[$required])) {
+        $message = 'Stripe doRefund: Missing mandatory parameter: ' . $required;
+        Civi::log()->error($message);
+        Throw new \Civi\Payment\Exception\PaymentProcessorException($message);
+      }
+    }
+    $refundParams = [
+      'charge' => $params['charge_id'],
+    ];
+    if (!empty($params['amount'])) {
+      $refundParams['amount'] = $this->getAmount($params);
+    }
+    try {
+      $refund = \Stripe\Refund::create($refundParams);
+    }
+    catch (Exception $e) {
+      $this->handleError($e->getCode(), $e->getMessage());
+      Throw new \Civi\Payment\Exception\PaymentProcessorException($e->getMessage());
+    }
   }
 
   /**
