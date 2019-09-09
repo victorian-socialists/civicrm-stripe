@@ -39,16 +39,24 @@ class CRM_Stripe_AJAX {
       ]);
     }
     else {
-      $intent = \Stripe\PaymentIntent::create([
-        'payment_method' => $paymentMethodID,
-        'amount' => $processor->getAmount(['amount' => $amount]),
-        'currency' => $currency,
-        'confirmation_method' => 'manual',
-        'capture_method' => 'manual', // authorize the amount but don't take from card yet
-        'setup_future_usage' => 'off_session', // Setup the card to be saved and used later
-        'confirm' => TRUE,
-      ]);
+      try {
+        $intent = \Stripe\PaymentIntent::create([
+          'payment_method' => $paymentMethodID,
+          'amount' => $processor->getAmount(['amount' => $amount]),
+          'currency' => $currency,
+          'confirmation_method' => 'manual',
+          'capture_method' => 'manual',
+          // authorize the amount but don't take from card yet
+          'setup_future_usage' => 'off_session',
+          // Setup the card to be saved and used later
+          'confirm' => TRUE,
+        ]);
+      }
+      catch (Exception $e) {
+        CRM_Utils_JSON::output(['error' => ['message' => $e->getMessage()]]);
+      }
     }
+
 
     self::generatePaymentResponse($intent);
   }
