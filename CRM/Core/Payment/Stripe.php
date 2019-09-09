@@ -219,9 +219,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   public function createPlan($params, $amount) {
     $currency = strtolower($params['currencyID']);
     $planId = "every-{$params['frequency_interval']}-{$params['frequency_unit']}-{$amount}-" . $currency;
-    if (isset($params['membership_type_tag'])) {
-      $planId = $params['membership_type_tag'] . $planId;
-    }
 
     if ($this->_paymentProcessor['is_test']) {
       $planId .= '-test';
