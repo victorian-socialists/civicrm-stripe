@@ -357,6 +357,10 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     if(!empty(CRM_Utils_Array::value('paymentIntentID', $params))) {
       $paymentIntentID = CRM_Utils_Array::value('paymentIntentID', $params);
     }
+    elseif (CRM_Core_Session::singleton()->get('stripePaymentIntent')) {
+      // @fixme Hack for contributionpages - see https://github.com/civicrm/civicrm-core/pull/15252
+      $paymentIntentID = CRM_Core_Session::singleton()->get('stripePaymentIntent');
+    }
     else {
       CRM_Core_Error::statusBounce(E::ts('Unable to complete payment! Missing paymentIntent ID.'));
       Civi::log()->debug('paymentIntentID not found. $params: ' . print_r($params, TRUE));

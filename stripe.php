@@ -179,11 +179,29 @@ function stripe_civicrm_postProcess($formName, &$form) {
   // Retrieve the paymentIntentID that was posted along with the form and add it to the form params
   //  This allows multi-page checkout to work (eg. register->confirm->thankyou)
   $params = $form->get('params');
-  if (isset($params[0])) {
-    $paymentIntentID = CRM_Utils_Request::retrieveValue('paymentIntentID', 'String');
-    if ($paymentIntentID) {
-      $params[0]['paymentIntentID'] = $paymentIntentID;
-      $form->set('params', $params);
+  if (!$params) {
+    // @fixme Hack for contributionpages - see https://github.com/civicrm/civicrm-core/pull/15252
+    $params = $form->getVar('_params');
+    $hackForContributionPages = TRUE;
+  }
+  if (isset($params['amount'])) {
+    // Contribution pages have params directly in the main array
+    $paymentParams = &$params;
+  }
+  elseif (isset($params[0]['amount'])) {
+    // Event registration pages have params in a sub-array
+    $paymentParams = &$params[0];
+  }
+  else {
+    return;
+  }
+  $paymentIntentID = CRM_Utils_Request::retrieveValue('paymentIntentID', 'String');
+  if ($paymentIntentID) {
+    $paymentParams['paymentIntentID'] = $paymentIntentID;
+    $form->set('params', $params);
+    if (isset($hackForContributionPages)) {
+      // @fixme Hack for contributionpages - see https://github.com/civicrm/civicrm-core/pull/15252
+      CRM_Core_Session::singleton()->set('stripePaymentIntent', $paymentIntentID);
     }
   }
 }
