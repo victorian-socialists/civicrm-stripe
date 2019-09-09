@@ -1,12 +1,19 @@
 <?php
-/*
- * @file
- * Handle Stripe Webhooks for recurring payments.
+/**
+ * https://civicrm.org/licensing
  */
 
+/**
+ * Class CRM_Core_Payment_StripeIPN
+ */
 class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
 
   use CRM_Core_Payment_MJWIPNTrait;
+
+  /**
+   * @var \CRM_Core_Payment_Stripe Payment processor
+   */
+  protected $_paymentProcessor;
 
   /**
    * Transaction ID is the contribution in the redirect flow and a random number in the on-site->POST flow
@@ -47,7 +54,6 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   protected $receive_date = NULL;
   protected $amount = NULL;
   protected $fee = NULL;
-  protected $net_amount = NULL;
   protected $contribution = [];
 
   /**
@@ -119,14 +125,13 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
     // Determine the proper Stripe Processor ID so we can get the secret key
     // and initialize Stripe.
     $this->getPaymentProcessor();
-    $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $this->_paymentProcessor['id']]));
-    $processor->setAPIParams();
+    $this->_paymentProcessor->setAPIParams();
 
     // Now re-retrieve the data from Stripe to ensure it's legit.
     // Special case if this is the test webhook
     if (substr($parameters->id, -15, 15) === '_00000000000000') {
       http_response_code(200);
-      $test = (boolean) $this->_paymentProcessor['is_test'] ? '(Test processor)' : '(Live processor)';
+      $test = (boolean) $this->_paymentProcessor->getPaymentProcessor()['is_test'] ? '(Test processor)' : '(Live processor)';
       echo "Test webhook from Stripe ({$parameters->id}) received successfully by CiviCRM {$test}.";
       exit();
     }
@@ -155,8 +160,8 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
 
     $value = CRM_Utils_Type::validate($value, $type, FALSE);
     if ($abort && $value === NULL) {
-      echo "Failure: Missing Parameter<p>" . CRM_Utils_Type::escape($name, 'String');
-      $this->exception("Could not find an entry for $name");
+      echo "Failure: Missing or invalid parameter<p>" . CRM_Utils_Type::escape($name, 'String');
+      $this->exception("Missing or invalid parameter {$name}");
     }
     return $value;
   }
@@ -256,18 +261,36 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         $failureMessage = $this->retrieve('failure_message', 'String');
         $chargeId = $this->retrieve('charge_id', 'String');
         // @fixme: Check if "note" param actually does anything!
+        try {
+          $contribution = civicrm_api3('Contribution', 'getsingle', [
+            'trxn_id' => $chargeId,
+            'contribution_test' => $this->_paymentProcessor->getIsTestMode(),
+            'return' => 'id'
+          ]);
+        }
+        catch (Exception $e) {
+          // No failed contribution found, we won't record in CiviCRM for now
+          return TRUE;
+        }
         $params = [
           'note' => "{$failureCode} : {$failureMessage}",
-          'contribution_id' => civicrm_api3('Contribution', 'getvalue', ['trxn_id' => $chargeId, 'return' => 'id']),
+          'contribution_id' => $contribution['id'],
         ];
         $this->recordFailed($params);
         return TRUE;
 
       case 'charge.refunded':
         $chargeId = $this->retrieve('charge_id', 'String');
+        $refunds = \Stripe\Refund::all(['charge' => $chargeId, 'limit' => 1]);
         $params = [
-          'contribution_id' => civicrm_api3('Contribution', 'getvalue', ['trxn_id' => $chargeId, 'return' => 'id']),
-          'total_amount' => $this->retrieve('amount_refunded', 'Integer'),
+          'contribution_id' => civicrm_api3('Contribution', 'getvalue', [
+            'trxn_id' => $chargeId,
+            'contribution_test' => $this->_paymentProcessor->getIsTestMode(),
+            'return' => 'id'
+          ]),
+          'total_amount' => $this->retrieve('amount_refunded', 'Float'),
+          'cancel_reason' => $refunds->data[0]->reason,
+          'cancel_date' => date('YmdHis', $refunds->data[0]->created),
         ];
         $this->recordRefund($params);
         return TRUE;
@@ -317,7 +340,6 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
       'id' => $this->contribution['id'],
       'total_amount' => $this->amount,
       'fee_amount' => $this->fee,
-      'net_amount' => $this->net_amount,
     ]);
     // The last one was not completed, so complete it.
     civicrm_api3('Contribution', 'completetransaction', [
@@ -325,9 +347,8 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
       'trxn_date' => $this->receive_date,
       'trxn_id' => $this->charge_id,
       'total_amount' => $this->amount,
-      'net_amount' => $this->net_amount,
       'fee_amount' => $this->fee,
-      'payment_processor_id' => $this->_paymentProcessor['id'],
+      'payment_processor_id' => $this->_paymentProcessor->getPaymentProcessor()['id'],
       'is_email_receipt' => $this->getSendEmailReceipt(),
     ]);
   }
@@ -343,6 +364,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    */
   public function setInfo() {
     $abort = FALSE;
+    $stripeObjectName = get_class($this->_inputParameters->data->object);
     $this->customer_id = CRM_Stripe_Api::getObjectParam('customer_id', $this->_inputParameters->data->object);
     if (empty($this->customer_id)) {
       $this->exception('Missing customer_id!');
@@ -360,33 +382,29 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
     $this->plan_name = $this->retrieve('plan_name', 'String', $abort);
     $this->plan_start = $this->retrieve('plan_start', 'String', $abort);
 
+    if (($stripeObjectName !== 'Stripe\Charge') && ($this->charge_id !== NULL)) {
+      $charge = \Stripe\Charge::retrieve($this->charge_id);
+      $balanceTransactionID = CRM_Stripe_Api::getObjectParam('balance_transaction', $charge);
+    }
+    else {
+      $charge = $this->_inputParameters->data->object;
+      $balanceTransactionID = CRM_Stripe_Api::getObjectParam('balance_transaction', $this->_inputParameters->data->object);
+    }
     // Gather info about the amount and fee.
     // Get the Stripe charge object if one exists. Null charge still needs processing.
-    if ($this->charge_id !== null) {
+    // If the transaction is declined, there won't be a balance_transaction_id.
+    $this->amount = 0;
+    $this->fee = 0;
+    if ($balanceTransactionID) {
       try {
-        $charge = \Stripe\Charge::retrieve($this->charge_id);
-        $balance_transaction_id = $charge->balance_transaction;
-        // If the transaction is declined, there won't be a balance_transaction_id.
-        if ($balance_transaction_id) {
-          $balance_transaction = \Stripe\BalanceTransaction::retrieve($balance_transaction_id);
-          $this->amount = $charge->amount / 100;
-          $this->fee = $balance_transaction->fee / 100;
-        }
-        else {
-          $this->amount = 0;
-          $this->fee = 0;
-        }
+        $balanceTransaction = \Stripe\BalanceTransaction::retrieve($balanceTransactionID);
+        $this->amount = $charge->amount / 100;
+        $this->fee = $balanceTransaction->fee / 100;
       }
       catch(Exception $e) {
-        $this->exception('Cannot get contribution amounts');
+        $this->exception('Error retrieving balance transaction. ' . $e->getMessage());
       }
-    } else {
-      // The customer had a credit on their subscription from a downgrade or gift card.
-      $this->amount = 0;
-      $this->fee = 0;
     }
-
-    $this->net_amount = $this->amount - $this->fee;
 
     // Additional processing of values is only relevant if there is a subscription id.
     if ($this->subscription_id) {
@@ -399,14 +417,26 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         $this->exception('Cannot find recurring contribution for subscription ID: ' . $this->subscription_id . '. ' . $e->getMessage());
       }
     }
-    // If a recurring contribution has been found, get the most recent contribution belonging to it.
-    if ($this->contribution_recur_id) {
+
+    if ($this->charge_id) {
+      try {
+        $this->contribution = civicrm_api3('Contribution', 'getsingle', [
+          'trxn_id' => $this->charge_id,
+          'contribution_test' => $this->_paymentProcessor->getIsTestMode(),
+        ]);
+      }
+      catch (Exception $e) {
+        // Contribution not yet created?
+      }
+    }
+    elseif ($this->contribution_recur_id) {
+      // If a recurring contribution has been found, get the most recent contribution belonging to it.
       try {
         // Same approach as api repeattransaction.
         $contribution = civicrm_api3('contribution', 'getsingle', [
           'return' => ['id', 'contribution_status_id', 'total_amount', 'trxn_id'],
           'contribution_recur_id' => $this->contribution_recur_id,
-          'contribution_test' => isset($this->_paymentProcessor['is_test']) && $this->_paymentProcessor['is_test'] ? 1 : 0,
+          'contribution_test' => $this->_paymentProcessor->getIsTestMode(),
           'options' => ['limit' => 1, 'sort' => 'id DESC'],
         ]);
         $this->contribution = $contribution;
@@ -417,10 +447,4 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
     }
   }
 
-  public function exception($message) {
-    $errorMessage = 'StripeIPN Exception: Event: ' . $this->event_type . ' Error: ' . $message;
-    Civi::log()->debug($errorMessage);
-    http_response_code(400);
-    exit(1);
-  }
 }
