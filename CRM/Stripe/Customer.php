@@ -131,7 +131,6 @@ class CRM_Stripe_Customer {
 
     $stripeCustomerParams = [
       'description' => $contactDisplayName . ' (CiviCRM)',
-      'card' => $params['card_token'],
       'email' => CRM_Utils_Array::value('email', $params),
       'metadata' => ['civicrm_contact_id' => $params['contact_id']],
     ];
