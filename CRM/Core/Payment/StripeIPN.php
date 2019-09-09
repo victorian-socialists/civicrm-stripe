@@ -54,7 +54,8 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   protected $receive_date = NULL;
   protected $amount = NULL;
   protected $fee = NULL;
-  protected $contribution = [];
+  protected $contribution = NULL;
+  protected $previous_contribution = NULL;
 
   /**
    * CRM_Core_Payment_StripeIPN constructor.
@@ -187,7 +188,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           // The first contribution was completed, so create a new one.
           // api contribution repeattransaction repeats the appropriate contribution if it is given
           // simply the recurring contribution id. It also updates the membership for us.
-          civicrm_api3('Contribution', 'repeattransaction', [
+          $repeatParams = [
             'contribution_recur_id' => $this->contribution_recur_id,
             'contribution_status_id' => 'Completed',
             'receive_date' => $this->receive_date,
@@ -195,7 +196,11 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
             'total_amount' => $this->amount,
             'fee_amount' => $this->fee,
             'is_email_receipt' => $this->getSendEmailReceipt(),
-          ]);
+          ];
+          if ($this->previous_contribution) {
+            $repeatParams['original_contribution_id'] = $this->previous_contribution['id'];
+          }
+          civicrm_api3('Contribution', 'repeattransaction', $repeatParams);
         }
 
         // Successful charge & more to come.
@@ -429,7 +434,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         // Contribution not yet created?
       }
     }
-    elseif ($this->contribution_recur_id) {
+    if (!$this->contribution && $this->contribution_recur_id) {
       // If a recurring contribution has been found, get the most recent contribution belonging to it.
       try {
         // Same approach as api repeattransaction.
@@ -439,7 +444,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           'contribution_test' => $this->_paymentProcessor->getIsTestMode(),
           'options' => ['limit' => 1, 'sort' => 'id DESC'],
         ]);
-        $this->contribution = $contribution;
+        $this->previous_contribution = $contribution;
       }
       catch (Exception $e) {
         $this->exception('Cannot find any contributions with recurring contribution ID: ' . $this->contribution_recur_id . '. ' . $e->getMessage());
