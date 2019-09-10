@@ -11,7 +11,7 @@ use CRM_Stripe_ExtensionUtil as E;
  */
 class CRM_Stripe_Check {
 
-  const MIN_VERSION_MJWSHARED = 0.2;
+  const MIN_VERSION_MJWSHARED = 0.3;
 
   public static function checkRequirements(&$messages) {
     $extensions = civicrm_api3('Extension', 'get', [

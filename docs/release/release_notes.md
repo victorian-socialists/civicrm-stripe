@@ -1,3 +1,14 @@
+## Release 6.0.alpha3
+
+* Support recurring payments with paymentIntents/Elements. Cancel subscription with Stripe when we reach recurring end date
+* **Update required Stripe API version to 2019-09-09**
+* Handle confirmation pages properly for contribution pages (make sure we pass through paymentIntentID).
+* Handle card declined on client side.
+* Support creating recurring payment (subscription).
+* Handle IPN events for charges / invoices (support cancel/refund etc).
+* Add basic support for PaymentProcessor.refund API.
+* Remove membership_type_tag from plan name.
+
 ## Release 6.0.alpha2
 
 * Support Drupal Webform CiviCRM.
