@@ -137,8 +137,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   }
 
   public function supportsRecurring() {
-    // @fixme: Test and make this work for stripe elements / 6.0
-    return FALSE;
+    return TRUE;
   }
 
   /**
@@ -151,7 +150,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   }
 
   /**
-   * We can configure a start date for a smartdebit mandate
+   * Can we set a future recur start date?  Stripe allows this but we don't (yet) support it.
    * @return bool
    */
   public function supportsFutureRecurStartDate() {
@@ -366,6 +365,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     elseif (CRM_Core_Session::singleton()->get('stripePaymentIntent')) {
       // @fixme Hack for contributionpages - see https://github.com/civicrm/civicrm-core/pull/15252
       $paymentIntentID = CRM_Core_Session::singleton()->get('stripePaymentIntent');
+      $params['paymentIntentID'] = $paymentIntentID;
     }
     else {
       CRM_Core_Error::statusBounce(E::ts('Unable to complete payment! Missing paymentIntent ID.'));
@@ -489,7 +489,9 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     $params['contribution_status_id'] = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Completed');
     // For contribution workflow we have a contributionId so we can set parameters directly.
     // For events/membership workflow we have to return the parameters and they might get set...
+    // For a single charge there is no stripe invoice.
     $this->setPaymentProcessorOrderID($stripeCharge->id);
+    $this->setPaymentProcessorTrxnID($stripeCharge->id);
     $newParams['fee_amount'] = $stripeBalanceTransaction->fee / 100;
     $newParams['net_amount'] = $stripeBalanceTransaction->net / 100;
 
@@ -537,13 +539,14 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     ];
     // Create the stripe subscription for the customer
     $stripeSubscription = $stripeCustomer->subscriptions->create($subscriptionParams);
+    $this->setPaymentProcessorSubscriptionID($stripeSubscription->id);
 
     $recurParams = [
       'id' => $params['contributionRecurID'],
-      'trxn_id' => $stripeSubscription->id,
+      'trxn_id' => $this->getPaymentProcessorSubscriptionID(),
       // FIXME processor_id is deprecated as it is not guaranteed to be unique, but currently (CiviCRM 5.9)
       //  it is required by cancelSubscription (where it is called subscription_id)
-      'processor_id' => $stripeSubscription->id,
+      'processor_id' => $this->getPaymentProcessorSubscriptionID(),
       'auto_renew' => 1,
       'cycle_day' => date('d'),
       'next_sched_contribution_date' => $this->calculateNextScheduledDate($params),
@@ -555,6 +558,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       }
       if ($params['installments']) {
         $recurParams['end_date'] = $this->calculateEndDate($params);
+        $recurParams['installments'] = $params['installments'];
       }
     }
 
@@ -562,9 +566,11 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     CRM_Stripe_Hook::updateRecurringContribution($recurParams);
     // Update the recurring payment
     civicrm_api3('ContributionRecur', 'create', $recurParams);
-    // Update the contribution status
 
-    return $params;
+    // Set the orderID (trxn_id) to the invoice ID
+    // The IPN will change it to the charge_id
+    $this->setPaymentProcessorOrderID($stripeSubscription->latest_invoice);
+    return $this->endDoPayment($params);
   }
 
   /**

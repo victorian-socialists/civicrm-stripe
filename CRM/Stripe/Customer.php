@@ -116,7 +116,7 @@ class CRM_Stripe_Customer {
    * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
   public static function create($params, $stripe) {
-    $requiredParams = ['contact_id', 'card_token', 'processor_id'];
+    $requiredParams = ['contact_id', 'processor_id'];
     // $optionalParams = ['email'];
     foreach ($requiredParams as $required) {
       if (empty($params[$required])) {

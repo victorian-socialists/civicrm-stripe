@@ -60,56 +60,13 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   /**
    * CRM_Core_Payment_StripeIPN constructor.
    *
-   * @param $ipnData
+   * @param \stdClass $ipnData
    * @param bool $verify
-   *
-   * @throws \CRM_Core_Exception
    */
   public function __construct($ipnData, $verify = TRUE) {
     $this->verify_event = $verify;
     $this->setInputParameters($ipnData);
     parent::__construct();
-  }
-
-  /**
-   * Set the value of is_email_receipt to use when a new contribution is received for a recurring contribution
-   * This is used for the API Stripe.Ipn function.  If not set, we respect the value set on the ContributionRecur entity.
-   *
-   * @param int $sendReceipt The value of is_email_receipt
-   */
-  public function setSendEmailReceipt($sendReceipt) {
-    switch ($sendReceipt) {
-      case 0:
-        $this->is_email_receipt = 0;
-        break;
-
-      case 1:
-        $this->is_email_receipt = 1;
-        break;
-
-      default:
-        $this->is_email_receipt = 0;
-    }
-  }
-
-  /**
-   * Get the value of is_email_receipt to use when a new contribution is received for a recurring contribution
-   * This is used for the API Stripe.Ipn function.  If not set, we respect the value set on the ContributionRecur entity.
-   *
-   * @return int
-   * @throws \CiviCRM_API3_Exception
-   */
-  public function getSendEmailReceipt() {
-    if (isset($this->is_email_receipt)) {
-      return (int) $this->is_email_receipt;
-    }
-    if (!empty($this->contribution_recur_id)) {
-      $this->is_email_receipt = civicrm_api3('ContributionRecur', 'getvalue', [
-        'return' => "is_email_receipt",
-        'id' => $this->contribution_recur_id,
-      ]);
-    }
-    return (int) $this->is_email_receipt;
   }
 
   /**
@@ -168,8 +125,10 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   }
 
   /**
+   * @return bool
    * @throws \CRM_Core_Exception
    * @throws \CiviCRM_API3_Exception
+   * @throws \Stripe\Error\Api
    */
   public function main() {
     // Collect and determine all data about this event.
@@ -178,132 +137,113 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
 
     // NOTE: If you add an event here make sure you add it to the webhook or it will never be received!
     switch($this->event_type) {
-      // Successful recurring payment.
       case 'invoice.payment_succeeded':
+        // Successful recurring payment. Either we are completing an existing contribution or it's the next one in a subscription
         $this->setInfo();
         if ($this->contribution['contribution_status_id'] == $pendingStatusId) {
-          $this->completeContribution();
+          $params = [
+            'id' => $this->contribution['id'],
+            'trxn_date' => $this->receive_date,
+            'contribution_trxn_id' => $this->invoice_id,
+            'payment_trxn_id' => $this->charge_id,
+            'total_amount' => $this->amount,
+            'fee_amount' => $this->fee,
+          ];
+          $this->updateContributionCompleted($params);
+          // Don't touch the contributionRecur as it's updated automatically by Contribution.completetransaction
         }
-        elseif ($this->contribution['trxn_id'] != $this->charge_id) {
-          // The first contribution was completed, so create a new one.
-          // api contribution repeattransaction repeats the appropriate contribution if it is given
-          // simply the recurring contribution id. It also updates the membership for us.
-          $repeatParams = [
+        elseif ($this->contribution['trxn_id'] != $this->invoice_id) {
+          // Stripe has generated a new invoice (next payment in a subscription) so we
+          //   create a new contribution in CiviCRM
+          $params = [
             'contribution_recur_id' => $this->contribution_recur_id,
             'contribution_status_id' => 'Completed',
             'receive_date' => $this->receive_date,
-            'trxn_id' => $this->charge_id,
+            'contribution_trxn_id' => $this->invoice_id,
+            'payment_trxn_id' => $this->charge_id,
             'total_amount' => $this->amount,
             'fee_amount' => $this->fee,
-            'is_email_receipt' => $this->getSendEmailReceipt(),
+            'previous_contribution' => $this->previous_contribution,
           ];
-          if ($this->previous_contribution) {
-            $repeatParams['original_contribution_id'] = $this->previous_contribution['id'];
-          }
-          civicrm_api3('Contribution', 'repeattransaction', $repeatParams);
+          $this->repeatContribution($params);
+          // Don't touch the contributionRecur as it's updated automatically by Contribution.repeattransaction
         }
-
-        // Successful charge & more to come.
-        civicrm_api3('ContributionRecur', 'create', [
-          'id' => $this->contribution_recur_id,
-          'failure_count' => 0,
-          'contribution_status_id' => 'In Progress'
-        ]);
+        $this->handleInstallmentsForSubscription();
         return TRUE;
 
-      // Failed recurring payment.
       case 'invoice.payment_failed':
+        // Failed recurring payment. Either we are failing an existing contribution or it's the next one in a subscription
         $this->setInfo();
-        $failDate = date('YmdHis');
 
         if ($this->contribution['contribution_status_id'] == $pendingStatusId) {
           // If this contribution is Pending, set it to Failed.
-          civicrm_api3('Contribution', 'create', [
+          $params = [
             'id' => $this->contribution['id'],
-            'contribution_status_id' => "Failed",
-            'receive_date' => $failDate,
-            'is_email_receipt' => 0,
-          ]);
+            'receive_date' => $this->receive_date,
+            'cancel_reason' => $this->retrieve('failure_message', 'String'),
+            'payment_trxn_id' => $this->charge_id,
+          ];
+          $this->updateContributionFailed($params);
         }
-        else {
-          $contributionParams = [
+        elseif ($this->contribution['trxn_id'] != $this->invoice_id) {
+          $params = [
             'contribution_recur_id' => $this->contribution_recur_id,
             'contribution_status_id' => 'Failed',
-            'receive_date' => $failDate,
+            'receive_date' => $this->receive_date,
+            'contribution_trxn_id' => $this->invoice_id,
+            'payment_trxn_id' => $this->charge_id,
             'total_amount' => $this->amount,
-            'is_email_receipt' => 0,
+            'fee_amount' => $this->fee,
+            'previous_contribution' => $this->previous_contribution,
           ];
-          civicrm_api3('Contribution', 'repeattransaction', $contributionParams);
+          $this->repeatContribution($params);
+          // Don't touch the contributionRecur as it's updated automatically by Contribution.completetransaction
         }
-
-        $failureCount = civicrm_api3('ContributionRecur', 'getvalue', [
-          'id' => $this->contribution_recur_id,
-          'return' => 'failure_count',
-        ]);
-        $failureCount++;
-
-        // Change the status of the Recurring and update failed attempts.
-        civicrm_api3('ContributionRecur', 'create', [
-          'id' => $this->contribution_recur_id,
-          'contribution_status_id' => "Failed",
-          'failure_count' => $failureCount,
-          'modified_date' => $failDate,
-        ]);
         return TRUE;
 
-      // Subscription is cancelled
       case 'customer.subscription.deleted':
+        // Subscription is cancelled
         $this->setInfo();
         // Cancel the recurring contribution
-        civicrm_api3('ContributionRecur', 'cancel', [
-          'id' => $this->contribution_recur_id,
-        ]);
+        $this->updateRecurCancelled(['id' => $this->contribution_recur_id, 'cancel_date' => $this->retrieve('cancel_date', 'String', FALSE)]);
         return TRUE;
 
       // One-time donation and per invoice payment.
       case 'charge.failed':
-        $failureCode = $this->retrieve('failure_code', 'String');
-        $failureMessage = $this->retrieve('failure_message', 'String');
-        $chargeId = $this->retrieve('charge_id', 'String');
-        // @fixme: Check if "note" param actually does anything!
-        try {
-          $contribution = civicrm_api3('Contribution', 'getsingle', [
-            'trxn_id' => $chargeId,
-            'contribution_test' => $this->_paymentProcessor->getIsTestMode(),
-            'return' => 'id'
-          ]);
-        }
-        catch (Exception $e) {
-          // No failed contribution found, we won't record in CiviCRM for now
-          return TRUE;
-        }
+        $this->setInfo();
         $params = [
-          'note' => "{$failureCode} : {$failureMessage}",
-          'contribution_id' => $contribution['id'],
+          'id' => $this->contribution['id'],
+          'receive_date' => $this->receive_date,
+          'cancel_reason' => $this->retrieve('failure_message', 'String'),
+          'payment_trxn_id' => $this->charge_id,
         ];
-        $this->recordFailed($params);
+        $this->updateContributionFailed($params);
         return TRUE;
 
       case 'charge.refunded':
-        $chargeId = $this->retrieve('charge_id', 'String');
-        $refunds = \Stripe\Refund::all(['charge' => $chargeId, 'limit' => 1]);
+        $this->setInfo();
+        $refunds = \Stripe\Refund::all(['charge' => $this->charge_id, 'limit' => 1]);
         $params = [
-          'contribution_id' => civicrm_api3('Contribution', 'getvalue', [
-            'trxn_id' => $chargeId,
-            'contribution_test' => $this->_paymentProcessor->getIsTestMode(),
-            'return' => 'id'
-          ]),
+          'id' => $this->contribution['id'],
           'total_amount' => $this->retrieve('amount_refunded', 'Float'),
           'cancel_reason' => $refunds->data[0]->reason,
           'cancel_date' => date('YmdHis', $refunds->data[0]->created),
         ];
-        $this->recordRefund($params);
+        $this->updateContributionRefund($params);
         return TRUE;
 
       case 'charge.succeeded':
         $this->setInfo();
         if ($this->contribution['contribution_status_id'] == $pendingStatusId) {
-          $this->recordCompleted(['contribution_id' => $this->contribution['id']]);
+          $params = [
+            'id' => $this->contribution['id'],
+            'trxn_date' => $this->receive_date,
+            'contribution_trxn_id' => $this->charge_id,
+            'payment_trxn_id' => $this->charge_id,
+            'total_amount' => $this->amount,
+            'fee_amount' => $this->fee,
+          ];
+          $this->updateContributionCompleted($params);
         }
         return TRUE;
 
@@ -322,40 +262,10 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           'frequency_unit' => $this->frequency_unit,
           'frequency_interval' => $this->frequency_interval,
         ]);
-
-        civicrm_api3('Contribution', 'create', [
-          'id' => $this->contribution['id'],
-          'total_amount' => $this->plan_amount,
-          'contribution_recur_id' => $this->contribution_recur_id,
-        ]);
         return TRUE;
     }
     // Unhandled event type.
     return TRUE;
-  }
-
-  /**
-   * Complete a pending contribution and update associated entities (recur/membership)
-   *
-   * @throws \CiviCRM_API3_Exception
-   */
-  public function completeContribution() {
-    // Update the contribution to include the fee.
-    civicrm_api3('Contribution', 'create', [
-      'id' => $this->contribution['id'],
-      'total_amount' => $this->amount,
-      'fee_amount' => $this->fee,
-    ]);
-    // The last one was not completed, so complete it.
-    civicrm_api3('Contribution', 'completetransaction', [
-      'id' => $this->contribution['id'],
-      'trxn_date' => $this->receive_date,
-      'trxn_id' => $this->charge_id,
-      'total_amount' => $this->amount,
-      'fee_amount' => $this->fee,
-      'payment_processor_id' => $this->_paymentProcessor->getPaymentProcessor()['id'],
-      'is_email_receipt' => $this->getSendEmailReceipt(),
-    ]);
   }
 
   /**
@@ -431,7 +341,18 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         ]);
       }
       catch (Exception $e) {
-        // Contribution not yet created?
+        // Contribution not found - that's ok
+      }
+    }
+    if (!$this->contribution && $this->invoice_id) {
+      try {
+        $this->contribution = civicrm_api3('Contribution', 'getsingle', [
+          'trxn_id' => $this->invoice_id,
+          'contribution_test' => $this->_paymentProcessor->getIsTestMode(),
+        ]);
+      }
+      catch (Exception $e) {
+        // Contribution not found - that's ok
       }
     }
     if (!$this->contribution && $this->contribution_recur_id) {
@@ -450,6 +371,42 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         $this->exception('Cannot find any contributions with recurring contribution ID: ' . $this->contribution_recur_id . '. ' . $e->getMessage());
       }
     }
+    if (!$this->contribution) {
+      $this->exception('No matching contributions for event ' . CRM_Stripe_Api::getParam('id', $this->_inputParameters));
+    }
+  }
+
+  /**
+   * This allows us to end a subscription once:
+   *   a) We've reached the end date / number of installments
+   *   b) The recurring contribution is marked as completed
+   *
+   * @throws \CiviCRM_API3_Exception
+   */
+  private function handleInstallmentsForSubscription() {
+    if ((!$this->contribution_recur_id) || (!$this->subscription_id)) {
+      return;
+    }
+
+    $contributionRecur = civicrm_api3('ContributionRecur', 'getsingle', [
+      'id' => $this->contribution_recur_id,
+    ]);
+
+    if (empty($contributionRecur['installments']) && empty($contributionRecur['end_date'])) {
+      return;
+    }
+
+    $stripeSubscription = \Stripe\Subscription::retrieve($this->subscription_id);
+    // If we've passed the end date cancel the subscription
+    if (($stripeSubscription->current_period_end >= strtotime($contributionRecur['end_date']))
+      || ($contributionRecur['contribution_status_id']
+        == CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_ContributionRecur', 'contribution_status_id', 'Completed'))) {
+      \Stripe\Subscription::update($this->subscription_id, ['cancel_at_period_end' => TRUE]);
+      $this->updateRecurCompleted(['id' => $this->contribution_recur_id]);
+    }
+    // There is no easy way of retrieving a count of all invoices for a subscription so we ignore the "installments"
+    //   parameter for now and rely on checking end_date (which was calculated based on number of installments...)
+    // $stripeInvoices = \Stripe\Invoice::all(['subscription' => $this->subscription_id, 'limit' => 100]);
   }
 
 }
