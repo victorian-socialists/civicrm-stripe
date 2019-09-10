@@ -16,7 +16,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    *
    * @var string
    */
-  const API_VERSION = '2019-08-14';
+  const API_VERSION = '2019-09-09';
 
   /**
    * Mode of operation: live or test.

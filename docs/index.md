@@ -12,7 +12,7 @@ View this extension in the [Extension Directory](https://civicrm.org/extensions/
 * PHP 7.1+
 * Jquery 1.10 (Use jquery_update module on Drupal).
 * Drupal 7 / Joomla / Wordpress (latest supported release). *Not currently tested with other CMS but it may work.*
-* Stripe API version: 2019-08-14
+* Stripe API version: 2019-09-09
 * Drupal webform_civicrm 7.x-4.22+ (if using webform integration)
 
 If using test mode with drupal webform_civicrm you need this patch: https://github.com/colemanw/webform_civicrm/pull/266

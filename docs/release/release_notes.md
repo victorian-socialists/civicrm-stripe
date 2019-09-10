@@ -21,7 +21,7 @@
 
 * Use Stripe Elements: https://stripe.com/payments/elements.
 * Use PaymentIntents and comply with the European SCA directive (https://stripe.com/docs/strong-customer-authentication).
-* Require Stripe API Version: 2019-08-14 and ensure that all codepaths specify the API version.
+* Require Stripe API Version: 2019-09-09 and ensure that all codepaths specify the API version.
 * Switch publishable key/secret key in settings (upgrader does this automatically) so they are now "correct" per CiviCRM settings pages.
 * Support cards using 3dsecure and cards not using 3dsecure (workflows with Stripe are slightly different but both are now handled).
 
