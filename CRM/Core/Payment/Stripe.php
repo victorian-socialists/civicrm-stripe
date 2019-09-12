@@ -321,7 +321,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'currency' => $this->getDefaultCurrencyForForm($form),
       'billingAddressID' => CRM_Core_BAO_LocationType::getBilling(),
       'publishableKey' => CRM_Core_Payment_Stripe::getPublicKeyById($form->_paymentProcessor['id']),
-      'jsDebug' => TRUE,
+      'jsDebug' => (boolean) \Civi::settings()->get('stripe_jsdebug'),
     ];
     \Civi::resources()->addVars(E::SHORT_NAME, $jsVars);
     // Assign to smarty so we can add via Card.tpl for drupal webform because addVars doesn't work in that context
@@ -331,11 +331,13 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     CRM_Core_Region::instance('billing-block')->add(
       ['template' => 'CRM/Core/Payment/Stripe/Card.tpl', 'weight' => -1]);
     // Add CSS via region (it won't load on drupal webform if added via \Civi::resources()->addStyleFile)
+
+    $min = ((boolean) \Civi::settings()->get('stripe_jsdebug')) ? '' : '.min';
     CRM_Core_Region::instance('billing-block')->add([
-      'styleUrl' => \Civi::resources()->getUrl(E::LONG_NAME, 'css/elements.css'),
+      'styleUrl' => \Civi::resources()->getUrl(E::LONG_NAME, "css/elements{$min}.css"),
       'weight' => -1,
     ]);
-    \Civi::resources()->addScriptFile(E::LONG_NAME, 'js/civicrm_stripe.js');
+    \Civi::resources()->addScriptFile(E::LONG_NAME, "js/civicrm_stripe{$min}.js");
   }
 
   /**

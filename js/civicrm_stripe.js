@@ -1,5 +1,4 @@
 /**
- * @file
  * JS Integration between CiviCRM & Stripe.
  */
 CRM.$(function($) {
