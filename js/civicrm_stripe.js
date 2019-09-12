@@ -244,6 +244,9 @@ CRM.$(function($) {
       return submit(event);
     });
 
+    // Remove the onclick attribute added by CiviCRM.
+    submitButton.removeAttribute('onclick');
+
     addSupportForCiviDiscount();
 
     // For CiviCRM Webforms.
