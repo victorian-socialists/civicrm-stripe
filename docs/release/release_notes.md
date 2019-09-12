@@ -36,6 +36,10 @@
 * Switch publishable key/secret key in settings (upgrader does this automatically) so they are now "correct" per CiviCRM settings pages.
 * Support cards using 3dsecure and cards not using 3dsecure (workflows with Stripe are slightly different but both are now handled).
 
+### Not supported
+* CiviCRM Event Cart (requires additional funding, changes should probably be made in CiviCRM core to standardize that workflow rather than adding support via this extension).
+* Card payments via the admin backend (this was supported in 5.4.1 but has unresolved issues with Stripe Elements when used via popup forms).
+
 ## Release 5.4.1
 * Don't overwrite system messages when performing webhook checks.
 * Add form to handle creating/updating webhooks instead of automatically during system check (Thanks @artfulrobot)
