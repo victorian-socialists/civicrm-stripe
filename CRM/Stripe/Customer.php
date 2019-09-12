@@ -117,23 +117,13 @@ class CRM_Stripe_Customer {
    */
   public static function create($params, $stripe) {
     $requiredParams = ['contact_id', 'processor_id'];
-    // $optionalParams = ['email'];
     foreach ($requiredParams as $required) {
       if (empty($params[$required])) {
         throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (create): Missing required parameter: ' . $required);
       }
     }
 
-    $contactDisplayName = civicrm_api3('Contact', 'getvalue', [
-      'return' => 'display_name',
-      'id' => $params['contact_id'],
-    ]);
-
-    $stripeCustomerParams = [
-      'description' => $contactDisplayName . ' (CiviCRM)',
-      'email' => CRM_Utils_Array::value('email', $params),
-      'metadata' => ['civicrm_contact_id' => $params['contact_id']],
-    ];
+    $stripeCustomerParams = self::getStripeCustomerMetadata($params);
 
     try {
       $stripeCustomer = \Stripe\Customer::create($stripeCustomerParams);
@@ -153,6 +143,61 @@ class CRM_Stripe_Customer {
     self::add($params);
 
     return $stripeCustomer;
+  }
+
+  /**
+   * @param array $params
+   * @param \CRM_Core_Payment_Stripe $stripe
+   * @param string $stripeCustomerID
+   *
+   * @return \Stripe\Customer
+   * @throws \CiviCRM_API3_Exception
+   * @throws \Civi\Payment\Exception\PaymentProcessorException
+   */
+  public static function updateMetadata($params, $stripe, $stripeCustomerID) {
+    $requiredParams = ['contact_id', 'processor_id'];
+    foreach ($requiredParams as $required) {
+      if (empty($params[$required])) {
+        throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (updateMetadata): Missing required parameter: ' . $required);
+      }
+    }
+
+    $stripeCustomerParams = self::getStripeCustomerMetadata($params);
+
+    try {
+      $stripeCustomer = \Stripe\Customer::update($stripeCustomerID, $stripeCustomerParams);
+    }
+    catch (Exception $e) {
+      $err = CRM_Core_Payment_Stripe::parseStripeException('create_customer', $e, FALSE);
+      $errorMessage = $stripe->handleErrorNotification($err, $params['stripe_error_url']);
+      throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to update Stripe Customer: ' . $errorMessage);
+    }
+    return $stripeCustomer;
+  }
+
+  /**
+   * @param array $params
+   *   Required: contact_id; Optional: email
+   *
+   * @return array
+   * @throws \CiviCRM_API3_Exception
+   */
+  private static function getStripeCustomerMetadata($params) {
+    $contactDisplayName = civicrm_api3('Contact', 'getvalue', [
+      'return' => 'display_name',
+      'id' => $params['contact_id'],
+    ]);
+
+    $stripeCustomerParams = [
+      'name' => $contactDisplayName,
+      'description' => 'CiviCRM: ' . civicrm_api3('Domain', 'getvalue', ['current_domain' => 1, 'return' => 'name']),
+      'email' => CRM_Utils_Array::value('email', $params),
+      'metadata' => [
+        'CiviCRM Contact ID' => $params['contact_id'],
+        'CiviCRM URL' => CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$params['contact_id']}", TRUE),
+      ],
+    ];
+    return $stripeCustomerParams;
   }
 
   /**

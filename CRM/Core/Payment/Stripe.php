@@ -409,8 +409,11 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'stripe_error_url' => $params['stripe_error_url'],
     ];
 
+    // Get the Stripe Customer:
+    //   1. Look for an existing customer.
+    //   2. If no customer (or a deleted customer found), create a new one.
+    //   3. If existing customer found, update the metadata that Stripe holds for this customer.
     $stripeCustomerId = CRM_Stripe_Customer::find($customerParams);
-
     // Customer not in civicrm database.  Create a new Customer in Stripe.
     if (!isset($stripeCustomerId)) {
       $stripeCustomer = CRM_Stripe_Customer::create($customerParams, $this);
@@ -436,23 +439,37 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
           throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to create Stripe Customer: ' . $errorMessage);
         }
       }
+      else {
+        CRM_Stripe_Customer::updateMetadata($customerParams, $this, $stripeCustomer->id);
+      }
     }
 
     // Prepare the charge array, minus Customer/Card details.
     if (empty($params['description'])) {
-      $params['description'] = E::ts('Backend Stripe contribution');
+      $params['description'] = E::ts('Contribution: %1', [1 => $this->getPaymentProcessorLabel()]);
     }
+
+    $contactContribution = $this->getContactId($params) . '-' . ($this->getContributionId($params) ?: 'XX');
+    $intentParams = [
+      'customer' => $stripeCustomer->id,
+      'description' => "{$params['description']} {$contactContribution} #" . CRM_Utils_Array::value('invoiceID', $params),
+      'statement_descriptor_suffix' => "{$contactContribution} " . substr($params['description'],0,7),
+    ];
+    $intentParams['statement_descriptor'] = substr("{$contactContribution} " . $params['description'], 0, 22);
+    $intentMetadata = [
+      'amount_to_capture' => $this->getAmount($params),
+    ];
 
     // This is where we actually charge the customer
     try {
+      \Stripe\PaymentIntent::update($paymentIntentID, $intentParams);
       $intent = \Stripe\PaymentIntent::retrieve($paymentIntentID);
-      $intent->description = $params['description'] . ' # Invoice ID: ' . CRM_Utils_Array::value('invoiceID', $params);
       $intent->customer = $stripeCustomer->id;
       switch ($intent->status) {
         case 'requires_confirmation':
           $intent->confirm();
         case 'requires_capture':
-          $intent->capture(['amount_to_capture' => $this->getAmount($params)]);
+          $intent->capture($intentMetadata);
           break;
       }
     }
