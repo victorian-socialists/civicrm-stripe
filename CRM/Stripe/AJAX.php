@@ -16,7 +16,7 @@ class CRM_Stripe_AJAX {
    * @throws \CiviCRM_API3_Exception
    */
   public static function confirmPayment() {
-    $paymentMethodID = CRM_Utils_Request::retrieveValue('payment_method_id', 'String', NULL, TRUE);
+    $paymentMethodID = CRM_Utils_Request::retrieveValue('payment_method_id', 'String');
     $paymentIntentID = CRM_Utils_Request::retrieveValue('payment_intent_id', 'String');
     $amount = CRM_Utils_Request::retrieveValue('amount', 'Money', NULL, TRUE);
     $currency = CRM_Utils_Request::retrieveValue('currency', 'String', CRM_Core_Config::singleton()->defaultCurrency);
@@ -26,9 +26,7 @@ class CRM_Stripe_AJAX {
 
     if ($paymentIntentID) {
       $intent = \Stripe\PaymentIntent::retrieve($paymentIntentID);
-      $intent->confirm([
-        'payment_method' => $paymentMethodID,
-      ]);
+      $intent->confirm();
     }
     else {
       try {
