@@ -12,9 +12,9 @@
     <author>Matthew Wire (MJW Consulting)</author>
     <email>mjw@mjwconsult.co.uk</email>
   </maintainer>
-  <releaseDate>2019-09-10</releaseDate>
-  <version>6.0.alpha3</version>
-  <develStage>alpha</develStage>
+  <releaseDate>2019-09-12</releaseDate>
+  <version>6.0.beta1</version>
+  <develStage>beta</develStage>
   <compatibility>
     <ver>5.13</ver>
   </compatibility>

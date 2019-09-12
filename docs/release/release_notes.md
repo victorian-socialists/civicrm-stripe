@@ -1,3 +1,12 @@
+## Release 6.0.beta1
+
+*Thanks to Rich Lott (@artfulrobot) for contributing and testing release.*
+* We don't need to confirm the payment until we capture it
+* payment method id is not required when passing in an existing payment intent
+* Add minified versions of js/css
+* Remove onclick attribute from submit form so that CiviContribute forms do stripe processing before submission
+* Description and Customer fields in Stripe backend - fixes #78
+
 ## Release 6.0.alpha3
 
 * Support recurring payments with paymentIntents/Elements. Cancel subscription with Stripe when we reach recurring end date
