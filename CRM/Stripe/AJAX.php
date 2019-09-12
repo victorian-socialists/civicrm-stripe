@@ -24,11 +24,7 @@ class CRM_Stripe_AJAX {
     $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $processorID]));
     $processor->setAPIParams();
 
-    if ($paymentIntentID) {
-      $intent = \Stripe\PaymentIntent::retrieve($paymentIntentID);
-      $intent->confirm();
-    }
-    else {
+    if (!$paymentIntentID) {
       try {
         $intent = \Stripe\PaymentIntent::create([
           'payment_method' => $paymentMethodID,
