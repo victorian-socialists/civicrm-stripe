@@ -1,7 +1,7 @@
 #Stripe Payment Processor for CiviCRM.
 Integrates the Stripe payment processor (for Credit/Debit cards) into CiviCRM so you can use it to accept Credit / Debit card payments on your site.
 
-* https://stripe.com/
+[![Stripe Logo](/images/stripe.png)](https://stripe.com/)
 
 Latest releases can be found here: https://civicrm.org/extensions/stripe-payment-processor
 
@@ -14,8 +14,8 @@ View this extension in the [Extension Directory](https://civicrm.org/extensions/
 * Drupal 7 / Joomla / Wordpress (latest supported release). *Not currently tested with other CMS but it may work.*
 * Stripe API version: 2019-09-09
 * Drupal webform_civicrm 7.x-4.28+ (if using webform integration) - does NOT support test mode:
-  > If using test mode with drupal webform_civicrm you need this patch: https://github.com/colemanw/webform_civicrm/pull/266
-* MJWShared extension 0.3 - available here: https://civicrm.org/extensions/mjwshared
+  > If using test mode with drupal webform_civicrm you need [this patch](https://github.com/colemanw/webform_civicrm/pull/266)
+* [MJWShared extension](https://civicrm.org/extensions/mjwshared) version 0.3. 
 
 ## Troubleshooting
 Under *Administer->CiviContribute->Stripe Settings* you can find a setting:
@@ -24,7 +24,7 @@ Under *Administer->CiviContribute->Stripe Settings* you can find a setting:
 > This can be switched on to output debug info to the browser console and can be used to debug problems with submitting your payments.
 
 ## Credits
-Current Maintainer: Matthew Wire - https://www.mjwconsult.co.uk
+Current Maintainer: Matthew Wire - [MJW Consulting](https://www.mjwconsult.co.uk).
 
 ### Original Author
 Joshua Walker - http://drastikbydesign.com - https://drupal.org/user/433663  
