@@ -370,8 +370,8 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       $params['paymentIntentID'] = $paymentIntentID;
     }
     else {
-      CRM_Core_Error::statusBounce(E::ts('Unable to complete payment! Missing paymentIntent ID.'));
       Civi::log()->debug('paymentIntentID not found. $params: ' . print_r($params, TRUE));
+      CRM_Core_Error::statusBounce(E::ts('Unable to complete payment! Missing paymentIntent ID.'));
     }
 
     $pendingStatusId = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending');
