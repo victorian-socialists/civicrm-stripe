@@ -1,4 +1,7 @@
 <?php
+/**
+ * https://civicrm.org/licensing
+ */
 
 use CRM_Stripe_ExtensionUtil as E;
 

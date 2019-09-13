@@ -16,6 +16,8 @@ markdown_extensions:
 pages:
 - About: index.md
 - Installation: install.md
+- Webhooks (Notifications): webhook.md
+- Contributions, Payments and Customers: contribution.md
 - Recurring Contributions (Subscriptions): recur.md
 - Advanced:
   - API: api.md

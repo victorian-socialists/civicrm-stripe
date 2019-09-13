@@ -14,6 +14,7 @@ All configuration is in the standard Payment Processors settings area in CiviCRM
 You will enter your "Publishable" & "Secret" key given by stripe.com.  
 
 ## Installation
-There are no special installation requirements.
+**The mjwshared extension is required and MUST be installed.**
+
 The extension will show up in the extensions browser for automated installation.
 Otherwise, download and install as you would for any other CiviCRM extension.

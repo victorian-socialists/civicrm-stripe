@@ -1,4 +1,7 @@
 <?php
+/**
+ * https://civicrm.org/licensing
+ */
 
 /**
  * This api cleans up old data / tables in Stripe.

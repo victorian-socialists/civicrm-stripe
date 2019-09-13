@@ -6,7 +6,7 @@ In order to support other extensions that manipulate amounts etc we need to add 
 
 Currently only a single hook is implemented, and is only called in one place. 
 
-#### hook_civicrm_smartdebit_updateRecurringContribution(&$recurContributionParams)
+#### hook_civicrm_stripe_updateRecurringContribution(&$recurContributionParams)
 This hook allows modifying recurring contribution parameters during update.
 
 * @param array $recurContributionParams Recurring contribution params (ContributionRecur.create API parameters).

@@ -1,4 +1,7 @@
 <?php
+/**
+ * https://civicrm.org/licensing
+ */
 
 /**
  * This api sets up a Stripe Payment Processor with test credentials.

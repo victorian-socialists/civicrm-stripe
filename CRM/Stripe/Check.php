@@ -1,5 +1,4 @@
 <?php
-
 /**
  * https://civicrm.org/licensing
  */

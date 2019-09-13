@@ -1,5 +1,11 @@
 <?php
+/**
+ * https://civicrm.org/licensing
+ */
 
+/**
+ * Class CRM_Stripe_Customer
+ */
 class CRM_Stripe_Customer {
 
   /**

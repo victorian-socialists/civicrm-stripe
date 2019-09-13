@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <extension key="com.drastikbydesign.stripe" type="module">
   <file>stripe</file>
-  <name>Stripe (SCA payments development version)</name>
-  <description>Stripe Payment Processor</description>
+  <name>Stripe Payment Processor</name>
+  <description>Accept payments using https://stripe.com/</description>
   <urls>
     <url desc="Main Extension Page">https://lab.civicrm.org/extensions/stripe</url>
     <url desc="Support">https://lab.civicrm.org/extensions/stripe/issues</url>
@@ -12,9 +12,9 @@
     <author>Matthew Wire (MJW Consulting)</author>
     <email>mjw@mjwconsult.co.uk</email>
   </maintainer>
-  <releaseDate>2019-09-12</releaseDate>
-  <version>6.0.beta1</version>
-  <develStage>beta</develStage>
+  <releaseDate>2019-09-13</releaseDate>
+  <version>6.0</version>
+  <develStage>stable</develStage>
   <compatibility>
     <ver>5.13</ver>
   </compatibility>

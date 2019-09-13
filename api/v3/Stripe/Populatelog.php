@@ -1,4 +1,7 @@
 <?php
+/**
+ * https://civicrm.org/licensing
+ */
 
 /**
  * Populate the CiviCRM civicrm_system_log with Stripe events.
@@ -18,7 +21,7 @@
  * @see http://wiki.civicrm.org/confluence/display/CRMDOC/API+Architecture+Standards
  */
 function _civicrm_api3_stripe_Populatelog_spec(&$spec) {
-  $spec['ppid']['title'] = ts("The id of the payment processor."); 
+  $spec['ppid']['title'] = ts("The id of the payment processor.");
 }
 
 /**
@@ -46,12 +49,12 @@ function civicrm_api3_stripe_Populatelog($params) {
       throw new API_Exception("Expected one live Stripe payment processor, but found none or more than one. Please specify ppid=.", 2234);
     }
   }
-  
+
   $params = array('limit' => 100, 'type' => 'invoice.payment_succeeded');
-  if ($ppid) { 
+  if ($ppid) {
     $params['ppid'] = $ppid;
   }
- 
+
   $items = array();
   $last_item = NULL;
   $more = TRUE;
@@ -60,7 +63,7 @@ function civicrm_api3_stripe_Populatelog($params) {
       $params['starting_after'] = $last_item->id;
     }
     $objects = civicrm_api3('Stripe', 'Listevents', $params);
-    
+
     if (count($objects['values']['data']) == 0) {
       // No more!
       break;

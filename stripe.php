@@ -1,4 +1,7 @@
 <?php
+/**
+ * https://civicrm.org/licensing
+ */
 
 require_once 'stripe.civix.php';
 require_once __DIR__.'/vendor/autoload.php';
@@ -51,12 +54,6 @@ function stripe_civicrm_disable() {
 
 /**
  * Implementation of hook_civicrm_upgrade
- *
- * @param $op string, the type of operation being performed; 'check' or 'enqueue'
- * @param $queue CRM_Queue_Queue, (for 'enqueue') the modifiable list of pending up upgrade tasks
- *
- * @return mixed  based on op. for 'check', returns array(boolean) (TRUE if upgrades are pending)
- *                for 'enqueue', returns void
  */
 function stripe_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
   return _stripe_civix_civicrm_upgrade($op, $queue);
@@ -78,42 +75,6 @@ function stripe_civicrm_managed(&$entities) {
  */
 function stripe_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
   _stripe_civix_civicrm_alterSettingsFolders($metaDataFolders);
-}
-
-/**
- * Implementation of hook_civicrm_validateForm().
- *
- * Prevent server validation of cc fields
- *
- * @param $formName - the name of the form
- * @param $fields - Array of name value pairs for all 'POST'ed form values
- * @param $files - Array of file properties as sent by PHP POST protocol
- * @param $form - reference to the form object
- * @param $errors - Reference to the errors array.
- *
- */
-
-function stripe_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors) {
-  if (empty($form->_paymentProcessor['payment_processor_type'])) {
-    return;
-  }
-  // If Stripe is active here.
-  if ($form->_paymentProcessor['class_name'] == 'Payment_Stripe') {
-    if (isset($form->_elementIndex['stripe_token'])) {
-      if ($form->elementExists('credit_card_number')) {
-        $cc_field = $form->getElement('credit_card_number');
-        $form->removeElement('credit_card_number', true);
-        $form->addElement($cc_field);
-      }
-      if ($form->elementExists('cvv2')) {
-        $cvv2_field = $form->getElement('cvv2');
-        $form->removeElement('cvv2', true);
-        $form->addElement($cvv2_field);
-      }
-    }
-  } else {
-    return;
-  }
 }
 
 /**
@@ -150,7 +111,9 @@ function stripe_civicrm_alterContent( &$content, $context, $tplName, &$object ) 
  * hook_civicrm_alterContent is not called for all forms (eg. CRM_Contribute_Form_Contribution on backend)
  *
  * @param string $formName
- * @param CRM_Core_Form $form
+ * @param \CRM_Core_Form $form
+ *
+ * @throws \CRM_Core_Exception
  */
 function stripe_civicrm_buildForm($formName, &$form) {
   // Don't load stripe js on ajax forms
@@ -170,6 +133,8 @@ function stripe_civicrm_buildForm($formName, &$form) {
  *
  * @param string $formName
  * @param \CRM_Core_Form $form
+ *
+ * @throws \CRM_Core_Exception
  */
 function stripe_civicrm_postProcess($formName, &$form) {
   // We're only interested in forms that have a paymentprocessor
@@ -209,6 +174,8 @@ function stripe_civicrm_postProcess($formName, &$form) {
 
 /**
  * Implements hook_civicrm_check().
+ *
+ * @throws \CiviCRM_API3_Exception
  */
 function stripe_civicrm_check(&$messages) {
   CRM_Stripe_Webhook::check($messages);

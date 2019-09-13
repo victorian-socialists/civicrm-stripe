@@ -1,3 +1,5 @@
+{* https://civicrm.org/licensing *}
+
 <div class="crm-block crm-content-block">
     {if $isAllOk}
       <div class="alert alert-success">{$intro}</div>

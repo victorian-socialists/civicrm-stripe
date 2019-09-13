@@ -1,7 +1,13 @@
 <?php
+/**
+ * https://civicrm.org/licensing
+ */
 
 use CRM_Stripe_ExtensionUtil as E;
 
+/**
+ * Class CRM_Stripe_Webhook
+ */
 class CRM_Stripe_Webhook {
 
   use CRM_Stripe_WebhookTrait;

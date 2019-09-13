@@ -1,5 +1,9 @@
 <?php
 /**
+ * https://civicrm.org/licensing
+ */
+
+/**
  * Collection of upgrade steps.
  * DO NOT USE a naming scheme other than upgrade_N, where N is an integer.
  * Naming scheme upgrade_X_Y_Z is offically wrong!
