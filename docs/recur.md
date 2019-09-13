@@ -7,7 +7,7 @@ The CiviCRM Recurring Contribution `trxn_id` = Stripe `subscription ID`.
 When you create a recurring contribution in CiviCRM using the Stripe payment processor it is linked via the trxn_id to a Stripe subscription.
 
 !!! tip If you are using recurring contributions make sure you have webhooks configured correctly
-    See [Webhooks](/docs/webhook.md)
+    See [Webhooks](/webhook)
 
 ## Cancelling Recurring Contributions
 You can cancel a recurring contribution from the Stripe Dashboard or from within CiviCRM.
