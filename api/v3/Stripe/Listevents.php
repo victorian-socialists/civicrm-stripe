@@ -9,7 +9,7 @@
 
 /**
  * Stripe.ListEvents API specification
- * 
+ *
  *
  * @param array $spec description of fields supported by this API call
  * @return void
@@ -17,12 +17,13 @@
  */
 function _civicrm_api3_stripe_ListEvents_spec(&$spec) {
   $spec['ppid']['title'] = ts("Use the given Payment Processor ID");
-  $spec['ppid']['type'] = CRM_Utils_Type::T_INT; 
+  $spec['ppid']['type'] = CRM_Utils_Type::T_INT;
+  $spec['ppid']['api.required'] = TRUE;
   $spec['type']['title'] = ts("Limit to the given Stripe events type, defaults to invoice.payment_succeeded.");
   $spec['type']['api.default'] = 'invoice.payment_succeeded';
   $spec['limit']['title'] = ts("Limit number of results returned (100 is max)");
   $spec['starting_after']['title'] = ts("Only return results after this event id.");
-  $spec['output']['api.default'] = 'brief'; 
+  $spec['output']['api.default'] = 'brief';
   $spec['output']['title'] = ts("How to format the output, brief or raw. Defaults to brief.");
 }
 
@@ -122,18 +123,17 @@ function civicrm_api3_stripe_VerifyEventType($eventType) {
  * Process parameters to determine ppid and sk.
  *
  * @param array $params
+ *
+ * @return array
+ * @throws \API_Exception
  */
 function civicrm_api3_stripe_ProcessParams($params) {
-  $ppid = NULL;
   $type = NULL;
   $created = NULL;
   $limit = NULL;
   $starting_after = NULL;
   $sk = NULL;
 
-  if (array_key_exists('ppid', $params) ) {
-    $ppid = $params['ppid'];
-  }
   if (array_key_exists('created', $params) ) {
     $created = $params['created'];
   }
@@ -142,29 +142,6 @@ function civicrm_api3_stripe_ProcessParams($params) {
   }
   if (array_key_exists('starting_after', $params) ) {
     $starting_after = $params['starting_after'];
-  }
-
-  // Select the right payment processor to use.
-  if ($ppid) {
-    $query_params = array('id' => $ppid);
-  }
-  else {
-    // By default, select the live stripe processor (we expect there to be
-    // only one).
-    $query_params = array('class_name' => 'Payment_Stripe', 'is_test' => 0);
-  }
-  try {
-    $results = civicrm_api3('PaymentProcessor', 'getsingle', $query_params);
-    // YES! I know, password and user are backwards. wtf??
-    $sk = $results['user_name'];
-  }
-  catch (CiviCRM_API3_Exception $e) {
-    if(preg_match('/Expected one PaymentProcessor but/', $e->getMessage())) {
-      throw new API_Exception("Expected one live Stripe payment processor, but found none or more than one. Please specify ppid=.", 1234);
-    }
-    else {
-      throw new API_Exception("Error getting the Stripe Payment Processor to use", 1235);
-    }
   }
 
 	// Check to see if we should filter by type.
@@ -185,7 +162,7 @@ function civicrm_api3_stripe_ProcessParams($params) {
       throw new API_Exception("Created can only be passed in programatically as an array", 1237);
     }
   }
-  return array('sk' => $sk, 'type' => $type, 'created' => $created, 'limit' => $limit, 'starting_after' => $starting_after);
+  return ['type' => $type, 'created' => $created, 'limit' => $limit, 'starting_after' => $starting_after];
 }
 
 /**
@@ -199,7 +176,6 @@ function civicrm_api3_stripe_ProcessParams($params) {
  */
 function civicrm_api3_stripe_Listevents($params) {
   $parsed = civicrm_api3_stripe_ProcessParams($params);
-  $sk = $parsed['sk'];
   $type = $parsed['type'];
   $created = $parsed['created'];
   $limit = $parsed['limit'];
@@ -218,9 +194,10 @@ function civicrm_api3_stripe_Listevents($params) {
   if ($starting_after) {
     $args['starting_after'] = $starting_after;
   }
-  
-  require_once ("vendor/stripe/stripe-php/init.php");
-  \Stripe\Stripe::setApiKey($sk);
+
+  $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $params['ppid']]));
+  $processor->setAPIParams();
+
   $data_list = \Stripe\Event::all($args);
   if (array_key_exists('error', $data_list)) {
     $err = $data_list['error'];

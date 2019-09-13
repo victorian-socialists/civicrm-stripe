@@ -258,8 +258,7 @@ function civicrm_api3_stripe_customer_updatestripemetadata($params) {
       throw new CiviCRM_API3_Exception('Could not find contact ID for stripe customer: ' . $customerId);
     }
 
-    $paymentProcessor = \Civi\Payment\System::singleton()
-      ->getById($customerParams['processor_id']);
+    $paymentProcessor = \Civi\Payment\System::singleton()->getById($customerParams['processor_id']);
     $paymentProcessor->setAPIParams();
 
     // Get the stripe customer from stripe
@@ -267,7 +266,7 @@ function civicrm_api3_stripe_customer_updatestripemetadata($params) {
       $stripeCustomer = \Stripe\Customer::retrieve($customerId);
     } catch (Exception $e) {
       $err = CRM_Core_Payment_Stripe::parseStripeException('retrieve_customer', $e, FALSE);
-      $errorMessage = CRM_Core_Payment_Stripe::handleErrorNotification($err, NULL);
+      $errorMessage = $paymentProcessor->handleErrorNotification($err, NULL);
       throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to retrieve Stripe Customer: ' . $errorMessage);
     }
 

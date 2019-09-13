@@ -20,10 +20,16 @@ class CRM_Stripe_Api {
             return (bool) $stripeObject->refunded;
 
           case 'amount_refunded':
-            return (int) $stripeObject->amount_refunded / 100;
-            
+            return (float) $stripeObject->amount_refunded / 100;
+
           case 'customer_id':
             return (string) $stripeObject->customer;
+
+          case 'balance_transaction':
+            return (string) $stripeObject->balance_transaction;
+
+          case 'receive_date':
+            return self::formatDate($stripeObject->created);
 
         }
         break;
@@ -37,7 +43,7 @@ class CRM_Stripe_Api {
             return (string) $stripeObject->id;
 
           case 'receive_date':
-            return $stripeObject->date ? date("Y-m-d H:i:s", $stripeObject->date) : NULL;
+            return self::formatDate($stripeObject->created);
 
           case 'subscription_id':
             return (string) $stripeObject->subscription;
@@ -64,10 +70,13 @@ class CRM_Stripe_Api {
 
           case 'description':
             return (string) $stripeObject->description;
-        
+
           case 'customer_id':
             return (string) $stripeObject->customer;
 
+          case 'failure_message':
+            $stripeCharge = \Stripe\Charge::retrieve($stripeObject->charge);
+            return (string) $stripeCharge->failure_message;
 
         }
         break;
@@ -93,7 +102,10 @@ class CRM_Stripe_Api {
             return (string) $stripeObject->plan->name;
 
           case 'plan_start':
-            return $stripeObject->start ? date("Y-m-d H:i:s", $stripeObject->start) : NULL;
+            return self::formatDate($stripeObject->start_date);
+
+          case 'cancel_date':
+            return self::formatDate($stripeObject->canceled_at);
 
           case 'cycle_day':
             return date("d", $stripeObject->billing_cycle_anchor);
@@ -119,6 +131,16 @@ class CRM_Stripe_Api {
     return NULL;
   }
 
+  /**
+   * Return a formatted date from a stripe timestamp or NULL if not set
+   * @param int $stripeTimestamp
+   *
+   * @return string|null
+   */
+  private static function formatDate($stripeTimestamp) {
+    return $stripeTimestamp ? date('YmdHis', $stripeTimestamp) : NULL;
+  }
+
   public static function getParam($name, $stripeObject) {
     // Common parameters
     switch ($name) {
@@ -127,6 +149,9 @@ class CRM_Stripe_Api {
 
       case 'event_type':
         return (string) $stripeObject->type;
+
+      case 'id':
+        return (string) $stripeObject->id;
 
       case 'previous_plan_id':
         if (preg_match('/\.updated$/', $stripeObject->type)) {

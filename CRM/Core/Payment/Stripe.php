@@ -3,18 +3,20 @@
  * https://civicrm.org/licensing
  */
 
+use CRM_Stripe_ExtensionUtil as E;
+
 /**
  * Class CRM_Core_Payment_Stripe
  */
 class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
 
-  use CRM_Core_Payment_StripeTrait;
+  use CRM_Core_Payment_MJWTrait;
 
   /**
    *
    * @var string
    */
-  const API_VERSION = '2019-05-16';
+  const API_VERSION = '2019-09-09';
 
   /**
    * Mode of operation: live or test.
@@ -31,13 +33,14 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    *
    * @param string $mode
    *   The mode of operation: live or test.
+   * @param array $paymentProcessor
    *
    * @return void
    */
-  public function __construct($mode, &$paymentProcessor) {
+  public function __construct($mode, $paymentProcessor) {
     $this->_mode = $mode;
     $this->_paymentProcessor = $paymentProcessor;
-    $this->_processorName = ts('Stripe');
+    $this->_processorName = E::SHORT_NAME;
   }
 
   /**
@@ -46,7 +49,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return string
    */
   public static function getSecretKey($paymentProcessor) {
-    return trim(CRM_Utils_Array::value('user_name', $paymentProcessor));
+    return trim(CRM_Utils_Array::value('password', $paymentProcessor));
   }
 
   /**
@@ -55,7 +58,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return string
    */
   public static function getPublicKey($paymentProcessor) {
-    return trim(CRM_Utils_Array::value('password', $paymentProcessor));
+    return trim(CRM_Utils_Array::value('user_name', $paymentProcessor));
   }
 
   /**
@@ -105,7 +108,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    *   The error message if any.
    */
   public function checkConfig() {
-    $error = array();
+    $error = [];
 
     if (!empty($error)) {
       return implode('<p>', $error);
@@ -120,7 +123,9 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return bool
    */
   public function supportsBackOffice() {
-    return TRUE;
+    // @fixme Make this work again with stripe elements / 6.0
+    return FALSE;
+    // return TRUE;
   }
 
   /**
@@ -131,8 +136,21 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     return FALSE;
   }
 
+  public function supportsRecurring() {
+    return TRUE;
+  }
+
   /**
-   * We can configure a start date for a smartdebit mandate
+   * Does this payment processor support refund?
+   *
+   * @return bool
+   */
+  public function supportsRefund() {
+    return TRUE;
+  }
+
+  /**
+   * Can we set a future recur start date?  Stripe allows this but we don't (yet) support it.
    * @return bool
    */
   public function supportsFutureRecurStartDate() {
@@ -173,14 +191,8 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    *
    * @return string errorMessage (or statusbounce if URL is specified)
    */
-  public static function handleErrorNotification($err, $bounceURL = NULL) {
-    $debugMsg = $err['type'] . ' ' . $err['code'] . ' ' . $err['message'];
-    Civi::log()->debug('Stripe Payment Error: ' . $debugMsg);
-
-    if ($bounceURL) {
-      CRM_Core_Error::statusBounce($err['message'], $bounceURL, 'Payment Error');
-    }
-    return $debugMsg;
+  public function handleErrorNotification($err, $bounceURL = NULL) {
+    return self::handleError("{$err['type']} {$err['code']}", $err['message'], $bounceURL);
   }
 
   /**
@@ -215,9 +227,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   public function createPlan($params, $amount) {
     $currency = strtolower($params['currencyID']);
     $planId = "every-{$params['frequency_interval']}-{$params['frequency_unit']}-{$amount}-" . $currency;
-    if (isset($params['membership_type_tag'])) {
-      $planId = $params['membership_type_tag'] . $planId;
-    }
 
     if ($this->_paymentProcessor['is_test']) {
       $planId .= '-test';
@@ -236,19 +245,19 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         if ($this->_paymentProcessor['is_test']) {
           $productName .= '-test';
         }
-        $product = \Stripe\Product::create(array(
+        $product = \Stripe\Product::create([
           "name" => $productName,
           "type" => "service"
-        ));
+        ]);
         // Create a new Plan.
-        $stripePlan = array(
+        $stripePlan = [
           'amount' => $amount,
           'interval' => $params['frequency_unit'],
           'product' => $product->id,
           'currency' => $currency,
           'id' => $planId,
           'interval_count' => $params['frequency_interval'],
-        );
+        ];
         $plan = \Stripe\Plan::create($stripePlan);
       }
     }
@@ -261,15 +270,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return array
    */
   public function getPaymentFormFields() {
-    return array(
-      'credit_card_type',
-      'credit_card_number',
-      'cvv2',
-      'credit_card_exp_date',
-      'stripe_token',
-      'stripe_pub_key',
-      'stripe_id',
-    );
+    return [];
   }
 
   /**
@@ -281,86 +282,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    *   field metadata
    */
   public function getPaymentFormFieldsMetadata() {
-    $creditCardType = array('' => ts('- select -')) + CRM_Contribute_PseudoConstant::creditCard();
-    return array(
-      'credit_card_number' => array(
-        'htmlType' => 'text',
-        'name' => 'credit_card_number',
-        'title' => ts('Card Number'),
-        'cc_field' => TRUE,
-        'attributes' => array(
-          'size' => 20,
-          'maxlength' => 20,
-          'autocomplete' => 'off',
-        ),
-        'is_required' => TRUE,
-      ),
-      'cvv2' => array(
-        'htmlType' => 'text',
-        'name' => 'cvv2',
-        'title' => ts('Security Code'),
-        'cc_field' => TRUE,
-        'attributes' => array(
-          'size' => 5,
-          'maxlength' => 10,
-          'autocomplete' => 'off',
-        ),
-        'is_required' => TRUE,
-      ),
-      'credit_card_exp_date' => array(
-        'htmlType' => 'date',
-        'name' => 'credit_card_exp_date',
-        'title' => ts('Expiration Date'),
-        'cc_field' => TRUE,
-        'attributes' => CRM_Core_SelectValues::date('creditCard'),
-        'is_required' => TRUE,
-        'month_field' => 'credit_card_exp_date_M',
-        'year_field' => 'credit_card_exp_date_Y',
-        'extra' => ['class' => 'crm-form-select'],
-      ),
-
-      'credit_card_type' => array(
-        'htmlType' => 'select',
-        'name' => 'credit_card_type',
-        'title' => ts('Card Type'),
-        'cc_field' => TRUE,
-        'attributes' => $creditCardType,
-        'is_required' => FALSE,
-      ),
-      'stripe_token' => array(
-        'htmlType' => 'hidden',
-        'name' => 'stripe_token',
-        'title' => 'Stripe Token',
-        'attributes' => array(
-          'id' => 'stripe-token',
-          'class' => 'payproc-metadata',
-        ),
-        'cc_field' => TRUE,
-        'is_required' => TRUE,
-      ),
-      'stripe_id' => array(
-        'htmlType' => 'hidden',
-        'name' => 'stripe_id',
-        'title' => 'Stripe ID',
-        'attributes' => array(
-          'id' => 'stripe-id',
-          'class' => 'payproc-metadata',
-        ),
-        'cc_field' => TRUE,
-        'is_required' => TRUE,
-      ),
-      'stripe_pub_key' => array(
-        'htmlType' => 'hidden',
-        'name' => 'stripe_pub_key',
-        'title' => 'Stripe Public Key',
-        'attributes' => array(
-          'id' => 'stripe-pub-key',
-          'class' => 'payproc-metadata',
-        ),
-        'cc_field' => TRUE,
-        'is_required' => TRUE,
-      ),
-    );
+    return [];
   }
 
   /**
@@ -394,14 +316,28 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @param \CRM_Core_Form $form
    */
   public function buildForm(&$form) {
-    // Set default values
-    $paymentProcessorId = CRM_Utils_Array::value('id', $form->_paymentProcessor);
-    $publishableKey = CRM_Core_Payment_Stripe::getPublicKeyById($paymentProcessorId);
-    $defaults = [
-      'stripe_id' => $paymentProcessorId,
-      'stripe_pub_key' => $publishableKey,
+    $jsVars = [
+      'id' => $form->_paymentProcessor['id'],
+      'currency' => $this->getDefaultCurrencyForForm($form),
+      'billingAddressID' => CRM_Core_BAO_LocationType::getBilling(),
+      'publishableKey' => CRM_Core_Payment_Stripe::getPublicKeyById($form->_paymentProcessor['id']),
+      'jsDebug' => (boolean) \Civi::settings()->get('stripe_jsdebug'),
     ];
-    $form->setDefaults($defaults);
+    \Civi::resources()->addVars(E::SHORT_NAME, $jsVars);
+    // Assign to smarty so we can add via Card.tpl for drupal webform because addVars doesn't work in that context
+    $form->assign('stripeJSVars', $jsVars);
+
+    // Add help and javascript
+    CRM_Core_Region::instance('billing-block')->add(
+      ['template' => 'CRM/Core/Payment/Stripe/Card.tpl', 'weight' => -1]);
+    // Add CSS via region (it won't load on drupal webform if added via \Civi::resources()->addStyleFile)
+
+    $min = ((boolean) \Civi::settings()->get('stripe_jsdebug')) ? '' : '.min';
+    CRM_Core_Region::instance('billing-block')->add([
+      'styleUrl' => \Civi::resources()->getUrl(E::LONG_NAME, "css/elements{$min}.css"),
+      'weight' => -1,
+    ]);
+    \Civi::resources()->addScriptFile(E::LONG_NAME, "js/civicrm_stripe{$min}.js");
   }
 
   /**
@@ -422,21 +358,23 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
   public function doPayment(&$params, $component = 'contribute') {
-    if (array_key_exists('credit_card_number', $params)) {
-      $cc = $params['credit_card_number'];
-      if (!empty($cc) && substr($cc, 0, 8) != '00000000') {
-        Civi::log()->debug(ts('ALERT! Unmasked credit card received in back end. Please report this error to the site administrator.'));
-      }
+    $params = $this->beginDoPayment($params);
+
+    // Get the passed in paymentIntent
+    if(!empty(CRM_Utils_Array::value('paymentIntentID', $params))) {
+      $paymentIntentID = CRM_Utils_Array::value('paymentIntentID', $params);
+    }
+    elseif (CRM_Core_Session::singleton()->get('stripePaymentIntent')) {
+      // @fixme Hack for contributionpages - see https://github.com/civicrm/civicrm-core/pull/15252
+      $paymentIntentID = CRM_Core_Session::singleton()->get('stripePaymentIntent');
+      $params['paymentIntentID'] = $paymentIntentID;
+    }
+    else {
+      CRM_Core_Error::statusBounce(E::ts('Unable to complete payment! Missing paymentIntent ID.'));
+      Civi::log()->debug('paymentIntentID not found. $params: ' . print_r($params, TRUE));
     }
 
-    $completedStatusId = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Completed');
     $pendingStatusId = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending');
-
-    // If we have a $0 amount, skip call to processor and set payment_status to Completed.
-    if (empty($params['amount'])) {
-      $params['payment_status_id'] = $completedStatusId;
-      return $params;
-    }
 
     $this->setAPIParams();
 
@@ -448,24 +386,18 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     }
     else {
       $qfKey = $params['qfKey'];
-      $parsed_url = parse_url($params['entryURL']);
-      $url_path = substr($parsed_url['path'], 1);
-      $params['stripe_error_url'] = CRM_Utils_System::url($url_path,
-      $parsed_url['query'] . "&_qf_Main_display=1&qfKey={$qfKey}", FALSE, NULL, FALSE);
+      $parsedUrl = parse_url($params['entryURL']);
+      $urlPath = substr($parsedUrl['path'], 1);
+      $query = $parsedUrl['query'];
+      if (strpos($query, '_qf_Main_display=1') === FALSE) {
+        $query .= '&_qf_Main_display=1';
+      }
+      if (strpos($query, 'qfKey=') === FALSE) {
+        $query .= "&qfKey={$qfKey}";
+      }
+      $params['stripe_error_url'] = CRM_Utils_System::url($urlPath, $query, FALSE, NULL, FALSE);
     }
     $amount = self::getAmount($params);
-
-    // Use Stripe.js instead of raw card details.
-    if (!empty($params['stripe_token'])) {
-      $card_token = $params['stripe_token'];
-    }
-    else if(!empty(CRM_Utils_Array::value('stripe_token', $_POST, NULL))) {
-      $card_token = CRM_Utils_Array::value('stripe_token', $_POST, NULL);
-    }
-    else {
-      CRM_Core_Error::statusBounce(ts('Unable to complete payment! Please this to the site administrator with a description of what you were trying to do.'));
-      Civi::log()->debug('Stripe.js token was not passed!  Report this message to the site administrator. $params: ' . print_r($params, TRUE));
-    }
 
     $contactId = $this->getContactId($params);
     $email = $this->getBillingEmail($params, $contactId);
@@ -473,137 +405,116 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     // See if we already have a stripe customer
     $customerParams = [
       'contact_id' => $contactId,
-      'card_token' => $card_token,
       'processor_id' => $this->_paymentProcessor['id'],
       'email' => $email,
       // Include this to allow redirect within session on payment failure
       'stripe_error_url' => $params['stripe_error_url'],
     ];
 
+    // Get the Stripe Customer:
+    //   1. Look for an existing customer.
+    //   2. If no customer (or a deleted customer found), create a new one.
+    //   3. If existing customer found, update the metadata that Stripe holds for this customer.
     $stripeCustomerId = CRM_Stripe_Customer::find($customerParams);
-
     // Customer not in civicrm database.  Create a new Customer in Stripe.
     if (!isset($stripeCustomerId)) {
-      $stripeCustomer = CRM_Stripe_Customer::create($customerParams);
+      $stripeCustomer = CRM_Stripe_Customer::create($customerParams, $this);
     }
     else {
       // Customer was found in civicrm database, fetch from Stripe.
-      $deleteCustomer = FALSE;
       try {
         $stripeCustomer = \Stripe\Customer::retrieve($stripeCustomerId);
-      }
-      catch (Exception $e) {
+      } catch (Exception $e) {
         $err = self::parseStripeException('retrieve_customer', $e, FALSE);
-        if (($err['type'] == 'invalid_request_error') && ($err['code'] == 'resource_missing')) {
-          $deleteCustomer = TRUE;
-        }
-        $errorMessage = self::handleErrorNotification($err, $params['stripe_error_url']);
-        throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to create Stripe Charge: ' . $errorMessage);
+        $errorMessage = $this->handleErrorNotification($err, $params['stripe_error_url']);
+        throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to retrieve Stripe Customer: ' . $errorMessage);
       }
 
-      if ($deleteCustomer || $stripeCustomer->isDeleted()) {
+      if ($stripeCustomer->isDeleted()) {
         // Customer doesn't exist, create a new one
         CRM_Stripe_Customer::delete($customerParams);
         try {
-          $stripeCustomer = CRM_Stripe_Customer::create($customerParams);
-        }
-        catch (Exception $e) {
+          $stripeCustomer = CRM_Stripe_Customer::create($customerParams, $this);
+        } catch (Exception $e) {
           // We still failed to create a customer
-          $errorMessage = self::handleErrorNotification($stripeCustomer, $params['stripe_error_url']);
+          $errorMessage = $this->handleErrorNotification($stripeCustomer, $params['stripe_error_url']);
           throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to create Stripe Customer: ' . $errorMessage);
         }
       }
-
-      $stripeCustomer->card = $card_token;
-      try {
-        $stripeCustomer->save();
-      }
-      catch (Exception $e) {
-        $err = self::parseStripeException('update_customer', $e, TRUE);
-        if (($err['type'] == 'invalid_request_error') && ($err['code'] == 'token_already_used')) {
-          // This error is ok, we've already used the token during create_customer
-        }
-        else {
-          $errorMessage = self::handleErrorNotification($err, $params['stripe_error_url']);
-          throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to update Stripe Customer: ' . $errorMessage);
-        }
+      else {
+        CRM_Stripe_Customer::updateMetadata($customerParams, $this, $stripeCustomer->id);
       }
     }
 
     // Prepare the charge array, minus Customer/Card details.
     if (empty($params['description'])) {
-      $params['description'] = ts('Backend Stripe contribution');
+      $params['description'] = E::ts('Contribution: %1', [1 => $this->getPaymentProcessorLabel()]);
+    }
+
+    $contactContribution = $this->getContactId($params) . '-' . ($this->getContributionId($params) ?: 'XX');
+    $intentParams = [
+      'customer' => $stripeCustomer->id,
+      'description' => "{$params['description']} {$contactContribution} #" . CRM_Utils_Array::value('invoiceID', $params),
+      'statement_descriptor_suffix' => "{$contactContribution} " . substr($params['description'],0,7),
+    ];
+    $intentParams['statement_descriptor'] = substr("{$contactContribution} " . $params['description'], 0, 22);
+    $intentMetadata = [
+      'amount_to_capture' => $this->getAmount($params),
+    ];
+
+    // This is where we actually charge the customer
+    try {
+      \Stripe\PaymentIntent::update($paymentIntentID, $intentParams);
+      $intent = \Stripe\PaymentIntent::retrieve($paymentIntentID);
+      $intent->customer = $stripeCustomer->id;
+      switch ($intent->status) {
+        case 'requires_confirmation':
+          $intent->confirm();
+        case 'requires_capture':
+          $intent->capture($intentMetadata);
+          break;
+      }
+    }
+    catch (Exception $e) {
+      $this->handleError($e->getCode(), $e->getMessage(), $params['stripe_error_url']);
     }
 
     // Handle recurring payments in doRecurPayment().
     if (CRM_Utils_Array::value('is_recur', $params) && $params['contributionRecurID']) {
+      // This is where we save the customer card
+      // @todo For a recurring payment we have to save the card. For a single payment we'd like to develop the
+      //   save card functionality but should not save by default as the customer has not agreed.
+      $paymentMethod = \Stripe\PaymentMethod::retrieve($intent->payment_method);
+      $paymentMethod->attach(['customer' => $stripeCustomer->id]);
+
       // We set payment status as pending because the IPN will set it as completed / failed
       $params['payment_status_id'] = $pendingStatusId;
-      return $this->doRecurPayment($params, $amount, $stripeCustomer);
-    }
-
-    // Stripe charge.
-    $stripeChargeParams = [
-      'amount' => $amount,
-      'currency' => strtolower($params['currencyID']),
-      'description' => $params['description'] . ' # Invoice ID: ' . CRM_Utils_Array::value('invoiceID', $params),
-    ];
-
-    // Use Stripe Customer if we have a valid one.  Otherwise just use the card.
-    if (!empty($stripeCustomer->id)) {
-      $stripeChargeParams['customer'] = $stripeCustomer->id;
-    }
-    else {
-      $stripeChargeParams['card'] = $card_token;
-    }
-
-    try {
-      $stripeCharge = \Stripe\Charge::create($stripeChargeParams);
-    }
-    catch (Exception $e) {
-      $err = self::parseStripeException('charge_create', $e, FALSE);
-
-      if ($e instanceof \Stripe\Error\Card) {
-        if ($this->getContributionId($params)) {
-          civicrm_api3('Note', 'create', [
-            'entity_id' => $this->getContributionId($params),
-            'contact_id' => $this->getContactId($params),
-            'subject' => $err['type'],
-            'note' => $err['code'],
-            'entity_table' => 'civicrm_contribution',
-          ]);
-        }
-      }
-      $errorMessage = self::handleErrorNotification($err, $params['stripe_error_url']);
-      throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to create Stripe Charge: ' . $errorMessage);
+      return $this->doRecurPayment($params, $amount, $stripeCustomer, $paymentMethod);
     }
 
     // Return fees & net amount for Civi reporting.
+    $stripeCharge = $intent->charges->data[0];
     try {
       $stripeBalanceTransaction = \Stripe\BalanceTransaction::retrieve($stripeCharge->balance_transaction);
     }
     catch (Exception $e) {
       $err = self::parseStripeException('retrieve_balance_transaction', $e, FALSE);
-      $errorMessage = self::handleErrorNotification($err, $params['stripe_error_url']);
+      $errorMessage = $this->handleErrorNotification($err, $params['stripe_error_url']);
       throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to retrieve Stripe Balance Transaction: ' . $errorMessage);
     }
 
     // Success!
+    // Set the desired contribution status which will be set later (do not set on the contribution here!)
+    $params['contribution_status_id'] = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Completed');
     // For contribution workflow we have a contributionId so we can set parameters directly.
     // For events/membership workflow we have to return the parameters and they might get set...
-    $newParams['trxn_id'] = $stripeCharge->id;
-    $newParams['payment_status_id'] = $completedStatusId;
+    // For a single charge there is no stripe invoice.
+    $this->setPaymentProcessorOrderID($stripeCharge->id);
+    $this->setPaymentProcessorTrxnID($stripeCharge->id);
     $newParams['fee_amount'] = $stripeBalanceTransaction->fee / 100;
     $newParams['net_amount'] = $stripeBalanceTransaction->net / 100;
 
-    if ($this->getContributionId($params)) {
-      $newParams['id'] = $this->getContributionId($params);
-      civicrm_api3('Contribution', 'create', $newParams);
-      unset($newParams['id']);
-    }
-    $params = array_merge($params, $newParams);
-
-    return $params;
+    return $this->endDoPayment($params, $newParams);
   }
 
   /**
@@ -614,8 +525,9 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    *   Assoc array of input parameters for this transaction.
    * @param int $amount
    *   Transaction amount in USD cents.
-   * @param object $stripeCustomer
+   * @param \Stripe\Customer $stripeCustomer
    *   Stripe customer object generated by Stripe API.
+   * @param \Stripe\PaymentMethod $stripePaymentMethod
    *
    * @return array
    *   The result in a nice formatted array (or an error object).
@@ -623,7 +535,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @throws \CiviCRM_API3_Exception
    * @throws \CRM_Core_Exception
    */
-  public function doRecurPayment(&$params, $amount, $stripeCustomer) {
+  public function doRecurPayment($params, $amount, $stripeCustomer, $stripePaymentMethod) {
     $requiredParams = ['contributionRecurID', 'frequency_unit'];
     foreach ($requiredParams as $required) {
       if (!isset($params[$required])) {
@@ -635,8 +547,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     // Make sure frequency_interval is set (default to 1 if not)
     empty($params['frequency_interval']) ? $params['frequency_interval'] = 1 : NULL;
 
-    $amount = $this->deprecatedHandleCiviDiscount($params, $amount, $stripeCustomer);
-
     // Create the stripe plan
     $planId = self::createPlan($params, $amount);
 
@@ -644,16 +554,18 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     $subscriptionParams = [
       'prorate' => FALSE,
       'plan' => $planId,
+      'default_payment_method' => $stripePaymentMethod,
     ];
     // Create the stripe subscription for the customer
     $stripeSubscription = $stripeCustomer->subscriptions->create($subscriptionParams);
+    $this->setPaymentProcessorSubscriptionID($stripeSubscription->id);
 
     $recurParams = [
       'id' => $params['contributionRecurID'],
-      'trxn_id' => $stripeSubscription->id,
+      'trxn_id' => $this->getPaymentProcessorSubscriptionID(),
       // FIXME processor_id is deprecated as it is not guaranteed to be unique, but currently (CiviCRM 5.9)
       //  it is required by cancelSubscription (where it is called subscription_id)
-      'processor_id' => $stripeSubscription->id,
+      'processor_id' => $this->getPaymentProcessorSubscriptionID(),
       'auto_renew' => 1,
       'cycle_day' => date('d'),
       'next_sched_contribution_date' => $this->calculateNextScheduledDate($params),
@@ -665,6 +577,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       }
       if ($params['installments']) {
         $recurParams['end_date'] = $this->calculateEndDate($params);
+        $recurParams['installments'] = $params['installments'];
       }
     }
 
@@ -672,9 +585,43 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     CRM_Stripe_Hook::updateRecurringContribution($recurParams);
     // Update the recurring payment
     civicrm_api3('ContributionRecur', 'create', $recurParams);
-    // Update the contribution status
 
-    return $params;
+    // Set the orderID (trxn_id) to the invoice ID
+    // The IPN will change it to the charge_id
+    $this->setPaymentProcessorOrderID($stripeSubscription->latest_invoice);
+    return $this->endDoPayment($params);
+  }
+
+  /**
+   * Submit a refund payment
+   *
+   * @param array $params
+   *   Assoc array of input parameters for this transaction.
+   *
+   * @throws \Civi\Payment\Exception\PaymentProcessorException
+   */
+  public function doRefund(&$params) {
+    $requiredParams = ['charge_id', 'payment_processor_id'];
+    foreach ($requiredParams as $required) {
+      if (!isset($params[$required])) {
+        $message = 'Stripe doRefund: Missing mandatory parameter: ' . $required;
+        Civi::log()->error($message);
+        Throw new \Civi\Payment\Exception\PaymentProcessorException($message);
+      }
+    }
+    $refundParams = [
+      'charge' => $params['charge_id'],
+    ];
+    if (!empty($params['amount'])) {
+      $refundParams['amount'] = $this->getAmount($params);
+    }
+    try {
+      $refund = \Stripe\Refund::create($refundParams);
+    }
+    catch (Exception $e) {
+      $this->handleError($e->getCode(), $e->getMessage());
+      Throw new \Civi\Payment\Exception\PaymentProcessorException($e->getMessage());
+    }
   }
 
   /**
@@ -771,74 +718,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   }
 
   /**
-   * @deprecated This belongs in a separate extension / hook as it's non-standard CiviCRM behaviour
-   *
-   * This adds some support for CiviDiscount on recurring contributions and changes the default behavior to discounting
-   *  only the first of a recurring contribution set instead of all. (Intro offer) The Stripe procedure for discounting the
-   *  first payment of subscription entails creating a negative invoice item or negative balance first,
-   *  then creating the subscription at 100% full price. The customers first Stripe invoice will reflect the
-   * discount. Subsequent invoices will be at the full undiscounted amount.
-   * NB: Civi currently won't send a $0 charge to a payproc extension, but it should in this case. If the discount is
-   *  the cost of initial payment, we still send the whole discount (or giftcard) as a negative balance.
-   * Consider not selling giftards greater than your least expensive auto-renew membership until we can override this.
-   *
-   * @param $params
-   * @param $amount
-   * @param $stripeCustomer
-   *
-   * @return float|int
-   * @throws \CiviCRM_API3_Exception
-   */
-  public function deprecatedHandleCiviDiscount(&$params, $amount, $stripeCustomer) {
-    if (!empty($params['discountcode'])) {
-      $discount_code = $params['discountcode'];
-      $discount_object = civicrm_api3('DiscountCode', 'get', array(
-        'sequential' => 1,
-        'return' => "amount,amount_type",
-        'code' => $discount_code,
-      ));
-      // amount_types: 1 = percentage, 2 = fixed, 3 = giftcard
-      if ((!empty($discount_object['values'][0]['amount'])) && (!empty($discount_object['values'][0]['amount_type']))) {
-        $discount_type = $discount_object['values'][0]['amount_type'];
-        if ( $discount_type == 1 ) {
-          // Discount is a percentage. Avoid ugly math and just get the full price using price_ param.
-          foreach($params as $key=>$value){
-            if("price_" == substr($key,0,6)){
-              $price_param = $key;
-              $price_field_id = substr($key,strrpos($key,'_') + 1);
-            }
-          }
-          if (!empty($params[$price_param])) {
-            $priceFieldValue = civicrm_api3('PriceFieldValue', 'get', array(
-              'sequential' => 1,
-              'return' => "amount",
-              'id' => $params[$price_param],
-              'price_field_id' => $price_field_id,
-            ));
-          }
-          if (!empty($priceFieldValue['values'][0]['amount'])) {
-            $priceset_amount = $priceFieldValue['values'][0]['amount'];
-            $full_price = $priceset_amount * 100;
-            $discount_in_cents = $full_price - $amount;
-            // Set amount to full price.
-            $amount = $full_price;
-          }
-        } else if ( $discount_type >= 2 ) {
-          // discount is fixed or a giftcard. (may be > amount).
-          $discount_amount = $discount_object['values'][0]['amount'];
-          $discount_in_cents = $discount_amount * 100;
-          // Set amount to full price.
-          $amount = $amount + $discount_in_cents;
-        }
-      }
-      // Apply the disount through a negative balance.
-      $stripeCustomer->account_balance = -$discount_in_cents;
-      $stripeCustomer->save();
-    }
-    return $amount;
-  }
-
-  /**
    * Default payment instrument validation.
    *
    * Implement the usual Luhn algorithm via a static function in the CRM_Core_Payment_Form if it's a credit card
@@ -863,15 +742,15 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
 
     $contributionRecurId = $this->getRecurringContributionId($params);
     try {
-      $contributionRecur = civicrm_api3('ContributionRecur', 'getsingle', array(
+      $contributionRecur = civicrm_api3('ContributionRecur', 'getsingle', [
         'id' => $contributionRecurId,
-      ));
+      ]);
     }
     catch (Exception $e) {
       return FALSE;
     }
     if (empty($contributionRecur['trxn_id'])) {
-      CRM_Core_Session::setStatus(ts('The recurring contribution cannot be cancelled (No reference (trxn_id) found).'), 'Smart Debit', 'error');
+      CRM_Core_Session::setStatus(E::ts('The recurring contribution cannot be cancelled (No reference (trxn_id) found).'), 'Smart Debit', 'error');
       return FALSE;
     }
 

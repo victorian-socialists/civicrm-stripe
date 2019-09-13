@@ -39,7 +39,7 @@ class CRM_Stripe_BaseTest extends \PHPUnit_Framework_TestCase implements Headles
   // Secret/public keys are PTP test keys.
   protected $_sk = 'sk_test_TlGdeoi8e1EOPC3nvcJ4q5UZ';
   protected $_pk = 'pk_test_k2hELLGpBLsOJr6jZ2z9RaYh';
-  protected $_cc = NULL; 
+  protected $_cc = NULL;
 
   public function setUpHeadless() {
     // Civi\Test has many helpers, like install(), uninstall(), sql(), and sqlFile().
@@ -111,8 +111,8 @@ class CRM_Stripe_BaseTest extends \PHPUnit_Framework_TestCase implements Headles
     $processor = array_pop($result['values']);
     $this->_sk = $processor['user_name'];
     $this->_pk = $processor['password'];
-    $this->_paymentProcessor = $processor; 
-    $this->_paymentProcessorID = $result['id']; 
+    $this->_paymentProcessor = $processor;
+    $this->_paymentProcessorID = $result['id'];
   }
 
   /**
@@ -132,9 +132,9 @@ class CRM_Stripe_BaseTest extends \PHPUnit_Framework_TestCase implements Headles
       ), $params);
     $result = civicrm_api3('ContributionPage', 'create', $params);
     $this->assertEquals(0, $result['is_error']);
-    $this->_contributionPageID = $result['id']; 
+    $this->_contributionPageID = $result['id'];
   }
-  
+
   /**
    * Submit to stripe
    */
@@ -179,8 +179,9 @@ class CRM_Stripe_BaseTest extends \PHPUnit_Framework_TestCase implements Headles
   public function assertValidTrxn() {
     $this->assertNotEmpty($this->_trxn_id, "A trxn id was assigned");
 
-    \Stripe\Stripe::setApiKey($this->_sk);
-    $found = FALSE;
+    $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $this->_paymentProcessorID]));
+    $processor->setAPIParams();
+
     try {
       $results = \Stripe\Charge::retrieve(array( "id" => $this->_trxn_id));
       $found = TRUE;
@@ -188,10 +189,10 @@ class CRM_Stripe_BaseTest extends \PHPUnit_Framework_TestCase implements Headles
     catch (Stripe_Error $e) {
       $found = FALSE;
     }
-    
+
     $this->assertTrue($found, 'Assigned trxn_id is valid.');
 
-  }  
+  }
   /**
    * Create contribition
    */
@@ -213,7 +214,7 @@ class CRM_Stripe_BaseTest extends \PHPUnit_Framework_TestCase implements Headles
     ), $params));
     $this->assertEquals(0, $contribution['is_error']);
     $this->_contributionID = $contribution['id'];
-  } 
+  }
 
   public function createOrganization() {
     if (!empty($this->_orgID)) {
@@ -230,7 +231,7 @@ class CRM_Stripe_BaseTest extends \PHPUnit_Framework_TestCase implements Headles
     CRM_Member_PseudoConstant::flush('membershipType');
     CRM_Core_Config::clearDBCache();
     $this->createOrganization();
-    $params = array( 
+    $params = array(
       'name' => 'General',
       'duration_unit' => 'year',
       'duration_interval' => 1,
@@ -251,5 +252,5 @@ class CRM_Stripe_BaseTest extends \PHPUnit_Framework_TestCase implements Headles
     CRM_Utils_Cache::singleton()->flush();
   }
 
-  
+
 }

@@ -27,7 +27,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
   protected $_frequency_interval = 1;
   protected $_membershipID;
 
-  // This test is particularly dirty for some reason so we have to 
+  // This test is particularly dirty for some reason so we have to
   // force a reset.
   public function setUpHeadless() {
     $force = TRUE;
@@ -71,13 +71,15 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     $this->doPayment($payment_extra_params);
 
     // Now check to see if an event was triggered and if so, process it.
-    $payment_object = $this->getEvent('invoice.payment_succeeded'); 
+    $payment_object = $this->getEvent('invoice.payment_succeeded');
     if ($payment_object) {
       $this->ipn($payment_object);
     }
 
-    // Now that we have a recurring contribution, let's update it. 
-    \Stripe\Stripe::setApiKey($this->_sk);
+    // Now that we have a recurring contribution, let's update it.
+    $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $this->_paymentProcessorID]));
+    $processor->setAPIParams();
+
     $sub = \Stripe\Subscription::retrieve($this->_subscriptionID);
 
     // Create a new plan if it doesn't yet exist.
@@ -110,7 +112,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     $sub->save();
 
     // Now check to see if an event was triggered and if so, process it.
-    $payment_object = $this->getEvent('customer.subscription.updated'); 
+    $payment_object = $this->getEvent('customer.subscription.updated');
     if ($payment_object) {
       $this->ipn($payment_object);
     }
@@ -123,8 +125,8 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       'return' => array('id'),
     );
     $result = civicrm_api3('ContributionRecur', 'getsingle', $params);
-    $newContributionRecurID = $result['id']; 
-    
+    $newContributionRecurID = $result['id'];
+
     // Now ensure that the membership record is updated to have this
     // new recurring contribution id.
     $membership_contribution_recur_id = civicrm_api3('Membership', 'getvalue', array(
@@ -135,7 +137,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
 
     // Delete the new plan so we can cleanly run the next time.
     $plan->delete();
-    
+
   }
 
   /**
@@ -155,7 +157,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     $this->doPayment($payment_extra_params);
 
     // Now check to see if an event was triggered and if so, process it.
-    $payment_object = $this->getEvent('invoice.payment_succeeded'); 
+    $payment_object = $this->getEvent('invoice.payment_succeeded');
     if ($payment_object) {
       // Now manipulate the transaction so it appears to be a failed one.
       $payment_object->type = 'invoice.payment_failed';
@@ -192,7 +194,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     $this->doPayment($payment_extra_params);
 
     // Now check to see if an event was triggered and if so, process it.
-    $payment_object = $this->getEvent('invoice.payment_succeeded'); 
+    $payment_object = $this->getEvent('invoice.payment_succeeded');
     if ($payment_object) {
       $this->ipn($payment_object);
     }
@@ -201,15 +203,17 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     $this->assertEquals(1, $contribution_status_id, "Recurring payment was properly processed via a stripe event.");
 
     // Now, cancel the subscription and ensure it is properly cancelled.
-    \Stripe\Stripe::setApiKey($this->_sk);
+    $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $this->_paymentProcessorID]));
+    $processor->setAPIParams();
+
     $sub = \Stripe\Subscription::retrieve($this->_subscriptionID);
     $sub->cancel();
 
-    $sub_object = $this->getEvent('customer.subscription.deleted'); 
+    $sub_object = $this->getEvent('customer.subscription.deleted');
     if ($sub_object) {
       $this->ipn($sub_object);
     }
-    $this->assertContributionRecurIsCancelled();  
+    $this->assertContributionRecurIsCancelled();
   }
 
   public function assertContributionRecurIsCancelled() {
@@ -239,7 +243,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     $params['output'] = 'raw';
 
     // Now try to retrieve this transaction.
-    $transactions = civicrm_api3('Stripe', 'listevents', $params );    
+    $transactions = civicrm_api3('Stripe', 'listevents', $params );
     foreach($transactions['values']['data'] as $transaction) {
       if ($transaction->data->object->$property == $this->_subscriptionID) {
         return $transaction;
@@ -254,7 +258,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
    *
    */
   public function ipn($data, $verify = TRUE) {
-    // The $_GET['processor_id'] value is normally set by 
+    // The $_GET['processor_id'] value is normally set by
     // CRM_Core_Payment::handlePaymentMethod
     $_GET['processor_id'] = $this->_paymentProcessorID;
     $ipnClass = new CRM_Core_Payment_StripeIPN($data, $verify);
@@ -272,7 +276,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       'amount' => $this->_total,
       'sequential' => 1,
       'installments' => $this->_installments,
-      'frequency_unit' => $this->_frequency_unit, 
+      'frequency_unit' => $this->_frequency_unit,
       'frequency_interval' => $this->_frequency_interval,
       'invoice_id' => $this->_invoiceID,
       'contribution_status_id' => 2,
@@ -293,5 +297,5 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     $this->assertEquals(0, $contributionRecur['is_error']);
     $this->_contributionRecurID = $contributionRecur['id'];
     $this->_contributionID = $contributionRecur['values']['0']['api.contribution.create']['id'];
-  } 
+  }
 }

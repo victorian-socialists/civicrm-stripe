@@ -20,13 +20,16 @@ class CRM_Stripe_Webhook {
     $result = civicrm_api3('PaymentProcessor', 'get', [
       'class_name' => 'Payment_Stripe',
       'is_active' => 1,
+      'domain_id' => CRM_Core_Config::domainID(),
     ]);
 
     foreach ($result['values'] as $paymentProcessor) {
       $messageTexts = [];
       $webhook_path = self::getWebhookPath($paymentProcessor['id']);
 
-      \Stripe\Stripe::setApiKey(CRM_Core_Payment_Stripe::getSecretKey($paymentProcessor));
+      $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $paymentProcessor['id']]));
+      $processor->setAPIParams();
+
       try {
         $webhooks = \Stripe\WebhookEndpoint::all(["limit" => 100]);
       }
@@ -35,10 +38,7 @@ class CRM_Stripe_Webhook {
         $messages[] = new CRM_Utils_Check_Message(
           'stripe_webhook',
           $error,
-          E::ts('Stripe Payment Processor: %1 (%2)', [
-            1 => $paymentProcessor['name'],
-            2 => $paymentProcessor['id'],
-          ]),
+          self::getTitle($paymentProcessor),
           \Psr\Log\LogLevel::ERROR,
           'fa-money'
         );
@@ -91,9 +91,12 @@ class CRM_Stripe_Webhook {
           }
         }
         else {
-          $messageTexts[] = E::ts('Stripe Webhook missing! Please visit <a href="%1">Fix Stripe Webhook</a> to fix.', [
-            1 => CRM_Utils_System::url('civicrm/stripe/fix-webhook'),
-          ]);
+          $messageTexts[] = E::ts('Stripe Webhook missing! Please visit <a href="%1">Fix Stripe Webhook</a> to fix.<br />Expected webhook path is: <a href="%2" target="_blank">%2</a>',
+            [
+              1 => CRM_Utils_System::url('civicrm/stripe/fix-webhook'),
+              2 => $webhook_path,
+            ]
+          );
         }
       }
 
@@ -101,10 +104,7 @@ class CRM_Stripe_Webhook {
         $messages[] = new CRM_Utils_Check_Message(
           'stripe_webhook',
           $messageText,
-          E::ts('Stripe Payment Processor Webhook: %1 (%2)', [
-            1 => $paymentProcessor['name'],
-            2 => $paymentProcessor['id'],
-          ]),
+          self::getTitle($paymentProcessor),
           \Psr\Log\LogLevel::WARNING,
           'fa-money'
         );
@@ -113,12 +113,29 @@ class CRM_Stripe_Webhook {
   }
 
   /**
+   * Get the error message title for the system check
+   * @param array $paymentProcessor
+   *
+   * @return string
+   */
+  private static function getTitle($paymentProcessor) {
+    if (!empty($paymentProcessor['is_test'])) {
+      $paymentProcessor['name'] .= ' (test)';
+    }
+    return E::ts('Stripe Payment Processor: %1 (%2)', [
+      1 => $paymentProcessor['name'],
+      2 => $paymentProcessor['id'],
+    ]);
+  }
+
+  /**
    * Create a new webhook for payment processor
    *
    * @param int $paymentProcessorId
    */
   public static function createWebhook($paymentProcessorId) {
-    \Stripe\Stripe::setApiKey(CRM_Core_Payment_Stripe::getSecretKeyById($paymentProcessorId));
+    $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $paymentProcessorId]));
+    $processor->setAPIParams();
 
     $params = [
       'enabled_events' => self::getDefaultEnabledEvents(),

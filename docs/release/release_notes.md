@@ -1,3 +1,54 @@
+## Release 6.0.beta1
+
+*Thanks to Rich Lott (@artfulrobot) for contributing and testing release.*
+* We don't need to confirm the payment until we capture it
+* payment method id is not required when passing in an existing payment intent
+* Add minified versions of js/css
+* Remove onclick attribute from submit form so that CiviContribute forms do stripe processing before submission
+* Description and Customer fields in Stripe backend - fixes #78
+
+## Release 6.0.alpha3
+
+* Support recurring payments with paymentIntents/Elements. Cancel subscription with Stripe when we reach recurring end date
+* **Update required Stripe API version to 2019-09-09**
+* Handle confirmation pages properly for contribution pages (make sure we pass through paymentIntentID).
+* Handle card declined on client side.
+* Support creating recurring payment (subscription).
+* Handle IPN events for charges / invoices (support cancel/refund etc).
+* Add basic support for PaymentProcessor.refund API.
+* Remove membership_type_tag from plan name.
+
+## Release 6.0.alpha2
+
+* Support Drupal Webform CiviCRM.
+* Support Event Registration.
+* Support Confirm/Thankyou pages on contribution pages / events.
+* Support cards using 3dsecure and cards not using 3dsecure.
+
+### Not Supported (should be in final 6.0 release):
+* Recurring payments.
+* Backend payments.
+
+## Release 6.0.alpha1
+
+* ONLY contribution pages with no confirm pages are supported.
+
+## Release 6.0 (not yet released)
+
+**This is a major new release. You cannot rollback once you've upgraded.**
+
+**This extension REQUIRES the mjwshared extension available here: https://lab.civicrm.org/extensions/mjwshared**
+
+* Use Stripe Elements: https://stripe.com/payments/elements.
+* Use PaymentIntents and comply with the European SCA directive (https://stripe.com/docs/strong-customer-authentication).
+* Require Stripe API Version: 2019-09-09 and ensure that all codepaths specify the API version.
+* Switch publishable key/secret key in settings (upgrader does this automatically) so they are now "correct" per CiviCRM settings pages.
+* Support cards using 3dsecure and cards not using 3dsecure (workflows with Stripe are slightly different but both are now handled).
+
+### Not supported
+* CiviCRM Event Cart (requires additional funding, changes should probably be made in CiviCRM core to standardize that workflow rather than adding support via this extension).
+* Card payments via the admin backend (this was supported in 5.4.1 but has unresolved issues with Stripe Elements when used via popup forms).
+
 ## Release 5.4.1
 * Don't overwrite system messages when performing webhook checks.
 * Add form to handle creating/updating webhooks instead of automatically during system check (Thanks @artfulrobot)
