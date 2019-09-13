@@ -23,14 +23,5 @@ Under *Administer->CiviContribute->Stripe Settings* you can find a setting:
 
 > This can be switched on to output debug info to the browser console and can be used to debug problems with submitting your payments.
 
-## Credits
-Current Maintainer: Matthew Wire - [MJW Consulting](https://www.mjwconsult.co.uk).
-
-### Original Author
-Joshua Walker - http://drastikbydesign.com - https://drupal.org/user/433663  
-
-### Other Credits
-Peter Hartmann - https://blog.hartmanncomputer.com
-
-For bug fixes, new features, and documentation, thanks to:
-rgburton, Swingline0, BorislavZlatanov, agh1, jmcclelland, mattwire
+## Support and Maintenance
+This extension is supported and maintained by [![MJW Consulting](/images/mjwconsulting.jpg)](https://www.mjwconsult.co.uk) with the help and support of the CiviCRM community.
