@@ -302,9 +302,12 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       $billingLocationID = CRM_Core_BAO_LocationType::getBilling();
     }
 
-    // Stripe does not require the state/county field
-    if (!empty($metadata["billing_state_province_id-{$billingLocationID}"]['is_required'])) {
-      $metadata["billing_state_province_id-{$billingLocationID}"]['is_required'] = FALSE;
+    // Stripe does not require some of the billing fields but users may still choose to fill them in.
+    $nonRequiredBillingFields = ["billing_state_province_id-{$billingLocationID}", "billing_postal_code-{$billingLocationID}"];
+    foreach ($nonRequiredBillingFields as $fieldName) {
+      if (!empty($metadata[$fieldName]['is_required'])) {
+        $metadata[$fieldName]['is_required'] = FALSE;
+      }
     }
 
     return $metadata;

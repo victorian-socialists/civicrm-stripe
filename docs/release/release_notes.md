@@ -1,3 +1,7 @@
+## Release 6.0.1
+
+* Support cards that do not request a postal/zip code.
+
 ## Release 6.0
 
 *Switch to Stripe Elements for SAQ-A compliance on most sites and support the European Secure Customer Authentication (SCA) payments directive.*
