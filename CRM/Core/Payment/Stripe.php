@@ -325,6 +325,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'billingAddressID' => CRM_Core_BAO_LocationType::getBilling(),
       'publishableKey' => CRM_Core_Payment_Stripe::getPublicKeyById($form->_paymentProcessor['id']),
       'jsDebug' => (boolean) \Civi::settings()->get('stripe_jsdebug'),
+      'paymentProcessorTypeID' => $form->_paymentProcessor['payment_processor_type_id'],
     ];
     \Civi::resources()->addVars(E::SHORT_NAME, $jsVars);
     // Assign to smarty so we can add via Card.tpl for drupal webform because addVars doesn't work in that context
@@ -371,6 +372,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       // @fixme Hack for contributionpages - see https://github.com/civicrm/civicrm-core/pull/15252
       $paymentIntentID = CRM_Core_Session::singleton()->get('stripePaymentIntent');
       $params['paymentIntentID'] = $paymentIntentID;
+      CRM_Core_Session::singleton()->set('stripePaymentIntent', NULL);
     }
     else {
       Civi::log()->debug('paymentIntentID not found. $params: ' . print_r($params, TRUE));
