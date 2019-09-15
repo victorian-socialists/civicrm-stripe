@@ -94,12 +94,13 @@ CRM.$(function($) {
     window.onbeforeunload = null;
 
     // Load Stripe onto the form.
-    checkAndLoad();
-
-    // Store and remove any onclick Action currently assigned to the form.
-    // We will re-add it if the transaction goes through.
-    //onclickAction = submitButton.getAttribute('onclick');
-    //submitButton.removeAttribute('onclick');
+    var cardElement = document.getElementById('card-element');
+    if ((typeof cardElement !== 'undefined') && (cardElement)) {
+      if (!cardElement.children.length) {
+        debugging('checkAndLoad from document.ready');
+        checkAndLoad();
+      }
+    }
 
     // Quickform doesn't add hidden elements via standard method. On a form where payment processor may
     //  be loaded via initial form load AND ajax (eg. backend live contribution page with payproc dropdown)
@@ -113,61 +114,66 @@ CRM.$(function($) {
   });
 
   // Re-prep form when we've loaded a new payproc
-  $( document ).ajaxComplete(function( event, xhr, settings ) {
+  $(document).ajaxComplete(function(event, xhr, settings) {
     // /civicrm/payment/form? occurs when a payproc is selected on page
     // /civicrm/contact/view/participant occurs when payproc is first loaded on event credit card payment
     // On wordpress these are urlencoded
-    if ((settings.url.match("civicrm(\/|%2F)payment(\/|%2F)form") != null)
-      || (settings.url.match("civicrm(\/|\%2F)contact(\/|\%2F)view(\/|\%2F)participant") != null)) {
+    if ((settings.url.match("civicrm(\/|%2F)payment(\/|%2F)form") != null) ||
+      (settings.url.match("civicrm(\/|\%2F)contact(\/|\%2F)view(\/|\%2F)participant") != null)) {
+
       // See if there is a payment processor selector on this form
       // (e.g. an offline credit card contribution page).
-      if ($('#payment_processor_id').length > 0) {
+      if (typeof CRM.vars.stripe === 'undefined') {
+        return;
+      }
+      var paymentProcessorID = getPaymentProcessorSelectorValue();
+      if (paymentProcessorID !== null) {
         // There is. Check if the selected payment processor is different
         // from the one we think we should be using.
-        var ppid = $('#payment_processor_id').val();
-        if (ppid != CRM.vars.stripe.id) {
-          debugging('payment processor changed to id: ' + ppid);
-          // It is! See if the new payment processor is also a Stripe
-          // Payment processor. First, find out what the stripe
-          // payment processor type id is (we don't want to update
-          // the stripe pub key with a value from another payment processor).
-          CRM.api3('PaymentProcessorType', 'getvalue', {
-            "sequential": 1,
-            "return": "id",
-            "name": "Stripe"
+        if (paymentProcessorID !== parseInt(CRM.vars.stripe.id)) {
+          debugging('payment processor changed to id: ' + paymentProcessorID);
+          if (paymentProcessorID === 0) {
+            // Don't bother executing anything below - this is a manual / paylater
+            return notStripe();
+          }
+          // It is! See if the new payment processor is also a Stripe Payment processor.
+          // (we don't want to update the stripe pub key with a value from another payment processor).
+          // Now, see if the new payment processor id is a stripe payment processor.
+          CRM.api3('PaymentProcessor', 'getvalue', {
+            "return": "user_name",
+            "id": paymentProcessorID,
+            "payment_processor_type_id": CRM.vars.stripe.paymentProcessorTypeID,
           }).done(function(result) {
-            // Now, see if the new payment processor id is a stripe
-            // payment processor.
-            var stripe_pp_type_id = result['result'];
-            CRM.api3('PaymentProcessor', 'getvalue', {
-              "sequential": 1,
-              "return": "password",
-              "id": ppid,
-              "payment_processor_type_id": stripe_pp_type_id,
-            }).done(function(result) {
-              var pub_key = result['result'];
-              if (pub_key) {
-                // It is a stripe payment processor, so update the key.
-                debugging("Setting new stripe key to: " + pub_key);
-                CRM.vars.stripe.publishableKey = pub_key;
-              }
-              else {
-                debugging("New payment processor is not Stripe, setting stripe-pub-key to null");
-                CRM.vars.stripe.publishableKey = null;
-              }
-              // Now reload the billing block.
-              checkAndLoad();
-            });
+            var pub_key = result.result;
+            if (pub_key) {
+              // It is a stripe payment processor, so update the key.
+              debugging("Setting new stripe key to: " + pub_key);
+              CRM.vars.stripe.publishableKey = pub_key;
+            }
+            else {
+              return notStripe();
+            }
+            // Now reload the billing block.
+            debugging('checkAndLoad from ajaxComplete');
+            checkAndLoad();
           });
         }
       }
-      checkAndLoad();
     }
   });
 
+  function notStripe() {
+    debugging("New payment processor is not Stripe, clearing CRM.vars.stripe");
+    //CRM.vars.stripe.publishableKey = null;
+    delete(CRM.vars.stripe);
+    if ((typeof card !== 'undefined') && (card)) {
+      card.unmount();
+    }
+  }
+
   function checkAndLoad() {
     if (typeof CRM.vars.stripe === 'undefined') {
-      debugging('CRM.vars.stripe not defined!');
+      debugging('CRM.vars.stripe not defined! Not a Stripe processor?');
       return;
     }
 
@@ -190,7 +196,11 @@ CRM.$(function($) {
   }
 
   function loadStripeBillingBlock() {
-    stripe = Stripe(CRM.vars.stripe.publishableKey);
+    debugging('loadStripeBillingBlock');
+
+    if (typeof stripe === 'undefined') {
+      stripe = Stripe(CRM.vars.stripe.publishableKey);
+    }
     var elements = stripe.elements();
 
     var style = {
@@ -209,7 +219,7 @@ CRM.$(function($) {
       updateFormElementsFromCreditCardDetails(event);
     });
 
-      // Get the form containing payment details
+    // Get the form containing payment details
     form = getBillingForm();
     if (typeof form.length === 'undefined' || form.length === 0) {
       debugging('No billing form!');
@@ -227,21 +237,33 @@ CRM.$(function($) {
       '[type="submit"].cancel, ' +
       '[type="submit"].webform-previous'), i;
     for (i = 0; i < nonPaymentSubmitButtons.length; ++i) {
-      nonPaymentSubmitButtons[i].addEventListener('click', function () {
-        debugging('adding submitdontprocess');
-        form.dataset.submitdontprocess = true;
-      });
+      nonPaymentSubmitButtons[i].addEventListener('click', submitDontProcess());
     }
 
-    submitButton.addEventListener('click', function(event) {
+    function submitDontProcess() {
+      debugging('adding submitdontprocess');
+      form.dataset.submitdontprocess = true;
+    }
+
+    submitButton.addEventListener('click', submitButtonClick);
+
+    function submitButtonClick(event) {
+      if (form.dataset.submitted) {
+        return;
+      }
+      form.dataset.submitted = true;
       // Take over the click function of the form.
+      if (typeof CRM.vars.stripe === 'undefined') {
+        // Submit the form
+        return form.submit();
+      }
       debugging('clearing submitdontprocess');
       form.dataset.submitdontprocess = false;
 
       // Run through our own submit, that executes Stripe submission if
       // appropriate for this submit.
       return submit(event);
-    });
+    }
 
     // Remove the onclick attribute added by CiviCRM.
     submitButton.removeAttribute('onclick');
@@ -271,17 +293,18 @@ CRM.$(function($) {
       event.preventDefault();
       debugging('submit handler');
 
+      if (typeof CRM.vars.stripe === 'undefined') {
+        debugging('Submitting - not a stripe processor');
+        return true;
+      }
+
       if (form.dataset.submitted === true) {
         debugging('form already submitted');
         return false;
       }
 
-      var stripeProcessorId;
-      var chosenProcessorId;
-
-      if (typeof CRM.vars.stripe !== 'undefined') {
-        stripeProcessorId = CRM.vars.stripe.id;
-      }
+      var stripeProcessorId = CRM.vars.stripe.id;
+      var chosenProcessorId = null;
 
       // Handle multiple payment options and Stripe not being chosen.
       // @fixme this needs refactoring as some is not relevant anymore (with stripe 6.0)
@@ -296,8 +319,8 @@ CRM.$(function($) {
       }
       else {
         // Most forms have payment_processor-section but event registration has credit_card_info-section
-        if ((form.querySelector(".crm-section.payment_processor-section") !== null)
-          || (form.querySelector(".crm-section.credit_card_info-section") !== null)) {
+        if ((form.querySelector(".crm-section.payment_processor-section") !== null) ||
+          (form.querySelector(".crm-section.credit_card_info-section") !== null)) {
           stripeProcessorId = CRM.vars.stripe.id;
           if (form.querySelector('input[name="payment_processor_id"]:checked') !== null) {
             chosenProcessorId = form.querySelector('input[name="payment_processor_id"]:checked').value;
@@ -309,9 +332,8 @@ CRM.$(function($) {
       // - Is the selected processor ID pay later (0)
       // - Is the Stripe processor ID defined?
       // - Is selected processor ID and stripe ID undefined? If we only have stripe ID, then there is only one (stripe) processor on the page
-      if ((chosenProcessorId === 0)
-        || (stripeProcessorId == null)
-        || ((chosenProcessorId == null) && (stripeProcessorId == null))) {
+      if ((chosenProcessorId === 0) || (stripeProcessorId == null) ||
+        ((chosenProcessorId == null) && (stripeProcessorId == null))) {
         debugging('Not a Stripe transaction, or pay-later');
         return true;
       }
@@ -384,7 +406,7 @@ CRM.$(function($) {
   function getBillingForm() {
     // If we have a stripe billing form on the page
     var billingFormID = $('div#card-element').closest('form').prop('id');
-    if (!billingFormID.length) {
+    if ((typeof billingFormID === 'undefined') || (!billingFormID.length)) {
       // If we have multiple payment processors to select and stripe is not currently loaded
       billingFormID = $('input[name=hidden_processor]').closest('form').prop('id');
     }
@@ -465,6 +487,24 @@ CRM.$(function($) {
     hiddenInput.setAttribute('id', 'action');
     hiddenInput.setAttribute('value', submitAction);
     form.appendChild(hiddenInput);
+  }
+
+  /**
+   * Get the selected payment processor on the form
+   * @returns int
+   */
+  function getPaymentProcessorSelectorValue() {
+    if ((typeof form === 'undefined') || (!form)) {
+      form = getBillingForm();
+      if (!form) {
+        return null;
+      }
+    }
+    var paymentProcessorSelected = form.querySelector('input[name="payment_processor_id"]:checked');
+    if (paymentProcessorSelected !== null) {
+      return parseInt(paymentProcessorSelected.value);
+    }
+    return null;
   }
 
 });
