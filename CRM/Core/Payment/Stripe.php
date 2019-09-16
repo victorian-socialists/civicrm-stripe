@@ -764,6 +764,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    *
    * @throws \CRM_Core_Exception
    * @throws \CiviCRM_API3_Exception
+   * @throws \Stripe\Error\Api
    */
   public static function handlePaymentNotification() {
     $data_raw = file_get_contents("php://input");
@@ -772,37 +773,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     if ($ipnClass->main()) {
       http_response_code(200);
     }
-  }
-
-  /**
-   * Get a "token" parameter that was inserted via javascript on the payment form (eg. paymentIntentID).
-   *
-   * @param string $parameterName
-   * @param array $params
-   *
-   * @return string
-   * @throws \CRM_Core_Exception
-   */
-  private function getTokenParameter($parameterName, $params) {
-    // Get the passed in parameter
-    if(!empty(CRM_Utils_Array::value($parameterName, $params))) {
-      $parameterValue = CRM_Utils_Array::value($parameterName, $params);
-    }
-    elseif (CRM_Core_Session::singleton()->get($parameterName)) {
-      // @fixme Hack for contributionpages - see https://github.com/civicrm/civicrm-core/pull/15252
-      $parameterValue = CRM_Core_Session::singleton()->get($parameterName);
-      CRM_Core_Session::singleton()->set($parameterName, NULL);
-    }
-    elseif(CRM_Utils_Request::retrieve($parameterName, 'String')) {
-      $parameterValue = CRM_Utils_Request::retrieve($parameterName, 'String');
-    }
-    if (empty($parameterValue)) {
-      Civi::log()->debug("{$parameterName}paymentIntentID not found. \$params: " . print_r($params, TRUE));
-      CRM_Core_Error::statusBounce(E::ts('Unable to complete payment! Missing %1.', [1 => $parameterName]));
-    }
-
-    $params[$parameterName] = $parameterValue;
-    return $params;
   }
 
 }

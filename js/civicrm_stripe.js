@@ -66,7 +66,7 @@ CRM.$(function($) {
   }
 
   function handleCardPayment() {
-    debugging('handle card payment', card);
+    debugging('handle card payment');
     stripe.createPaymentMethod('card', card).then(function (result) {
       if (result.error) {
         // Show error in payment form
@@ -168,13 +168,12 @@ CRM.$(function($) {
 
   function notStripe() {
     debugging("New payment processor is not Stripe, clearing CRM.vars.stripe");
-    //CRM.vars.stripe.publishableKey = null;
-    delete(CRM.vars.stripe);
     if ((typeof card !== 'undefined') && (card)) {
-      debugging("destroying card element", card);
+      debugging("destroying card element");
       card.destroy();
       card = undefined;
     }
+    delete(CRM.vars.stripe);
   }
 
   function checkAndLoad() {
@@ -480,7 +479,7 @@ CRM.$(function($) {
     }
   }
 
-  function debugging (errorCode) {
+  function debugging(errorCode) {
     // Uncomment the following to debug unexpected returns.
     if ((typeof(CRM.vars.stripe) === 'undefined') || (Boolean(CRM.vars.stripe.jsDebug) === true)) {
       console.log(new Date().toISOString() + ' civicrm_stripe.js: ' + errorCode);

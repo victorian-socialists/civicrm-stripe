@@ -1,6 +1,26 @@
-## Release 6.0.1
+## Release 6.1
 
-* Support cards that do not request a postal/zip code.
+*This release fixes a number of bugs/issues identified after the release of 6.0.*
+
+#### Upgrade Advice
+
+**IMPORTANT!** If upgrading to 6.x for the first time make sure you install the [mjwshared](https://lab.civicrm.org/extensions/mjwshared) extension
+**BEFORE** you upgrade Stripe.
+
+This release requires an upgrade to version 0.4 of the MJWShared extension.
+
+ **ALL users of 6.0 should upgrade to this release.**
+ 
+ If upgrading to 6.x for the first time, please upgrade directly to 6.1 (do not install 6.0 first).
+
+#### Changes
+
+* Support cards that do not request a postal/zip code (*fixes [#80](https://lab.civicrm.org/extensions/stripe/issues/80)*).
+* Enable payments on backend (*fixes [#79](https://lab.civicrm.org/extensions/stripe/issues/79)).
+* Resolve multiple issues with "more than one" payment processor on the form and stripe failing to submit if it wasn't the first to be selected:
+  * Fix issue when script is reloaded by changes of payment processors.
+  * Improve handling for multiple processors and pay later.
+  * Make sure we clear the paymentIntentID from the session once we've used it (this prevents a browser refresh trying to use an already captured paymentIntent).
 
 ## Release 6.0
 
