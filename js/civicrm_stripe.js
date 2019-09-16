@@ -2,12 +2,53 @@
  * JS Integration between CiviCRM & Stripe.
  */
 CRM.$(function($) {
+  debugging("civicrm_stripe loaded, dom-ready function firing.");
 
+  if (window.civicrmStripeHandleReload) {
+    // Call existing instance of this, instead of making new one.
+
+    debugging("calling existing civicrmStripeHandleReload.");
+    window.civicrmStripeHandleReload();
+    return;
+  }
+
+  // On intial load...
   var stripe;
   var card;
   var form;
   var submitButton;
   var stripeLoading = false;
+  var onclickAction = null;
+
+  // Disable the browser "Leave Page Alert" which is triggered because we mess with the form submit function.
+  window.onbeforeunload = null;
+
+  // Quickform doesn't add hidden elements via standard method. On a form where payment processor may
+  //  be loaded via initial form load AND ajax (eg. backend live contribution page with payproc dropdown)
+  //  the processor metadata elements will appear twice (once on initial load, once via AJAX).  The ones loaded
+  //  via initial load will not be removed when AJAX loaded ones are added and the wrong stripe-pub-key etc will
+  //  be submitted.  This removes all elements with the class "payproc-metadata" from the form each time the
+  //  dropdown is changed.
+  $('select#payment_processor_id').on('change', function() {
+    $('input.payproc-metadata').remove();
+  });
+
+  /**
+   * This function boots the UI.
+   */
+  window.civicrmStripeHandleReload = function() {
+    debugging('civicrmStripeHandleReload');
+    // Load Stripe onto the form.
+    var cardElement = document.getElementById('card-element');
+    if ((typeof cardElement !== 'undefined') && (cardElement)) {
+      if (!cardElement.children.length) {
+        debugging('checkAndLoad from document.ready');
+        checkAndLoad();
+      }
+    }
+  };
+  // On initial run we need to call this now.
+  window.civicrmStripeHandleReload();
 
   function paymentIntentSuccessHandler(paymentIntent) {
     debugging('paymentIntent confirmation success');
@@ -36,7 +77,7 @@ CRM.$(function($) {
   }
 
   function handleCardPayment() {
-    debugging('handle card payment');
+    debugging('handle card payment', card);
     stripe.createPaymentMethod('card', card).then(function (result) {
       if (result.error) {
         // Show error in payment form
@@ -87,39 +128,13 @@ CRM.$(function($) {
     });
   }
 
-  // Prepare the form.
-  var onclickAction = null;
-  $(document).ready(function() {
-    // Disable the browser "Leave Page Alert" which is triggered because we mess with the form submit function.
-    window.onbeforeunload = null;
-
-    // Load Stripe onto the form.
-    var cardElement = document.getElementById('card-element');
-    if ((typeof cardElement !== 'undefined') && (cardElement)) {
-      if (!cardElement.children.length) {
-        debugging('checkAndLoad from document.ready');
-        checkAndLoad();
-      }
-    }
-
-    // Quickform doesn't add hidden elements via standard method. On a form where payment processor may
-    //  be loaded via initial form load AND ajax (eg. backend live contribution page with payproc dropdown)
-    //  the processor metadata elements will appear twice (once on initial load, once via AJAX).  The ones loaded
-    //  via initial load will not be removed when AJAX loaded ones are added and the wrong stripe-pub-key etc will
-    //  be submitted.  This removes all elements with the class "payproc-metadata" from the form each time the
-    //  dropdown is changed.
-    $('select#payment_processor_id').on('change', function() {
-      $('input.payproc-metadata').remove();
-    });
-  });
-
   // Re-prep form when we've loaded a new payproc
   $(document).ajaxComplete(function(event, xhr, settings) {
     // /civicrm/payment/form? occurs when a payproc is selected on page
     // /civicrm/contact/view/participant occurs when payproc is first loaded on event credit card payment
     // On wordpress these are urlencoded
-    if ((settings.url.match("civicrm(\/|%2F)payment(\/|%2F)form") != null) ||
-      (settings.url.match("civicrm(\/|\%2F)contact(\/|\%2F)view(\/|\%2F)participant") != null)) {
+    if ((settings.url.match("civicrm(\/|%2F)payment(\/|%2F)form") !== null) ||
+      (settings.url.match("civicrm(\/|\%2F)contact(\/|\%2F)view(\/|\%2F)participant") !== null)) {
 
       // See if there is a payment processor selector on this form
       // (e.g. an offline credit card contribution page).
@@ -167,7 +182,9 @@ CRM.$(function($) {
     //CRM.vars.stripe.publishableKey = null;
     delete(CRM.vars.stripe);
     if ((typeof card !== 'undefined') && (card)) {
-      card.unmount();
+      debugging("destroynig card element", card);
+      card.destroy();
+      card = undefined;
     }
   }
 
@@ -212,6 +229,7 @@ CRM.$(function($) {
     // Create an instance of the card Element.
     card = elements.create('card', {style: style});
     card.mount('#card-element');
+    debugging("created new card element", card);
 
     // Hide the CiviCRM postcode field so it will still be submitted but will contain the value set in the stripe card-element.
     document.getElementsByClassName('billing_postal_code-' + CRM.vars.stripe.billingAddressID + '-section')[0].setAttribute('hidden', true);
@@ -332,8 +350,8 @@ CRM.$(function($) {
       // - Is the selected processor ID pay later (0)
       // - Is the Stripe processor ID defined?
       // - Is selected processor ID and stripe ID undefined? If we only have stripe ID, then there is only one (stripe) processor on the page
-      if ((chosenProcessorId === 0) || (stripeProcessorId == null) ||
-        ((chosenProcessorId == null) && (stripeProcessorId == null))) {
+      if ((chosenProcessorId === 0) || (stripeProcessorId === null) ||
+        ((chosenProcessorId === null) && (stripeProcessorId === null))) {
         debugging('Not a Stripe transaction, or pay-later');
         return true;
       }
@@ -460,14 +478,16 @@ CRM.$(function($) {
   function addSupportForCiviDiscount() {
     // Add a keypress handler to set flag if enter is pressed
     cividiscountElements = form.querySelectorAll('input#discountcode');
-    for (i = 0; i < cividiscountElements.length; ++i) {
-      cividiscountElements[i].addEventListener('keydown', function (e) {
+    var cividiscountHandleKeydown = function(e) {
         if (e.keyCode === 13) {
           e.preventDefault();
           debugging('adding submitdontprocess');
           form.dataset.submitdontprocess = true;
         }
-      });
+    };
+
+    for (i = 0; i < cividiscountElements.length; ++i) {
+      cividiscountElements[i].addEventListener('keydown', cividiscountHandleKeydown);
     }
   }
 
