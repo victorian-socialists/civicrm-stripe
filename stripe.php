@@ -167,7 +167,7 @@ function stripe_civicrm_postProcess($formName, &$form) {
     $form->set('params', $params);
     if (isset($hackForContributionPages)) {
       // @fixme Hack for contributionpages - see https://github.com/civicrm/civicrm-core/pull/15252
-      CRM_Core_Session::singleton()->set('stripePaymentIntent', $paymentIntentID);
+      CRM_Core_Session::singleton()->set('paymentIntentID', $paymentIntentID);
     }
   }
 }

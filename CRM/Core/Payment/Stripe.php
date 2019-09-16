@@ -123,9 +123,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return bool
    */
   public function supportsBackOffice() {
-    // @fixme Make this work again with stripe elements / 6.0
-    return FALSE;
-    // return TRUE;
+    return TRUE;
   }
 
   /**
@@ -363,21 +361,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    */
   public function doPayment(&$params, $component = 'contribute') {
     $params = $this->beginDoPayment($params);
-
-    // Get the passed in paymentIntent
-    if(!empty(CRM_Utils_Array::value('paymentIntentID', $params))) {
-      $paymentIntentID = CRM_Utils_Array::value('paymentIntentID', $params);
-    }
-    elseif (CRM_Core_Session::singleton()->get('stripePaymentIntent')) {
-      // @fixme Hack for contributionpages - see https://github.com/civicrm/civicrm-core/pull/15252
-      $paymentIntentID = CRM_Core_Session::singleton()->get('stripePaymentIntent');
-      $params['paymentIntentID'] = $paymentIntentID;
-      CRM_Core_Session::singleton()->set('stripePaymentIntent', NULL);
-    }
-    else {
-      Civi::log()->debug('paymentIntentID not found. $params: ' . print_r($params, TRUE));
-      CRM_Core_Error::statusBounce(E::ts('Unable to complete payment! Missing paymentIntent ID.'));
-    }
+    $params = $this->getTokenParameter('paymentIntentID', $params);
 
     $pendingStatusId = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending');
 
@@ -469,8 +453,8 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
 
     // This is where we actually charge the customer
     try {
-      \Stripe\PaymentIntent::update($paymentIntentID, $intentParams);
-      $intent = \Stripe\PaymentIntent::retrieve($paymentIntentID);
+      \Stripe\PaymentIntent::update($params['paymentIntentID'], $intentParams);
+      $intent = \Stripe\PaymentIntent::retrieve($params['paymentIntentID']);
       $intent->customer = $stripeCustomer->id;
       switch ($intent->status) {
         case 'requires_confirmation':
@@ -788,6 +772,37 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     if ($ipnClass->main()) {
       http_response_code(200);
     }
+  }
+
+  /**
+   * Get a "token" parameter that was inserted via javascript on the payment form (eg. paymentIntentID).
+   *
+   * @param string $parameterName
+   * @param array $params
+   *
+   * @return string
+   * @throws \CRM_Core_Exception
+   */
+  private function getTokenParameter($parameterName, $params) {
+    // Get the passed in parameter
+    if(!empty(CRM_Utils_Array::value($parameterName, $params))) {
+      $parameterValue = CRM_Utils_Array::value($parameterName, $params);
+    }
+    elseif (CRM_Core_Session::singleton()->get($parameterName)) {
+      // @fixme Hack for contributionpages - see https://github.com/civicrm/civicrm-core/pull/15252
+      $parameterValue = CRM_Core_Session::singleton()->get($parameterName);
+      CRM_Core_Session::singleton()->set($parameterName, NULL);
+    }
+    elseif(CRM_Utils_Request::retrieve($parameterName, 'String')) {
+      $parameterValue = CRM_Utils_Request::retrieve($parameterName, 'String');
+    }
+    if (empty($parameterValue)) {
+      Civi::log()->debug("{$parameterName}paymentIntentID not found. \$params: " . print_r($params, TRUE));
+      CRM_Core_Error::statusBounce(E::ts('Unable to complete payment! Missing %1.', [1 => $parameterName]));
+    }
+
+    $params[$parameterName] = $parameterValue;
+    return $params;
   }
 
 }

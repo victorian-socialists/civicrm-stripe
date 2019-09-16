@@ -443,6 +443,10 @@ CRM.$(function($) {
         totalFee += parseFloat($(this).data('amount'));
       });
     }
+    else if (document.getElementById('total_amount')) {
+      // The input#total_amount field exists on backend contribution forms
+      return document.getElementById('total_amount').value;
+    }
     return totalFee;
   }
 
