@@ -12,26 +12,15 @@ CRM.$(function($) {
     return;
   }
 
-  // On intial load...
+  // On initial load...
   var stripe;
   var card;
   var form;
   var submitButton;
   var stripeLoading = false;
-  var onclickAction = null;
 
   // Disable the browser "Leave Page Alert" which is triggered because we mess with the form submit function.
   window.onbeforeunload = null;
-
-  // Quickform doesn't add hidden elements via standard method. On a form where payment processor may
-  //  be loaded via initial form load AND ajax (eg. backend live contribution page with payproc dropdown)
-  //  the processor metadata elements will appear twice (once on initial load, once via AJAX).  The ones loaded
-  //  via initial load will not be removed when AJAX loaded ones are added and the wrong stripe-pub-key etc will
-  //  be submitted.  This removes all elements with the class "payproc-metadata" from the form each time the
-  //  dropdown is changed.
-  $('select#payment_processor_id').on('change', function() {
-    $('input.payproc-metadata').remove();
-  });
 
   /**
    * This function boots the UI.
@@ -182,7 +171,7 @@ CRM.$(function($) {
     //CRM.vars.stripe.publishableKey = null;
     delete(CRM.vars.stripe);
     if ((typeof card !== 'undefined') && (card)) {
-      debugging("destroynig card element", card);
+      debugging("destroying card element", card);
       card.destroy();
       card = undefined;
     }
