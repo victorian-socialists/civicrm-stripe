@@ -1,3 +1,7 @@
+## Release 6.1.1
+
+* Fix issue with charge.succeeded triggering error on recurring contributions
+
 ## Release 6.1
 
 *This release fixes a number of bugs/issues identified after the release of 6.0.*
@@ -16,7 +20,7 @@ This release requires an upgrade to version 0.4 of the MJWShared extension.
 #### Changes
 
 * Support cards that do not request a postal/zip code (*fixes [#80](https://lab.civicrm.org/extensions/stripe/issues/80)*).
-* Enable payments on backend (*fixes [#79](https://lab.civicrm.org/extensions/stripe/issues/79)).
+* Enable payments on backend (*fixes [#79](https://lab.civicrm.org/extensions/stripe/issues/79)*).
 * Resolve multiple issues with "more than one" payment processor on the form and stripe failing to submit if it wasn't the first to be selected:
   * Fix issue when script is reloaded by changes of payment processors.
   * Improve handling for multiple processors and pay later.
