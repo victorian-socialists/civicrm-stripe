@@ -34,6 +34,9 @@ class CRM_Stripe_Api {
           case 'receive_date':
             return self::formatDate($stripeObject->created);
 
+          case 'invoice_id':
+            return (string) $stripeObject->invoice;
+
         }
         break;
 

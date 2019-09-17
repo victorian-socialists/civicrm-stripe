@@ -238,7 +238,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           $params = [
             'id' => $this->contribution['id'],
             'trxn_date' => $this->receive_date,
-            'contribution_trxn_id' => $this->charge_id,
+            'contribution_trxn_id' => $this->invoice_id ?: $this->charge_id,
             'payment_trxn_id' => $this->charge_id,
             'total_amount' => $this->amount,
             'fee_amount' => $this->fee,
