@@ -317,6 +317,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @param \CRM_Core_Form $form
    */
   public function buildForm(&$form) {
+    // Don't use \Civi::resources()->addScriptFile etc as they often don't work on AJAX loaded forms (eg. participant backend registration)
     $jsVars = [
       'id' => $form->_paymentProcessor['id'],
       'currency' => $this->getDefaultCurrencyForForm($form),
@@ -339,7 +340,9 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'styleUrl' => \Civi::resources()->getUrl(E::LONG_NAME, "css/elements{$min}.css"),
       'weight' => -1,
     ]);
-    \Civi::resources()->addScriptFile(E::LONG_NAME, "js/civicrm_stripe{$min}.js");
+    CRM_Core_Region::instance('billing-block')->add([
+      'scriptUrl' => \Civi::resources()->getUrl(E::LONG_NAME, "js/civicrm_stripe{$min}.js"),
+    ]);
   }
 
   /**
