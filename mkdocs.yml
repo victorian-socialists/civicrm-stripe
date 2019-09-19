@@ -16,6 +16,7 @@ markdown_extensions:
 
 pages:
 - About: index.md
+- Examples / Screenshots: examples.md
 - Installation: install.md
 - Webhooks (Notifications): webhook.md
 - Contributions, Payments and Customers: contribution.md
