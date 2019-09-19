@@ -3,6 +3,8 @@
  * https://civicrm.org/licensing
  */
 
+use CRM_Stripe_ExtensionUtil as E;
+
 /**
  * Class CRM_Stripe_AJAX
  */
@@ -39,7 +41,10 @@ class CRM_Stripe_AJAX {
   public static function confirmPayment() {
     $paymentMethodID = CRM_Utils_Request::retrieveValue('payment_method_id', 'String');
     $paymentIntentID = CRM_Utils_Request::retrieveValue('payment_intent_id', 'String');
-    $amount = CRM_Utils_Request::retrieveValue('amount', 'Money', NULL, TRUE);
+    $amount = CRM_Utils_Request::retrieveValue('amount', 'Money');
+    if (empty($amount)) {
+      CRM_Utils_JSON::output(['error' => ['message' => E::ts('No amount specified for payment!')]]);
+    }
     $currency = CRM_Utils_Request::retrieveValue('currency', 'String', CRM_Core_Config::singleton()->defaultCurrency);
     $processorID = CRM_Utils_Request::retrieveValue('id', 'Integer', NULL, TRUE);
     $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $processorID]));
