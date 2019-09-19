@@ -48,14 +48,41 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   protected $plan_start = NULL;
 
   // Derived properties.
+
+  /**
+   * @var int The recurring contribution ID (linked to Stripe Subscription) (if available)
+   */
   protected $contribution_recur_id = NULL;
+
+  /**
+   * @var string The Stripe Event ID
+   */
   protected $event_id = NULL;
+
+  /**
+   * @var string The stripe Invoice ID (mapped to trxn_id on a contribution for recurring contributions)
+   */
   protected $invoice_id = NULL;
+
+  /**
+   * @var string The date/time the charge was made
+   */
   protected $receive_date = NULL;
+
+  /**
+   * @var float The amount paid
+   */
   protected $amount = NULL;
+
+  /**
+   * @var float The fee charged by Stripe
+   */
   protected $fee = NULL;
+
+  /**
+   * @var array The current contribution (linked to Stripe charge(single)/invoice(subscription)
+   */
   protected $contribution = NULL;
-  protected $previous_contribution = NULL;
 
   /**
    * CRM_Core_Payment_StripeIPN constructor.
@@ -163,7 +190,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
             'payment_trxn_id' => $this->charge_id,
             'total_amount' => $this->amount,
             'fee_amount' => $this->fee,
-            'previous_contribution' => $this->previous_contribution,
+            'original_contribution_id' => $this->contribution['id'],
           ];
           $this->repeatContribution($params);
           // Don't touch the contributionRecur as it's updated automatically by Contribution.repeattransaction
@@ -194,7 +221,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
             'payment_trxn_id' => $this->charge_id,
             'total_amount' => $this->amount,
             'fee_amount' => $this->fee,
-            'previous_contribution' => $this->previous_contribution,
+            'original_contribution_id' => $this->contribution['id'],
           ];
           $this->repeatContribution($params);
           // Don't touch the contributionRecur as it's updated automatically by Contribution.completetransaction
@@ -359,13 +386,12 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
       // If a recurring contribution has been found, get the most recent contribution belonging to it.
       try {
         // Same approach as api repeattransaction.
-        $contribution = civicrm_api3('contribution', 'getsingle', [
+        $this->contribution = civicrm_api3('contribution', 'getsingle', [
           'return' => ['id', 'contribution_status_id', 'total_amount', 'trxn_id'],
           'contribution_recur_id' => $this->contribution_recur_id,
           'contribution_test' => $this->_paymentProcessor->getIsTestMode(),
           'options' => ['limit' => 1, 'sort' => 'id DESC'],
         ]);
-        $this->previous_contribution = $contribution;
       }
       catch (Exception $e) {
         $this->exception('Cannot find any contributions with recurring contribution ID: ' . $this->contribution_recur_id . '. ' . $e->getMessage());
