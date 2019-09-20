@@ -1,6 +1,7 @@
 ## Release 6.1.2
 
 * Fix [#89](https://lab.civicrm.org/extensions/stripe/issues/89) - Payment Element is not loading for backend "Credit Card Event Registration".
+* Fix repeatContribution - pass the found contribution ID instead of using a separate previous_contribution variable - fixes !63
 
 ## Release 6.1.1
 
