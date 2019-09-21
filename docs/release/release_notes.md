@@ -1,5 +1,7 @@
 ## Release 6.1.3
 
+**You need to Fix/Create webhook after installing this update to add the `charge.captured` event to the list of events sent to the webhook.**
+
 * Handle charge.succeeded/charge.captured when no customer_id is provided - fixes 400 errors / missing customer_id.
 * Remove invalid setting of customer on paymentIntent (no user impact).
 * Small improvements to Stripe Plan code (no user impact).
