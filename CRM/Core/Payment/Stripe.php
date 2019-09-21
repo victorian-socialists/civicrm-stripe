@@ -223,8 +223,8 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return \Stripe\Plan
    */
   public function createPlan($params, $amount) {
-    $currency = strtolower($params['currencyID']);
-    $planId = "every-{$params['frequency_interval']}-{$params['frequency_unit']}-{$amount}-" . $currency;
+    $currency = $this->getCurrency($params);
+    $planId = "every-{$params['frequency_interval']}-{$params['frequency_unit']}-{$amount}-" . strtolower($currency);
 
     if ($this->_paymentProcessor['is_test']) {
       $planId .= '-test';
@@ -237,9 +237,9 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     }
     catch (Stripe\Error\InvalidRequest $e) {
       $err = self::parseStripeException('plan_retrieve', $e, FALSE);
-      if ($err['code'] == 'resource_missing') {
-        $formatted_amount = number_format(($amount / 100), 2);
-        $productName = "CiviCRM " . (isset($params['membership_name']) ? $params['membership_name'] . ' ' : '') . "every {$params['frequency_interval']} {$params['frequency_unit']}(s) {$formatted_amount}{$currency}";
+      if ($err['code'] === 'resource_missing') {
+        $formatted_amount = CRM_Utils_Money::formatLocaleNumericRoundedByCurrency(($amount / 100), $currency);
+        $productName = "CiviCRM " . (isset($params['membership_name']) ? $params['membership_name'] . ' ' : '') . "every {$params['frequency_interval']} {$params['frequency_unit']}(s) {$currency}{$formatted_amount}";
         if ($this->_paymentProcessor['is_test']) {
           $productName .= '-test';
         }
