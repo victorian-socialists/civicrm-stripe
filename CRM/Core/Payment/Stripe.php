@@ -458,7 +458,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     try {
       \Stripe\PaymentIntent::update($params['paymentIntentID'], $intentParams);
       $intent = \Stripe\PaymentIntent::retrieve($params['paymentIntentID']);
-      $intent->customer = $stripeCustomer->id;
       switch ($intent->status) {
         case 'requires_confirmation':
           $intent->confirm();
