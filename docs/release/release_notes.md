@@ -4,6 +4,8 @@
 * Remove invalid setting of customer on paymentIntent (no user impact).
 * Small improvements to Stripe Plan code (no user impact).
 
+*Note: You should use [this CiviCRM core patch](https://github.com/civicrm/civicrm-core/pull/15340) if using webform_civicrm 4.28.*
+
 ## Release 6.1.2
 
 * Fix [#89](https://lab.civicrm.org/extensions/stripe/issues/89) - Payment Element is not loading for backend "Credit Card Event Registration".
