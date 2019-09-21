@@ -184,6 +184,7 @@ class CRM_Stripe_Webhook {
       'charge.failed',
       'charge.refunded',
       'charge.succeeded',
+      'charge.captured',
       'customer.subscription.updated',
       'customer.subscription.deleted',
     ];

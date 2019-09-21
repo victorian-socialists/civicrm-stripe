@@ -260,6 +260,13 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         return TRUE;
 
       case 'charge.succeeded':
+        // For a recurring contribution we can process charge.succeeded once we receive the event with an invoice ID.
+        // For a single contribution we can't process charge.succeeded because it only triggers BEFORE the charge is captured
+        if (empty(CRM_Stripe_Api::getObjectParam('customer_id', $this->_inputParameters->data->object))) {
+          return TRUE;
+        };
+      case 'charge.captured':
+        // For a single contribution we have to use charge.captured because it has the customer_id.
         $this->setInfo();
         if ($this->contribution['contribution_status_id'] == $pendingStatusId) {
           $params = [
