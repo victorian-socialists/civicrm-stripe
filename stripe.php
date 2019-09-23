@@ -141,6 +141,7 @@ function stripe_civicrm_postProcess($formName, &$form) {
   if (empty($form->get('paymentProcessor')) || ($form->get('paymentProcessor')['class_name'] !== 'Payment_Stripe')) {
     return;
   }
+  CRM_Core_Payment_Stripe::setTokenParameter('paymentMethodID', $form);
   CRM_Core_Payment_Stripe::setTokenParameter('paymentIntentID', $form);
 }
 

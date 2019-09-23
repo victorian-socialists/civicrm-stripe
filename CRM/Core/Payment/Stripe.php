@@ -367,7 +367,12 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    */
   public function doPayment(&$params, $component = 'contribute') {
     $params = $this->beginDoPayment($params);
-    $params = $this->getTokenParameter('paymentIntentID', $params);
+    if (CRM_Utils_Array::value('is_recur', $params) && $this->getRecurringContributionId($params)) {
+      $params = $this->getTokenParameter('paymentMethodID', $params, TRUE);
+    }
+    else {
+      $params = $this->getTokenParameter('paymentIntentID', $params, TRUE);
+    }
 
     $pendingStatusId = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending');
 
@@ -446,17 +451,30 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       $params['description'] = E::ts('Contribution: %1', [1 => $this->getPaymentProcessorLabel()]);
     }
 
+    // Handle recurring payments in doRecurPayment().
+    if (CRM_Utils_Array::value('is_recur', $params) && $this->getRecurringContributionId($params)) {
+      // This is where we save the customer card
+      // @todo For a recurring payment we have to save the card. For a single payment we'd like to develop the
+      //   save card functionality but should not save by default as the customer has not agreed.
+      $paymentMethod = \Stripe\PaymentMethod::retrieve($params['paymentMethodID']);
+      $paymentMethod->attach(['customer' => $stripeCustomer->id]);
+      $stripeCustomer = \Stripe\Customer::retrieve($stripeCustomer->id);
+
+      // We set payment status as pending because the IPN will set it as completed / failed
+      $params['payment_status_id'] = $pendingStatusId;
+      return $this->doRecurPayment($params, $amount, $stripeCustomer, $paymentMethod);
+    }
+
     $contactContribution = $this->getContactId($params) . '-' . ($this->getContributionId($params) ?: 'XX');
     $intentParams = [
       'customer' => $stripeCustomer->id,
       'description' => "{$params['description']} {$contactContribution} #" . CRM_Utils_Array::value('invoiceID', $params),
-      'statement_descriptor_suffix' => "{$contactContribution} " . substr($params['description'],0,7),
     ];
+    $intentParams['statement_descriptor_suffix'] = "{$contactContribution} " . substr($params['description'],0,7);
     $intentParams['statement_descriptor'] = substr("{$contactContribution} " . $params['description'], 0, 22);
     $intentMetadata = [
       'amount_to_capture' => $this->getAmount($params),
     ];
-
     // This is where we actually charge the customer
     try {
       \Stripe\PaymentIntent::update($params['paymentIntentID'], $intentParams);
@@ -471,19 +489,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     }
     catch (Exception $e) {
       $this->handleError($e->getCode(), $e->getMessage(), $params['stripe_error_url']);
-    }
-
-    // Handle recurring payments in doRecurPayment().
-    if (CRM_Utils_Array::value('is_recur', $params) && $params['contributionRecurID']) {
-      // This is where we save the customer card
-      // @todo For a recurring payment we have to save the card. For a single payment we'd like to develop the
-      //   save card functionality but should not save by default as the customer has not agreed.
-      $paymentMethod = \Stripe\PaymentMethod::retrieve($intent->payment_method);
-      $paymentMethod->attach(['customer' => $stripeCustomer->id]);
-
-      // We set payment status as pending because the IPN will set it as completed / failed
-      $params['payment_status_id'] = $pendingStatusId;
-      return $this->doRecurPayment($params, $amount, $stripeCustomer, $paymentMethod);
     }
 
     // Return fees & net amount for Civi reporting.
@@ -549,7 +554,10 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'prorate' => FALSE,
       'plan' => $planId,
       'default_payment_method' => $stripePaymentMethod,
+      'metadata' => ['Description' => $params['description']],
+      'expand' => ['latest_invoice.payment_intent'],
     ];
+
     // Create the stripe subscription for the customer
     $stripeSubscription = $stripeCustomer->subscriptions->create($subscriptionParams);
     $this->setPaymentProcessorSubscriptionID($stripeSubscription->id);
@@ -582,7 +590,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
 
     // Set the orderID (trxn_id) to the invoice ID
     // The IPN will change it to the charge_id
-    $this->setPaymentProcessorOrderID($stripeSubscription->latest_invoice);
+    $this->setPaymentProcessorOrderID($stripeSubscription->latest_invoice['id']);
     return $this->endDoPayment($params);
   }
 

@@ -70,8 +70,7 @@ class CRM_Stripe_AJAX {
           // Setup the card to be saved and used later
           'confirm' => TRUE,
         ]);
-      }
-      catch (Exception $e) {
+      } catch (Exception $e) {
         CRM_Utils_JSON::output(['error' => ['message' => $e->getMessage()]]);
       }
     }
@@ -85,21 +84,24 @@ class CRM_Stripe_AJAX {
    * @param \Stripe\PaymentIntent $intent
    */
   private static function generatePaymentResponse($intent) {
-    if ($intent->status == 'requires_action' &&
-      $intent->next_action->type == 'use_stripe_sdk') {
+    if ($intent->status === 'requires_action' &&
+      $intent->next_action->type === 'use_stripe_sdk') {
       // Tell the client to handle the action
       CRM_Utils_JSON::output([
         'requires_action' => true,
         'payment_intent_client_secret' => $intent->client_secret,
       ]);
-    } else if (($intent->status == 'requires_capture') || ($intent->status == 'requires_confirmation')) {
+    }
+    elseif (($intent->status === 'requires_capture') || ($intent->status === 'requires_confirmation')) {
+      // paymentIntent = requires_capture / requires_confirmation
       // The payment intent has been confirmed, we just need to capture the payment
       // Handle post-payment fulfillment
       CRM_Utils_JSON::output([
         'success' => true,
         'paymentIntent' => ['id' => $intent->id],
       ]);
-    } else {
+    }
+    else {
       // Invalid status
       CRM_Utils_JSON::output(['error' => ['message' => 'Invalid PaymentIntent status']]);
     }

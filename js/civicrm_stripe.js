@@ -39,14 +39,14 @@ CRM.$(function($) {
   // On initial run we need to call this now.
   window.civicrmStripeHandleReload();
 
-  function paymentIntentSuccessHandler(paymentIntent) {
-    debugging('paymentIntent confirmation success');
+  function successHandler(type, object) {
+    debugging(type + ': success - submitting form');
 
     // Insert the token ID into the form so it gets submitted to the server
     var hiddenInput = document.createElement('input');
     hiddenInput.setAttribute('type', 'hidden');
-    hiddenInput.setAttribute('name', 'paymentIntentID');
-    hiddenInput.setAttribute('value', paymentIntent.id);
+    hiddenInput.setAttribute('name', type);
+    hiddenInput.setAttribute('value', object.id);
     form.appendChild(hiddenInput);
 
     // Submit the form
@@ -74,18 +74,23 @@ CRM.$(function($) {
         displayError(result);
       }
       else {
-        // Send paymentMethod.id to server
-        var url = CRM.url('civicrm/stripe/confirm-payment');
-        $.post(url, {
-          payment_method_id: result.paymentMethod.id,
-          amount: getTotalAmount(),
-          currency: CRM.vars.stripe.currency,
-          id: CRM.vars.stripe.id,
-          recur: getIsRecur(),
-        }).then(function (result) {
-          // Handle server response (see Step 3)
-          handleServerResponse(result);
-        });
+        if (getIsRecur() === true) {
+          // Submit the form, if we need to do 3dsecure etc. we do it at the end (thankyou page) once subscription etc has been created
+          successHandler('paymentMethodID', result.paymentMethod);
+        }
+        else {
+          // Send paymentMethod.id to server
+          var url = CRM.url('civicrm/stripe/confirm-payment');
+          $.post(url, {
+            payment_method_id: result.paymentMethod.id,
+            amount: getTotalAmount(),
+            currency: CRM.vars.stripe.currency,
+            id: CRM.vars.stripe.id,
+          }).then(function (result) {
+            // Handle server response (see Step 3)
+            handleServerResponse(result);
+          });
+        }
       }
     });
   }
@@ -100,23 +105,22 @@ CRM.$(function($) {
       handleAction(result);
     } else {
       // All good, we can submit the form
-      paymentIntentSuccessHandler(result.paymentIntent);
+      successHandler('paymentIntentID', result.paymentIntent);
     }
   }
 
   function handleAction(response) {
-    stripe.handleCardAction(
-      response.payment_intent_client_secret
-    ).then(function(result) {
-      if (result.error) {
-        // Show error in payment form
-        displayError(result);
-      } else {
-        // The card action has been handled
-        // The PaymentIntent can be confirmed again on the server
-        paymentIntentSuccessHandler(result.paymentIntent);
-      }
-    });
+    stripe.handleCardAction(response.payment_intent_client_secret)
+      .then(function(result) {
+        if (result.error) {
+          // Show error in payment form
+          displayError(result);
+        } else {
+          // The card action has been handled
+          // The PaymentIntent can be confirmed again on the server
+          successHandler('paymentIntentID', result.paymentIntent);
+        }
+      });
   }
 
   // Re-prep form when we've loaded a new payproc
@@ -465,7 +469,7 @@ CRM.$(function($) {
 
   function getIsRecur() {
     if (document.getElementById('is_recur') !== null) {
-      return Boolean(document.getElementById('is_recur').value);
+      return Boolean(document.getElementById('is_recur').checked);
     }
     return false;
   }
