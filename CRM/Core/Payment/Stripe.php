@@ -330,6 +330,9 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     // Assign to smarty so we can add via Card.tpl for drupal webform because addVars doesn't work in that context
     $form->assign('stripeJSVars', $jsVars);
 
+    // Enable JS validation for forms so we only (submit) create a paymentIntent when the form has all fields validated.
+    $form->assign('isJsValidate', TRUE);
+
     // Add help and javascript
     CRM_Core_Region::instance('billing-block')->add(
       ['template' => 'CRM/Core/Payment/Stripe/Card.tpl', 'weight' => -1]);

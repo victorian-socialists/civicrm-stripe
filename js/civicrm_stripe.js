@@ -299,6 +299,11 @@ CRM.$(function($) {
       event.preventDefault();
       debugging('submit handler');
 
+      if ($(form).valid() === false) {
+        debugging('Form not valid');
+        return false;
+      }
+
       if (typeof CRM.vars.stripe === 'undefined') {
         debugging('Submitting - not a stripe processor');
         return true;
