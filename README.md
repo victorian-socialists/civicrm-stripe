@@ -6,6 +6,8 @@ Integrates the Stripe payment processor (for Credit/Debit cards) into CiviCRM so
 
 Latest releases can be found here: https://civicrm.org/extensions/stripe-payment-processor
 
+**Always read the [Release Notes](https://docs.civicrm.org/stripe/en/latest/release/release_notes/) carefully before upgrading!**
+
 ## Documentation
 Please see: https://docs.civicrm.org/stripe/en/latest
 
