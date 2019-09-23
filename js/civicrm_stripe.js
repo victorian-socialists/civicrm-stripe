@@ -62,6 +62,7 @@ CRM.$(function($) {
     errorElement.textContent = result.error.message;
     document.querySelector('#billing-payment-block').scrollIntoView();
     window.scrollBy(0, -50);
+    form.dataset.submitted = false;
     submitButton.removeAttribute('disabled');
   }
 
@@ -80,6 +81,7 @@ CRM.$(function($) {
           amount: getTotalAmount(),
           currency: CRM.vars.stripe.currency,
           id: CRM.vars.stripe.id,
+          recur: getIsRecur(),
         }).then(function (result) {
           // Handle server response (see Step 3)
           handleServerResponse(result);
@@ -254,7 +256,7 @@ CRM.$(function($) {
     submitButton.addEventListener('click', submitButtonClick);
 
     function submitButtonClick(event) {
-      if (form.dataset.submitted) {
+      if (form.dataset.submitted === true) {
         return;
       }
       form.dataset.submitted = true;
@@ -459,6 +461,13 @@ CRM.$(function($) {
       return document.getElementById('total_amount').value;
     }
     return totalFee;
+  }
+
+  function getIsRecur() {
+    if (document.getElementById('is_recur') !== null) {
+      return Boolean(document.getElementById('is_recur').value);
+    }
+    return false;
   }
 
   function updateFormElementsFromCreditCardDetails(event) {
