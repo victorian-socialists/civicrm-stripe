@@ -252,7 +252,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         $refunds = \Stripe\Refund::all(['charge' => $this->charge_id, 'limit' => 1]);
         $params = [
           'id' => $this->contribution['id'],
-          'total_amount' => $this->retrieve('amount_refunded', 'Float'),
+          'payment_trxn_id' => $this->charge_id,
           'cancel_reason' => $refunds->data[0]->reason,
           'cancel_date' => date('YmdHis', $refunds->data[0]->created),
         ];
@@ -367,11 +367,22 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
       }
     }
 
+    $contributionParamsToReturn = [
+      'id',
+      'trxn_id',
+      'contribution_status_id',
+      'total_amount',
+      'fee_amount',
+      'net_amount',
+      'tax_amount',
+    ];
+
     if ($this->charge_id) {
       try {
         $this->contribution = civicrm_api3('Contribution', 'getsingle', [
           'trxn_id' => $this->charge_id,
           'contribution_test' => $this->_paymentProcessor->getIsTestMode(),
+          'return' => $contributionParamsToReturn,
         ]);
       }
       catch (Exception $e) {
@@ -383,6 +394,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         $this->contribution = civicrm_api3('Contribution', 'getsingle', [
           'trxn_id' => $this->invoice_id,
           'contribution_test' => $this->_paymentProcessor->getIsTestMode(),
+          'return' => $contributionParamsToReturn,
         ]);
       }
       catch (Exception $e) {
@@ -397,6 +409,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           'return' => ['id', 'contribution_status_id', 'total_amount', 'trxn_id'],
           'contribution_recur_id' => $this->contribution_recur_id,
           'contribution_test' => $this->_paymentProcessor->getIsTestMode(),
+          'return' => $contributionParamsToReturn,
           'options' => ['limit' => 1, 'sort' => 'id DESC'],
         ]);
       }

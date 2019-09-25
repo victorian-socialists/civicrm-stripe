@@ -1,7 +1,7 @@
 ## Release 6.1.5
 
 * Send email receipts from Stripe by default (as this was what 5.x did). Add a setting under Administer->CiviContribute->Stripe Settings to enable/disable receipts from Stripe.
-
+* Support recording full refunds from Stripe.
 
 ## Release 6.1.4
 **This release fixes a MAJOR issue that caused duplicate payments to be taken when a new recurring contribution (subscription) was setup.  All users of 6.x should upgrade.**
