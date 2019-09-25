@@ -1,11 +1,9 @@
-#Stripe Payment Processor for CiviCRM.
+# Stripe Payment Processor for CiviCRM.
 Integrates the Stripe payment processor (for Credit/Debit cards) into CiviCRM so you can use it to accept Credit / Debit card payments on your site.
 
 [![Stripe Logo](/images/stripe.png)](https://stripe.com/)
 
-Latest releases can be found here: https://civicrm.org/extensions/stripe-payment-processor
-
-View this extension in the [Extension Directory](https://civicrm.org/extensions/stripe-payment-processor).
+View/Download this extension in the [Extension Directory](https://civicrm.org/extensions/stripe-payment-processor).
 
 ## Compatibility / Requirements
 * CiviCRM 5.13+

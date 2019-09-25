@@ -472,18 +472,24 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     ];
     $intentParams['statement_descriptor_suffix'] = "{$contactContribution} " . substr($params['description'],0,7);
     $intentParams['statement_descriptor'] = substr("{$contactContribution} " . $params['description'], 0, 22);
-    $intentMetadata = [
-      'amount_to_capture' => $this->getAmount($params),
-    ];
+
     // This is where we actually charge the customer
     try {
       \Stripe\PaymentIntent::update($params['paymentIntentID'], $intentParams);
       $intent = \Stripe\PaymentIntent::retrieve($params['paymentIntentID']);
+      if ($intent->amount !== $this->getAmount($params)) {
+        $this->handleError('Amount differs', E::ts('Amount is different from the authorised amount (%1, %2)', [1 => $intent->amount, 2=> $this->getAmount($params)]), $params['stripe_error_url']);
+      }
       switch ($intent->status) {
         case 'requires_confirmation':
           $intent->confirm();
         case 'requires_capture':
-          $intent->capture($intentMetadata);
+          $intent->capture();
+          if ((boolean) \Civi::settings()->get('stripe_oneoffreceipt')) {
+            // Send a receipt from Stripe - we have to set the receipt_email after the charge has been captured,
+            //   as the customer receives an email as soon as receipt_email is updated and would receive two if we updated before capture.
+            \Stripe\PaymentIntent::update($params['paymentIntentID'], ['receipt_email' => $email]);
+          }
           break;
       }
     }
