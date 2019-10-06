@@ -1,3 +1,7 @@
+## Release 6.1.6
+
+* Fix [#103](https://lab.civicrm.org/extensions/stripe/issues/103) - Allow submission of drupal webform when there are multiple processors on the page (eg. Stripe + Pay later).
+
 ## Release 6.1.5
 
 * Send email receipts from Stripe by default (as this was what 5.x did). Add a setting under Administer->CiviContribute->Stripe Settings to enable/disable receipts from Stripe.

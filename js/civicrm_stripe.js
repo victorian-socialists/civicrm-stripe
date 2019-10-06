@@ -53,6 +53,12 @@ CRM.$(function($) {
     form.submit();
   }
 
+  function nonStripeSubmit() {
+    // Disable the submit button to prevent repeated clicks
+    submitButton.setAttribute('disabled', true);
+    return form.submit();
+  }
+
   function displayError(result) {
     // Display error.message in your UI.
     debugging('error: ' + result.error.message);
@@ -267,7 +273,7 @@ CRM.$(function($) {
       // Take over the click function of the form.
       if (typeof CRM.vars.stripe === 'undefined') {
         // Submit the form
-        return form.submit();
+        return nonStripeSubmit();
       }
       debugging('clearing submitdontprocess');
       form.dataset.submitdontprocess = false;
@@ -320,18 +326,17 @@ CRM.$(function($) {
         return false;
       }
 
-      var stripeProcessorId = CRM.vars.stripe.id;
+      var stripeProcessorId = parseInt(CRM.vars.stripe.id);
       var chosenProcessorId = null;
 
       // Handle multiple payment options and Stripe not being chosen.
       // @fixme this needs refactoring as some is not relevant anymore (with stripe 6.0)
       if (getIsDrupalWebform()) {
-        stripeProcessorId = CRM.vars.stripe.id;
         // this element may or may not exist on the webform, but we are dealing with a single (stripe) processor enabled.
         if (!$('input[name="submitted[civicrm_1_contribution_1_contribution_payment_processor_id]"]').length) {
           chosenProcessorId = stripeProcessorId;
         } else {
-          chosenProcessorId = form.querySelector('input[name="submitted[civicrm_1_contribution_1_contribution_payment_processor_id]"]:checked').val();
+          chosenProcessorId = parseInt(form.querySelector('input[name="submitted[civicrm_1_contribution_1_contribution_payment_processor_id]"]:checked').value);
         }
       }
       else {
@@ -340,7 +345,7 @@ CRM.$(function($) {
           (form.querySelector(".crm-section.credit_card_info-section") !== null)) {
           stripeProcessorId = CRM.vars.stripe.id;
           if (form.querySelector('input[name="payment_processor_id"]:checked') !== null) {
-            chosenProcessorId = form.querySelector('input[name="payment_processor_id"]:checked').value;
+            chosenProcessorId = parseInt(form.querySelector('input[name="payment_processor_id"]:checked').value);
           }
         }
       }
@@ -352,7 +357,7 @@ CRM.$(function($) {
       if ((chosenProcessorId === 0) || (stripeProcessorId === null) ||
         ((chosenProcessorId === null) && (stripeProcessorId === null))) {
         debugging('Not a Stripe transaction, or pay-later');
-        return true;
+        return nonStripeSubmit();
       }
       else {
         debugging('Stripe is the selected payprocessor');
