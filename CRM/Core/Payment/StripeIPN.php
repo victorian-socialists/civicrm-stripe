@@ -103,14 +103,14 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    * @param array $parameters
    */
   public function setInputParameters($parameters) {
-    if (!is_object($parameters)) {
-      $this->exception('Invalid input parameters');
-    }
-
     // Determine the proper Stripe Processor ID so we can get the secret key
     // and initialize Stripe.
     $this->getPaymentProcessor();
     $this->_paymentProcessor->setAPIParams();
+
+    if (!is_object($parameters)) {
+      $this->exception('Invalid input parameters');
+    }
 
     // Now re-retrieve the data from Stripe to ensure it's legit.
     // Special case if this is the test webhook
