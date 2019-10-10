@@ -606,10 +606,11 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @param array $params
    *   Assoc array of input parameters for this transaction.
    *
+   * @return array
    * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
-  public function doRefund(&$params) {
-    $requiredParams = ['charge_id', 'payment_processor_id'];
+  public function doRefund($params) {
+    $requiredParams = ['trxn_id', 'amount'];
     foreach ($requiredParams as $required) {
       if (!isset($params[$required])) {
         $message = 'Stripe doRefund: Missing mandatory parameter: ' . $required;
@@ -618,11 +619,9 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       }
     }
     $refundParams = [
-      'charge' => $params['charge_id'],
+      'charge' => $params['trxn_id'],
     ];
-    if (!empty($params['amount'])) {
-      $refundParams['amount'] = $this->getAmount($params);
-    }
+    $refundParams['amount'] = $this->getAmount($params);
     try {
       $refund = \Stripe\Refund::create($refundParams);
     }
@@ -630,6 +629,31 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       $this->handleError($e->getCode(), $e->getMessage());
       Throw new \Civi\Payment\Exception\PaymentProcessorException($e->getMessage());
     }
+
+    switch ($refund->status) {
+      case 'pending':
+        $refundStatus = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending');
+        break;
+
+      case 'succeeded':
+        $refundStatus = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Completed');
+        break;
+
+      case 'failed':
+        $refundStatus = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Failed');
+        break;
+
+      case 'canceled':
+        $refundStatus = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Cancelled');
+        break;
+    }
+
+    $refundParams = [
+      'refund_trxn_id' => $refund->id,
+      'refund_status_id' => $refundStatus,
+      'processor_result' => $refund->jsonSerialize(),
+    ];
+    return $refundParams;
   }
 
   /**
