@@ -453,6 +453,12 @@ CRM.$(function($) {
 
   function getTotalAmount() {
     var totalFee = null;
+
+    if ((document.getElementById('additional_participants') !== null) &&
+       (document.getElementById('additional_participants').value.length !== 0)) {
+      debugging('Cannot setup paymentIntent because we don\'t know the final price');
+      return totalFee;
+    }
     if (typeof calculateTotalFee == 'function') {
       // This is ONLY triggered in the following circumstances on a CiviCRM contribution page:
       // - With a priceset that allows a 0 amount to be selected.
@@ -467,7 +473,7 @@ CRM.$(function($) {
     }
     else if (document.getElementById('total_amount')) {
       // The input#total_amount field exists on backend contribution forms
-      return document.getElementById('total_amount').value;
+      totalFee = document.getElementById('total_amount').value;
     }
     return totalFee;
   }

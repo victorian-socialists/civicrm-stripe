@@ -517,11 +517,12 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
 
     // This is where we actually charge the customer
     try {
-      \Stripe\PaymentIntent::update($params['paymentIntentID'], $intentParams);
       $intent = \Stripe\PaymentIntent::retrieve($params['paymentIntentID']);
       if ($intent->amount !== $this->getAmount($params)) {
-        $this->handleError('Amount differs', E::ts('Amount is different from the authorised amount (%1, %2)', [1 => $intent->amount, 2=> $this->getAmount($params)]), $params['stripe_error_url']);
+        $intentParams['amount'] = $this->getAmount($params);
+        //$this->handleError('Amount differs', E::ts('Amount is different from the authorised amount (%1, %2)', [1 => $intent->amount, 2=> $this->getAmount($params)]), $params['stripe_error_url']);
       }
+      $intent = \Stripe\PaymentIntent::update($params['paymentIntentID'], $intentParams);
       switch ($intent->status) {
         case 'requires_confirmation':
           $intent->confirm();

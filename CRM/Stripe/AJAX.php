@@ -42,8 +42,10 @@ class CRM_Stripe_AJAX {
     $paymentMethodID = CRM_Utils_Request::retrieveValue('payment_method_id', 'String');
     $paymentIntentID = CRM_Utils_Request::retrieveValue('payment_intent_id', 'String');
     $amount = CRM_Utils_Request::retrieveValue('amount', 'Money');
+    $confirm = TRUE;
     if (empty($amount)) {
-      CRM_Utils_JSON::output(['error' => ['message' => E::ts('No amount specified for payment!')]]);
+      $amount = 1;
+      $confirm = FALSE;
     }
     $currency = CRM_Utils_Request::retrieveValue('currency', 'String', CRM_Core_Config::singleton()->defaultCurrency);
     $processorID = CRM_Utils_Request::retrieveValue('id', 'Integer', NULL, TRUE);
@@ -68,7 +70,7 @@ class CRM_Stripe_AJAX {
           // authorize the amount but don't take from card yet
           'setup_future_usage' => 'off_session',
           // Setup the card to be saved and used later
-          'confirm' => TRUE,
+          'confirm' => $confirm,
         ]);
       } catch (Exception $e) {
         CRM_Utils_JSON::output(['error' => ['message' => $e->getMessage()]]);
