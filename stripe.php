@@ -129,23 +129,6 @@ function stripe_civicrm_buildForm($formName, &$form) {
 }
 
 /**
- * Implements hook_civicrm_postProcess().
- *
- * @param string $formName
- * @param \CRM_Core_Form $form
- *
- * @throws \CRM_Core_Exception
- */
-function stripe_civicrm_postProcess($formName, &$form) {
-  // We're only interested in forms that have a paymentprocessor
-  if (empty($form->get('paymentProcessor')) || ($form->get('paymentProcessor')['class_name'] !== 'Payment_Stripe')) {
-    return;
-  }
-  CRM_Core_Payment_Stripe::setTokenParameter('paymentMethodID', $form);
-  CRM_Core_Payment_Stripe::setTokenParameter('paymentIntentID', $form);
-}
-
-/**
  * Implements hook_civicrm_check().
  *
  * @throws \CiviCRM_API3_Exception

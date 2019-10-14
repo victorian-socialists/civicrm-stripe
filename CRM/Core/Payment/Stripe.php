@@ -156,6 +156,15 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   }
 
   /**
+   * Is an authorize-capture flow supported.
+   *
+   * @return bool
+   */
+  protected function supportsPreApproval() {
+    return TRUE;
+  }
+
+  /**
    * Get the currency for the transaction.
    *
    * Handle any inconsistency about how it is passed in here.
@@ -346,6 +355,39 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     CRM_Core_Region::instance('billing-block')->add([
       'scriptUrl' => \Civi::resources()->getUrl(E::LONG_NAME, "js/civicrm_stripe{$min}.js"),
     ]);
+  }
+
+  /**
+   * Function to action pre-approval if supported
+   *
+   * @param array $params
+   *   Parameters from the form
+   *
+   * This function returns an array which should contain
+   *   - pre_approval_parameters (this will be stored on the calling form & available later)
+   *   - redirect_url (if set the browser will be redirected to this.
+   *
+   * @return array
+   */
+  public function doPreApproval(&$params) {
+    $paymentIntentID = CRM_Utils_Request::retrieve('paymentIntentID', 'String');
+    if (!empty($paymentIntentID)) {
+      return ['pre_approval_parameters' => ['paymentIntentID' => $paymentIntentID]];
+    }
+  }
+
+  /**
+   * Get any details that may be available to the payment processor due to an approval process having happened.
+   *
+   * In some cases the browser is redirected to enter details on a processor site. Some details may be available as a
+   * result.
+   *
+   * @param array $storedDetails
+   *
+   * @return array
+   */
+  public function getPreApprovalDetails($storedDetails) {
+    return $storedDetails;
   }
 
   /**
