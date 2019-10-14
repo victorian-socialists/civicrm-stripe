@@ -42,6 +42,7 @@ class CRM_Stripe_AJAX {
     $paymentMethodID = CRM_Utils_Request::retrieveValue('payment_method_id', 'String');
     $paymentIntentID = CRM_Utils_Request::retrieveValue('payment_intent_id', 'String');
     $amount = CRM_Utils_Request::retrieveValue('amount', 'Money');
+    $capture = CRM_Utils_Request::retrieveValue('capture', 'Boolean', FALSE);
     $confirm = TRUE;
     if (empty($amount)) {
       $amount = 1;
@@ -55,7 +56,15 @@ class CRM_Stripe_AJAX {
     if ($paymentIntentID) {
       // We already have a PaymentIntent, retrieve and attempt confirm.
       $intent = \Stripe\PaymentIntent::retrieve($paymentIntentID);
-      $intent->confirm();
+      if ($intent->status === 'requires_confirmation') {
+        $intent->confirm();
+      }
+      if ($intent->status === 'requires_action') {
+        self::generatePaymentResponse($intent);
+      }
+      if ($capture) {
+        $intent->capture();
+      }
     }
     else {
       // We don't yet have a PaymentIntent, create one using the
@@ -98,6 +107,12 @@ class CRM_Stripe_AJAX {
       // paymentIntent = requires_capture / requires_confirmation
       // The payment intent has been confirmed, we just need to capture the payment
       // Handle post-payment fulfillment
+      CRM_Utils_JSON::output([
+        'success' => true,
+        'paymentIntent' => ['id' => $intent->id],
+      ]);
+    }
+    elseif ($intent->status === 'succeeded') {
       CRM_Utils_JSON::output([
         'success' => true,
         'paymentIntent' => ['id' => $intent->id],

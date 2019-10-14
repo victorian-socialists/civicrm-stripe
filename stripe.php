@@ -126,6 +126,23 @@ function stripe_civicrm_buildForm($formName, &$form) {
     \Civi::resources()->addScriptUrl('https://js.stripe.com/v3');
     \Civi::$statics[E::LONG_NAME]['stripeJSLoaded'] = TRUE;
   }
+
+  switch ($formName) {
+    case 'CRM_Contribution_Form_ThankYou':
+    case 'CRM_Event_Form_Registration_ThankYou':
+      \Civi::resources()->addScriptFile(E::LONG_NAME, 'js/civicrmStripeConfirm.js');
+
+      // @todo: Not working yet because the paymentIntentID doesn't get passed - let's save/retrieve from db (use contribution and/or session key)
+      $jsVars = [
+        'id' => $form->_paymentProcessor['id'],
+        'paymentIntentID' => \Civi::$statics['paymentIntentID'],
+        'publishableKey' => CRM_Core_Payment_Stripe::getPublicKeyById($form->_paymentProcessor['id']),
+        'jsDebug' => (boolean) \Civi::settings()->get('stripe_jsdebug'),
+      ];
+      \Civi::resources()->addVars(E::SHORT_NAME, $jsVars);
+      break;
+  }
+
 }
 
 /**

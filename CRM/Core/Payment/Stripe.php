@@ -523,11 +523,31 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         //$this->handleError('Amount differs', E::ts('Amount is different from the authorised amount (%1, %2)', [1 => $intent->amount, 2=> $this->getAmount($params)]), $params['stripe_error_url']);
       }
       $intent = \Stripe\PaymentIntent::update($params['paymentIntentID'], $intentParams);
+      if ($intent->status === 'requires_confirmation') {
+        $intent->confirm();
+      }
+
       switch ($intent->status) {
-        case 'requires_confirmation':
-          $intent->confirm();
         case 'requires_capture':
           $intent->capture();
+          // Return fees & net amount for Civi reporting.
+          $stripeCharge = $intent->charges->data[0];
+          try {
+            $stripeBalanceTransaction = \Stripe\BalanceTransaction::retrieve($stripeCharge->balance_transaction);
+          }
+          catch (Exception $e) {
+            $err = self::parseStripeException('retrieve_balance_transaction', $e, FALSE);
+            $errorMessage = $this->handleErrorNotification($err, $params['stripe_error_url']);
+            throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to retrieve Stripe Balance Transaction: ' . $errorMessage);
+          }
+          $newParams['fee_amount'] = $stripeBalanceTransaction->fee / 100;
+          $newParams['net_amount'] = $stripeBalanceTransaction->net / 100;
+          // Success!
+          // Set the desired contribution status which will be set later (do not set on the contribution here!)
+          $params['contribution_status_id'] = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Completed');
+
+        case 'requires_action':
+          \Civi::$statics['paymentIntentID'] = $params['paymentIntentID'];
           if ((boolean) \Civi::settings()->get('stripe_oneoffreceipt')) {
             // Send a receipt from Stripe - we have to set the receipt_email after the charge has been captured,
             //   as the customer receives an email as soon as receipt_email is updated and would receive two if we updated before capture.
@@ -540,27 +560,11 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       $this->handleError($e->getCode(), $e->getMessage(), $params['stripe_error_url']);
     }
 
-    // Return fees & net amount for Civi reporting.
-    $stripeCharge = $intent->charges->data[0];
-    try {
-      $stripeBalanceTransaction = \Stripe\BalanceTransaction::retrieve($stripeCharge->balance_transaction);
-    }
-    catch (Exception $e) {
-      $err = self::parseStripeException('retrieve_balance_transaction', $e, FALSE);
-      $errorMessage = $this->handleErrorNotification($err, $params['stripe_error_url']);
-      throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to retrieve Stripe Balance Transaction: ' . $errorMessage);
-    }
-
-    // Success!
-    // Set the desired contribution status which will be set later (do not set on the contribution here!)
-    $params['contribution_status_id'] = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Completed');
     // For contribution workflow we have a contributionId so we can set parameters directly.
     // For events/membership workflow we have to return the parameters and they might get set...
     // For a single charge there is no stripe invoice.
     $this->setPaymentProcessorOrderID($stripeCharge->id);
     $this->setPaymentProcessorTrxnID($stripeCharge->id);
-    $newParams['fee_amount'] = $stripeBalanceTransaction->fee / 100;
-    $newParams['net_amount'] = $stripeBalanceTransaction->net / 100;
 
     return $this->endDoPayment($params, $newParams);
   }
