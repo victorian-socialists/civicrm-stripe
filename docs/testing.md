@@ -41,12 +41,16 @@ ONLINE contribution, event registration tests
 
 ### Manual Tests
 
-1. Test webform submission with payment and user-select, single processor.
+1. Test webform submission with payment and user-select , single processor.
 1. TODO: Are we testing offline contribution with single/multi-processor properly when stripe is/is not default with katalon tests?
 
 1. Test online contribution page on Wordpress.
 1. Test online contribution page on Joomla.
-1. Test online event registration.
+1. Test online event registration (single processor).
+1. Test online event registration (no confirmation page).
+1. Test online event registration (multiple participants).
+1. Test online event registration (multiple processors, Stripe default).
+1. Test online event registration (multiple processors, Stripe not default).
 1. Test online event registration (cart checkout).
 
 #### Drupal Webform Tests

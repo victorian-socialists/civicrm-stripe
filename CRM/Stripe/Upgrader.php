@@ -3,6 +3,8 @@
  * https://civicrm.org/licensing
  */
 
+use CRM_Stripe_ExtensionUtil as E;
+
 /**
  * Collection of upgrade steps.
  * DO NOT USE a naming scheme other than upgrade_N, where N is an integer.
@@ -420,6 +422,13 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
         civicrm_api3('PaymentProcessor', 'create', $createParams);
       }
     }
+    CRM_Utils_System::flushCache();
+    return TRUE;
+  }
+
+  public function upgrade_5024() {
+    $this->ctx->log->info('Applying Stripe update 5024. Add the civicrm_stripe_paymentintent database table');
+    CRM_Utils_File::sourceSQLFile(CIVICRM_DSN, E::path('/sql/paymentintent_install.sql'));
     CRM_Utils_System::flushCache();
     return TRUE;
   }
