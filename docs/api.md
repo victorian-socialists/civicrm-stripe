@@ -32,3 +32,17 @@ The api commands are:
 * `StripeSubscription.import` - Use to import subscriptions into CiviCRM that are in Stripe but not CiviCRM.  
 Accepts various parameters but requires: Payment Processor ID, Stripe subscription ID and CiviCRM contact ID.
 ![StripeSubscription.import](/images/StripeSubscription.import.png) 
+
+## StripePaymentintents
+
+This API is used internally for tracking and managing paymentIntents. It can be used for querying information about attempted / successful payments using `StripePaymentintent.get`.
+
+It's not advised that you use this API for anything else.
+
+## Scheduled Jobs
+
+* `Job.process_stripe` - this cancels uncaptured paymentIntents and removes successful ones from the local database cache after a period of time:
+  
+  Parameters:
+  * delete_old: Delete old records from database. Specify 0 to disable. Default is "-3 month"
+  * cancel_incomplete: Cancel incomplete paymentIntents in your stripe account. Specify 0 to disable. Default is "-1 day"

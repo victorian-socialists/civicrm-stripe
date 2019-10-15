@@ -15,6 +15,19 @@ For a **recurring contribution** an invoice is created for each contribution:
 * We set the contribution `trxn_id` = Stripe `Invoice ID`.
 * We set individual payments on that contribution (which could be a payment, a failed payment, a refund) to have `trxn_id` = Stripe `Charge ID`
 
+## Uncaptured Charges
+
+Stripe uses **PaymentIntents** to pre-authorise and authenticate a card.
+
+These paymentIntents work in the same way as a pre-authorisation on Credit Card (such as a damage deposit on car-hire).
+For this reason they can be problematic when there are multiple failures as a customer card will remain *authorised* for 7 days 
+and shows as a charge on the customer card. They can be manually cancelled via the Stripe Dashboard.
+
+To mitigate this the Stripe extension tracks and records all paymentIntents created through CiviCRM and manages them 
+using a scheduled job `Job.process_stripe`.
+
+The defaults for this are to cancel uncaptured payments after 24 hours and clear out old records (from the CiviCRM database) after three months.
+
 ## Payment Metadata
 
 When we create a contribution in CiviCRM (Stripe Invoice/Charge) we add some metadata to that payment.
@@ -24,9 +37,17 @@ When we create a contribution in CiviCRM (Stripe Invoice/Charge) we add some met
 
 ## Customer Metadata
 
-Every time we create a new contribution/recurring contribution we create/update a Stripe customer with the following metadata:
+A new Stripe [**Customer**](https://stripe.com/docs/api/customers) is created the first time a contribution is created by them in CiviCRM.
+
+Each time a new contribution is created the Stripe Customer metadata is updated.
+
+The following metadata is created for a Stripe Customer:
+
 * Contact Name, Email address
 * Description (`CiviCRM: ` + site name).
 * Contact ID
 * Link to CiviCRM contact record
+
 ![Stripe Customer](/images/stripedashboard_customerdetail.png)
+
+In addition, if you have enabled receipts (see [Setup](/setup)) the email address will be sent to Stripe and used to send a receipt to the contact.

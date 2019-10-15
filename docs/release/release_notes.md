@@ -1,3 +1,14 @@
+## Release 6.2
+
+* Track paymentIntents and cancel uncaptured ones after 24 hours.
+  > Configurable via scheduled Job.process_stripe and API.
+* Refactor to support updating amount and re-confirming once we reach the thankyou page.
+* When we don't know the amount, pre-auth the card but don't confirm, then update the amount requested.
+  > This resolves, for example, registering multiple participants. Users may receive an additional confirmation step such as 3d secure on the *Thankyou* page if their card issuer requires it.
+* Refactor passing of token parameters to use pre_approval_parameters.
+  > This should resolve some issues with *PaymentIntent not found*.
+* Improve support for refunds in preparation for work in CiviCRM core (#15476-15479).
+
 ## Release 6.1.6
 
 * Fix [#103](https://lab.civicrm.org/extensions/stripe/issues/103) - Allow submission of drupal webform when there are multiple processors on the page (eg. Stripe + Pay later).
