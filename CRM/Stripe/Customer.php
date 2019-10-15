@@ -109,6 +109,7 @@ class CRM_Stripe_Customer {
       2 => [$params['customer_id'], 'String'],
       3 => [$params['processor_id'], 'Integer'],
     ];
+
     CRM_Core_DAO::executeQuery("INSERT INTO civicrm_stripe_customers
           (contact_id, id, processor_id) VALUES (%1, %2, %3)", $queryParams);
   }

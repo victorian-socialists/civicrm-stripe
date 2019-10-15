@@ -560,6 +560,21 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       $this->handleError($e->getCode(), $e->getMessage(), $params['stripe_error_url']);
     }
 
+    // Update the paymentIntent in the CiviCRM database for later tracking
+    $intentParams = [
+      'paymentintent_id' => $intent->id,
+      'payment_processor_id' => $this->_paymentProcessor['id'],
+      'status' => $intent->status,
+      'contribution_id' => $this->getContributionId($params),
+      'description' => $intentParams['description'],
+      'identifier' => $params['qfKey'],
+      'contact_id' => $this->getContactId($params),
+    ];
+    if (empty($intentParams['contribution_id'])) {
+      $intentParams['flags'][] = 'NC';
+    }
+    CRM_Stripe_BAO_StripePaymentintent::create($intentParams);
+
     // For contribution workflow we have a contributionId so we can set parameters directly.
     // For events/membership workflow we have to return the parameters and they might get set...
     // For a single charge there is no stripe invoice.

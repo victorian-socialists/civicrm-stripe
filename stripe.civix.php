@@ -457,5 +457,11 @@ function _stripe_civix_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
 
 function _stripe_civix_civicrm_entityTypes(&$entityTypes) {
   $entityTypes = array_merge($entityTypes, array (
+    'CRM_Stripe_DAO_StripePaymentintent' => 
+    array (
+      'name' => 'StripePaymentintent',
+      'class' => 'CRM_Stripe_DAO_StripePaymentintent',
+      'table' => 'civicrm_stripe_paymentintent',
+    ),
   ));
 }

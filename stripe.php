@@ -70,6 +70,14 @@ function stripe_civicrm_managed(&$entities) {
   _stripe_civix_civicrm_managed($entities);
 }
 
+
+/**
+ * Implements hook_civicrm_entityTypes().
+ */
+function stripe_civicrm_entityTypes(&$entityTypes) {
+  _stripe_civix_civicrm_entityTypes($entityTypes);
+}
+
 /**
  * Implements hook_civicrm_alterSettingsFolders().
  */
@@ -132,10 +140,27 @@ function stripe_civicrm_buildForm($formName, &$form) {
     case 'CRM_Event_Form_Registration_ThankYou':
       \Civi::resources()->addScriptFile(E::LONG_NAME, 'js/civicrmStripeConfirm.js');
 
-      // @todo: Not working yet because the paymentIntentID doesn't get passed - let's save/retrieve from db (use contribution and/or session key)
+      // This is a fairly nasty way of matching and retrieving our paymentIntent as it is no longer available.
+      $qfKey = CRM_Utils_Request::retrieve('qfKey', 'String');
+      if (!empty($qfKey)) {
+        $paymentIntent = civicrm_api3('StripePaymentintent', 'getsingle', ['return' => ['paymentintent_id', 'status', 'contribution_id'], 'identifier' => $qfKey]);
+      }
+
+      if (empty($paymentIntent['contribution_id'])) {
+        // If we now have a contribution ID try and update it so we can cross-reference the paymentIntent
+        $contributionId = $form->getVar('_values')['contributionId'];
+        if (!empty($contributionId)) {
+          civicrm_api3('StripePaymentintent', 'create', [
+            'id' => $paymentIntent['id'],
+            'contribution_id' => $contributionId
+          ]);
+        }
+      }
+
       $jsVars = [
         'id' => $form->_paymentProcessor['id'],
-        'paymentIntentID' => \Civi::$statics['paymentIntentID'],
+        'paymentIntentID' => $paymentIntent['paymentintent_id'],
+        'paymentIntentStatus' => $paymentIntent['status'],
         'publishableKey' => CRM_Core_Payment_Stripe::getPublicKeyById($form->_paymentProcessor['id']),
         'jsDebug' => (boolean) \Civi::settings()->get('stripe_jsdebug'),
       ];

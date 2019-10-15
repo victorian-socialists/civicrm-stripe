@@ -43,6 +43,7 @@ class CRM_Stripe_AJAX {
     $paymentIntentID = CRM_Utils_Request::retrieveValue('payment_intent_id', 'String');
     $amount = CRM_Utils_Request::retrieveValue('amount', 'Money');
     $capture = CRM_Utils_Request::retrieveValue('capture', 'Boolean', FALSE);
+    $title = CRM_Utils_Request::retrieveValue('description', 'String');
     $confirm = TRUE;
     if (empty($amount)) {
       $amount = 1;
@@ -59,10 +60,7 @@ class CRM_Stripe_AJAX {
       if ($intent->status === 'requires_confirmation') {
         $intent->confirm();
       }
-      if ($intent->status === 'requires_action') {
-        self::generatePaymentResponse($intent);
-      }
-      if ($capture) {
+      if ($capture && $intent->status === 'requires_capture') {
         $intent->capture();
       }
     }
@@ -85,6 +83,15 @@ class CRM_Stripe_AJAX {
         CRM_Utils_JSON::output(['error' => ['message' => $e->getMessage()]]);
       }
     }
+
+    // Save the generated paymentIntent in the CiviCRM database for later tracking
+    $intentParams = [
+      'paymentintent_id' => $intent->id,
+      'payment_processor_id' => $processorID,
+      'status' => $intent->status,
+      'description' => $title,
+    ];
+    CRM_Stripe_BAO_StripePaymentintent::create($intentParams);
 
     self::generatePaymentResponse($intent);
   }

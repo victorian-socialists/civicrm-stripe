@@ -1,8 +1,17 @@
 /**
- * JS Integration between CiviCRM & Stripe.
+ * This handles confirmation actions on the "Thankyou" pages for contribution/event workflows.
  */
 CRM.$(function($) {
-  debugging("civicrm_stripe loaded, dom-ready function firing.");
+  debugging("civicrmStripeConfirm loaded");
+
+  if (typeof CRM.vars.stripe === 'undefined') {
+    debugging('CRM.vars.stripe not defined! Not a Stripe processor?');
+    return;
+  }
+  if (CRM.vars.stripe.paymentIntentStatus === 'succeeded') {
+    debugging('already succeeded');
+    return;
+  }
 
   checkAndLoad();
 
@@ -62,11 +71,6 @@ CRM.$(function($) {
   }
 
   function checkAndLoad() {
-    if (typeof CRM.vars.stripe === 'undefined') {
-      debugging('CRM.vars.stripe not defined! Not a Stripe processor?');
-      return;
-    }
-
     if (typeof Stripe === 'undefined') {
       if (stripeLoading) {
         return;
