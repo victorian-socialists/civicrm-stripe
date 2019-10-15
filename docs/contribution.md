@@ -31,8 +31,10 @@ The defaults for this are to cancel uncaptured payments after 24 hours and clear
 ## Payment Metadata
 
 When we create a contribution in CiviCRM (Stripe Invoice/Charge) we add some metadata to that payment.
+
 * The statement descriptor contains a parsable `contactID-contributionID` and then part of the description.
 * The description contains the description, a parsable `contactID-contributionID` and then the CiviCRM (unique) invoice ID.
+
 ![Stripe Payment](/images/stripedashboard_paymentdetail.png)
 
 ## Customer Metadata

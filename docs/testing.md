@@ -1,5 +1,8 @@
 # TESTING
 
+!!! note
+    The tests included with the Stripe extension have not been updated for 6.x
+
 ### PHPUnit
 This extension comes with two PHP Unit tests:
 

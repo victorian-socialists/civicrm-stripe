@@ -13,6 +13,7 @@ To check if webhooks are configured correctly login to your Stripe Dashboard and
 ## Notifications
 
 Stripe notifies CiviCRM in the following circumstances:
+
 * A Charge is successful (not normally used as we are already notified during the actual payment process).
 * A Charge fails - sometimes a charge may be delayed (eg. for Fraud checks) and later fails.
 * A Charge is refunded - if a charge is refunded via the Stripe Dashboard it will update in CiviCRM.
