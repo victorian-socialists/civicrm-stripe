@@ -3,6 +3,8 @@
  * https://civicrm.org/licensing
  */
 
+use CRM_Stripe_ExtensionUtil as E;
+
 /**
  * Class CRM_Stripe_Customer
  */
@@ -202,6 +204,7 @@ class CRM_Stripe_Customer {
       'metadata' => [
         'CiviCRM Contact ID' => $params['contact_id'],
         'CiviCRM URL' => CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$params['contact_id']}", TRUE),
+        'CiviCRM Version' => CRM_Utils_System::version() . ' ' . civicrm_api3('Extension', 'getvalue', ['return' => "version", 'full_name' => E::LONG_NAME]),
       ],
     ];
     return $stripeCustomerParams;

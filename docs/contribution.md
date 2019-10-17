@@ -47,8 +47,9 @@ The following metadata is created for a Stripe Customer:
 
 * Contact Name, Email address
 * Description (`CiviCRM: ` + site name).
-* Contact ID
-* Link to CiviCRM contact record
+* Contact ID.
+* Link to CiviCRM contact record.
+* CiviCRM version info (eg. `5.18.3 6.2`).
 
 ![Stripe Customer](/images/stripedashboard_customerdetail.png)
 
