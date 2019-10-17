@@ -8,6 +8,8 @@
 * Refactor passing of token parameters to use pre_approval_parameters.
   > This should resolve some issues with *PaymentIntent not found*.
 * Improve support for refunds in preparation for work in CiviCRM core (#15476-15479).
+* Add CiviCRM version info to stripe customer - this is useful when troubleshooting issues on client sites as it is important to know whether a reported issue may have been fixed in a later version.
+* Fix [#110](https://lab.civicrm.org/extensions/stripe/issues/110) -Allow submit if amount is 0.
 
 ## Release 6.1.6
 
