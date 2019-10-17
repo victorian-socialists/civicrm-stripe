@@ -143,7 +143,21 @@ function stripe_civicrm_buildForm($formName, &$form) {
       // This is a fairly nasty way of matching and retrieving our paymentIntent as it is no longer available.
       $qfKey = CRM_Utils_Request::retrieve('qfKey', 'String');
       if (!empty($qfKey)) {
-        $paymentIntent = civicrm_api3('StripePaymentintent', 'getsingle', ['return' => ['paymentintent_id', 'status', 'contribution_id'], 'identifier' => $qfKey]);
+        try {
+          $paymentIntent = civicrm_api3('StripePaymentintent', 'getsingle', [
+            'return' => [
+              'paymentintent_id',
+              'status',
+              'contribution_id'
+            ],
+            'identifier' => $qfKey
+          ]);
+        }
+        catch (Exception $e) {
+          // If we can't find a paymentIntent assume it was not a Stripe transaction and don't load Stripe vars
+          // This could happen for various reasons (eg. amount = 0).
+          return;
+        }
       }
 
       if (empty($paymentIntent['contribution_id'])) {

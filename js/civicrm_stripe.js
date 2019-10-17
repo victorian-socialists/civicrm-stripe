@@ -395,7 +395,7 @@ CRM.$(function($) {
       var totalFee = getTotalAmount();
       if (totalFee == '0') {
         debugging("Total amount is 0");
-        return true;
+        return nonStripeSubmit();
       }
 
       // Lock to prevent multiple submissions
