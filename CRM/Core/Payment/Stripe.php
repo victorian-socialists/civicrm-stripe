@@ -521,65 +521,21 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         $intentParams['amount'] = $this->getAmount($params);
         //$this->handleError('Amount differs', E::ts('Amount is different from the authorised amount (%1, %2)', [1 => $intent->amount, 2=> $this->getAmount($params)]), $params['stripe_error_url']);
       }
-      $intent = \Stripe\PaymentIntent::update($params['paymentIntentID'], $intentParams);
-      if ($intent->status === 'requires_confirmation') {
-        $intent->confirm();
-      }
-
-      switch ($intent->status) {
-        case 'requires_capture':
-          $intent->capture();
-          // Return fees & net amount for Civi reporting.
-          $stripeCharge = $intent->charges->data[0];
-          try {
-            $stripeBalanceTransaction = \Stripe\BalanceTransaction::retrieve($stripeCharge->balance_transaction);
-          }
-          catch (Exception $e) {
-            $err = self::parseStripeException('retrieve_balance_transaction', $e, FALSE);
-            $errorMessage = $this->handleErrorNotification($err, $params['stripe_error_url']);
-            throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to retrieve Stripe Balance Transaction: ' . $errorMessage);
-          }
-          $newParams['fee_amount'] = $stripeBalanceTransaction->fee / 100;
-          $newParams['net_amount'] = $stripeBalanceTransaction->net / 100;
-          // Success!
-          // Set the desired contribution status which will be set later (do not set on the contribution here!)
-          $params['contribution_status_id'] = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Completed');
-
-        case 'requires_action':
-          \Civi::$statics['paymentIntentID'] = $params['paymentIntentID'];
-          if ((boolean) \Civi::settings()->get('stripe_oneoffreceipt')) {
-            // Send a receipt from Stripe - we have to set the receipt_email after the charge has been captured,
-            //   as the customer receives an email as soon as receipt_email is updated and would receive two if we updated before capture.
-            \Stripe\PaymentIntent::update($params['paymentIntentID'], ['receipt_email' => $email]);
-          }
-          break;
-      }
+      $intent = \Stripe\PaymentIntent::update($intent->id, $intentParams);
     }
     catch (Exception $e) {
       $this->handleError($e->getCode(), $e->getMessage(), $params['stripe_error_url']);
     }
 
-    // Update the paymentIntent in the CiviCRM database for later tracking
-    $intentParams = [
-      'paymentintent_id' => $intent->id,
-      'payment_processor_id' => $this->_paymentProcessor['id'],
-      'status' => $intent->status,
-      'contribution_id' => $this->getContributionId($params),
-      'description' => $intentParams['description'],
-      'identifier' => $params['qfKey'],
-      'contact_id' => $this->getContactId($params),
-    ];
-    if (empty($intentParams['contribution_id'])) {
-      $intentParams['flags'][] = 'NC';
+    list($params, $newParams) = $this->processPaymentIntent($params, $intent);
+
+    // For a single charge there is no stripe invoice, we set OrderID to the ChargeID.
+    if (empty($this->getPaymentProcessorOrderID())) {
+      $this->setPaymentProcessorOrderID($this->getPaymentProcessorTrxnID());
     }
-    CRM_Stripe_BAO_StripePaymentintent::create($intentParams);
 
     // For contribution workflow we have a contributionId so we can set parameters directly.
     // For events/membership workflow we have to return the parameters and they might get set...
-    // For a single charge there is no stripe invoice.
-    $this->setPaymentProcessorOrderID($stripeCharge->id);
-    $this->setPaymentProcessorTrxnID($stripeCharge->id);
-
     return $this->endDoPayment($params, $newParams);
   }
 
@@ -655,10 +611,86 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     // Update the recurring payment
     civicrm_api3('ContributionRecur', 'create', $recurParams);
 
+    // Get the paymentIntent for the latest invoice
+    $intent = $stripeSubscription->latest_invoice['payment_intent'];
+
+    list($params, $newParams) = $this->processPaymentIntent($params, $intent);
+
     // Set the orderID (trxn_id) to the invoice ID
     // The IPN will change it to the charge_id
     $this->setPaymentProcessorOrderID($stripeSubscription->latest_invoice['id']);
-    return $this->endDoPayment($params);
+
+    return $this->endDoPayment($params, $newParams);
+  }
+
+  /**
+   * This performs the processing and recording of the paymentIntent for both recurring and non-recurring payments
+   * @param array $params
+   * @param \Stripe\PaymentIntent $intent
+   *
+   * @return array [$params, $newParams]
+   */
+  private function processPaymentIntent($params, $intent) {
+    $contactId = $this->getContactId($params);
+    $email = $this->getBillingEmail($params, $contactId);
+    $newParams = [];
+
+    try {
+      if ($intent->status === 'requires_confirmation') {
+        $intent->confirm();
+      }
+
+      switch ($intent->status) {
+        case 'requires_capture':
+          $intent->capture();
+          // Return fees & net amount for Civi reporting.
+          $stripeCharge = $intent->charges->data[0];
+          try {
+            $stripeBalanceTransaction = \Stripe\BalanceTransaction::retrieve($stripeCharge->balance_transaction);
+          }
+          catch (Exception $e) {
+            $err = self::parseStripeException('retrieve_balance_transaction', $e, FALSE);
+            $errorMessage = $this->handleErrorNotification($err, $params['stripe_error_url']);
+            throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to retrieve Stripe Balance Transaction: ' . $errorMessage);
+          }
+          $newParams['fee_amount'] = $stripeBalanceTransaction->fee / 100;
+          $newParams['net_amount'] = $stripeBalanceTransaction->net / 100;
+          // Success!
+          // Set the desired contribution status which will be set later (do not set on the contribution here!)
+          $params['contribution_status_id'] = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Completed');
+          // Transaction ID is always stripe Charge ID.
+          $this->setPaymentProcessorTrxnID($stripeCharge->id);
+
+        case 'requires_action':
+          // We fall through to this in requires_capture / requires_action so we always set a receipt_email
+          if ((boolean) \Civi::settings()->get('stripe_oneoffreceipt')) {
+            // Send a receipt from Stripe - we have to set the receipt_email after the charge has been captured,
+            //   as the customer receives an email as soon as receipt_email is updated and would receive two if we updated before capture.
+            \Stripe\PaymentIntent::update($intent->id, ['receipt_email' => $email]);
+          }
+          break;
+      }
+    }
+    catch (Exception $e) {
+      $this->handleError($e->getCode(), $e->getMessage(), $params['stripe_error_url']);
+    }
+
+    // Update the paymentIntent in the CiviCRM database for later tracking
+    $intentParams = [
+      'paymentintent_id' => $intent->id,
+      'payment_processor_id' => $this->_paymentProcessor['id'],
+      'status' => $intent->status,
+      'contribution_id' => $this->getContributionId($params),
+      'description' => $this->getDescription($params, 'description'),
+      'identifier' => $params['qfKey'],
+      'contact_id' => $this->getContactId($params),
+    ];
+    if (empty($intentParams['contribution_id'])) {
+      $intentParams['flags'][] = 'NC';
+    }
+    CRM_Stripe_BAO_StripePaymentintent::create($intentParams);
+
+    return [$params, $newParams];
   }
 
   /**

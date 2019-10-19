@@ -8,9 +8,11 @@ CRM.$(function($) {
     debugging('CRM.vars.stripe not defined! Not a Stripe processor?');
     return;
   }
-  if (CRM.vars.stripe.paymentIntentStatus === 'succeeded') {
-    debugging('already succeeded');
-    return;
+  switch (CRM.vars.stripe.paymentIntentStatus) {
+    case 'succeeded':
+    case 'cancelled':
+      debugging('paymentIntent: ' . CRM.vars.stripe.paymentIntentStatus);
+      return;
   }
 
   checkAndLoad();
@@ -43,17 +45,37 @@ CRM.$(function($) {
   }
 
   function handleAction(response) {
-    stripe.handleCardAction(response.payment_intent_client_secret)
-      .then(function(result) {
-        if (result.error) {
-          // Show error in payment form
-          handleCardConfirm();
-        } else {
-          // The card action has been handled
-          debugging('card action success');
-          handleCardConfirm();
-        }
-      });
+    switch (CRM.vars.stripe.paymentIntentMethod) {
+      case 'automatic':
+        stripe.handleCardPayment(response.payment_intent_client_secret)
+          .then(function (result) {
+            if (result.error) {
+              // Show error in payment form
+              handleCardConfirm();
+            }
+            else {
+              // The card action has been handled
+              debugging('card payment success');
+              handleCardConfirm();
+            }
+          });
+        break;
+
+      case 'manual':
+        stripe.handleCardAction(response.payment_intent_client_secret)
+          .then(function (result) {
+            if (result.error) {
+              // Show error in payment form
+              handleCardConfirm();
+            }
+            else {
+              // The card action has been handled
+              debugging('card action success');
+              handleCardConfirm();
+            }
+          });
+        break;
+    }
   }
 
   function handleCardConfirm() {
