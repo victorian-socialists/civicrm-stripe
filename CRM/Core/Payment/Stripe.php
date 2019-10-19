@@ -509,10 +509,10 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     $contactContribution = $this->getContactId($params) . '-' . ($this->getContributionId($params) ?: 'XX');
     $intentParams = [
       'customer' => $stripeCustomer->id,
-      'description' => "{$params['description']} {$contactContribution} #" . CRM_Utils_Array::value('invoiceID', $params),
+      'description' => $this->getDescription($params, 'description'),
     ];
-    $intentParams['statement_descriptor_suffix'] = "{$contactContribution} " . substr($params['description'],0,7);
-    $intentParams['statement_descriptor'] = substr("{$contactContribution} " . $params['description'], 0, 22);
+    $intentParams['statement_descriptor_suffix'] = $this->getDescription($params, 'statement_descriptor_suffix');
+    $intentParams['statement_descriptor'] = $this->getDescription($params, 'statement_descriptor');
 
     // This is where we actually charge the customer
     try {
@@ -715,6 +715,30 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'processor_result' => $refund->jsonSerialize(),
     ];
     return $refundParams;
+  }
+
+  /**
+   * Get a description field
+   * @param array $params
+   * @param string $type
+   *   One of description, statement_descriptor, statement_descriptor_suffix
+   *
+   * @return string
+   */
+  private function getDescription($params, $type = 'description') {
+    if (!isset(\Civi::$statics[__CLASS__]['description']['contact_contribution'])) {
+      \Civi::$statics[__CLASS__]['description']['contact_contribution'] = $this->getContactId($params) . '-' . ($this->getContributionId($params) ?: 'XX');
+    }
+    switch ($type) {
+      case 'statement_descriptor':
+        return substr(\Civi::$statics[__CLASS__]['description']['contact_contribution'] . " " . $params['description'], 0, 22);
+
+      case 'statement_descriptor_suffix':
+        return \Civi::$statics[__CLASS__]['description']['contact_contribution'] . " " . substr($params['description'],0,7);
+
+      default:
+        return "{$params['description']} " . \Civi::$statics[__CLASS__]['description']['contact_contribution'] . " #" . CRM_Utils_Array::value('invoiceID', $params);
+    }
   }
 
   /**
