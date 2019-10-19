@@ -136,7 +136,7 @@ function stripe_civicrm_buildForm($formName, &$form) {
   }
 
   switch ($formName) {
-    case 'CRM_Contribution_Form_ThankYou':
+    case 'CRM_Contribute_Form_Contribution_ThankYou':
     case 'CRM_Event_Form_Registration_ThankYou':
       \Civi::resources()->addScriptFile(E::LONG_NAME, 'js/civicrmStripeConfirm.js');
 

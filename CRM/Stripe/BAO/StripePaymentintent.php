@@ -39,7 +39,7 @@ class CRM_Stripe_BAO_StripePaymentintent extends CRM_Stripe_DAO_StripePaymentint
   public static function create($params) {
     $instance = new self;
     try {
-      if ($params['id']) {
+      if (!empty($params['id'])) {
         $instance->id = $params['id'];
       }
       elseif ($params['paymentintent_id']) {
