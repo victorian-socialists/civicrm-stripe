@@ -10,6 +10,8 @@
 * Improve support for refunds in preparation for work in CiviCRM core (#15476-15479).
 * Add CiviCRM version info to stripe customer - this is useful when troubleshooting issues on client sites as it is important to know whether a reported issue may have been fixed in a later version.
 * Fix [#110](https://lab.civicrm.org/extensions/stripe/issues/110) -Allow submit if amount is 0.
+* Fix and record paymentIntents for recurring contributions - show authentication to user on thankyou page.
+  > this checks loads 3d secure etc from Stripe if required.
 
 ## Release 6.1.6
 
