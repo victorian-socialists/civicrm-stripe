@@ -370,10 +370,9 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return array
    */
   public function doPreApproval(&$params) {
-    $paymentIntentID = CRM_Utils_Request::retrieve('paymentIntentID', 'String');
-    if (!empty($paymentIntentID)) {
-      return ['pre_approval_parameters' => ['paymentIntentID' => $paymentIntentID]];
-    }
+    $preApprovalParams['paymentIntentID'] = CRM_Utils_Request::retrieve('paymentIntentID', 'String');
+    $preApprovalParams['paymentMethodID'] = CRM_Utils_Request::retrieve('paymentMethodID', 'String');
+    return ['pre_approval_parameters' => $preApprovalParams];
   }
 
   /**
