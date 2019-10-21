@@ -12,6 +12,8 @@
 * Fix [#110](https://lab.civicrm.org/extensions/stripe/issues/110) -Allow submit if amount is 0.
 * Fix and record paymentIntents for recurring contributions - show authentication to user on thankyou page.
   > this checks loads 3d secure etc from Stripe if required.
+* Don't try to record refund for an uncaptured payment.
+  > When an uncaptured payment is cancelled it triggers a charge.refunded event. But we don't want to record this in CiviCRM as it was never "captured" and the payment was never really taken.
 
 ## Release 6.1.6
 
