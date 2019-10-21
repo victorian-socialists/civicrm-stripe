@@ -37,6 +37,9 @@ class CRM_Stripe_Api {
           case 'invoice_id':
             return (string) $stripeObject->invoice;
 
+          case 'captured':
+            return (bool) $stripeObject->captured;
+
         }
         break;
 

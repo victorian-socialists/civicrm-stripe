@@ -248,6 +248,11 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         return TRUE;
 
       case 'charge.refunded':
+        // Cancelling an uncaptured paymentIntent triggers charge.refunded but we don't want to process that
+        if (empty(CRM_Stripe_Api::getObjectParam('captured', $this->_inputParameters->data->object))) {
+          return TRUE;
+        };
+        // This charge was actually captured, so record the refund in CiviCRM
         $this->setInfo();
         $refunds = \Stripe\Refund::all(['charge' => $this->charge_id, 'limit' => 1]);
         $params = [
