@@ -230,6 +230,13 @@ function civicrm_api3_stripe_Listevents($params) {
         if ($results['count'] > 0) {
           $item['processed'] = 'yes';
         }
+        else {
+          // Newer versions of stripe store the invoice id in trxn_id.
+          $results = civicrm_api3('Contribution', 'get', array('trxn_id' => $item['invoice']));
+          if ($results['count'] > 0) {
+            $item['processed'] = 'yes';
+          }
+        }
       }
       $out[] = $item;
     }
