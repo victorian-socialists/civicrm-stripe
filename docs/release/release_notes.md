@@ -1,3 +1,9 @@
+## Release 6.2.1
+
+* [#121](https://lab.civicrm.org/extensions/stripe/issues/121) Fix auto-recurring membership payments.
+* Stripe.ListEvents API - properly handle newer way to record trxn_id value.
+* Change doRefund signature to match what is in CiviCRM core (fixes a PHP warning).
+
 ## Release 6.2
 
 * Track paymentIntents and cancel uncaptured ones after 24 hours.
