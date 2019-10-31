@@ -13,10 +13,9 @@
 /**
  * Stripe.ListEvents API specification
  *
- *
  * @param array $spec description of fields supported by this API call
+ *
  * @return void
- * @see http://wiki.civicrm.org/confluence/display/CRMDOC/API+Architecture+Standards
  */
 function _civicrm_api3_stripe_ListEvents_spec(&$spec) {
   $spec['ppid']['title'] = ts("Use the given Payment Processor ID");
@@ -34,92 +33,92 @@ function _civicrm_api3_stripe_ListEvents_spec(&$spec) {
  * Stripe.VerifyEventType
  *
  * @param string $eventType
- * @return bolean True if valid type, false otherwise.
+ *
+ * @return boolean True if valid type, false otherwise.
  */
 function civicrm_api3_stripe_VerifyEventType($eventType) {
-
-	return in_array($eventType, array(
-			'account.external_account.created',
-			'account.external_account.deleted',
-			'account.external_account.updated',
-			'application_fee.created',
-			'application_fee.refunded',
-			'application_fee.refund.updated',
-			'balance.available',
-			'bitcoin.receiver.created',
-			'bitcoin.receiver.filled',
-			'bitcoin.receiver.updated',
-			'bitcoin.receiver.transaction.created',
-			'charge.captured',
-			'charge.failed',
-			'charge.pending',
-			'charge.refunded',
-			'charge.succeeded',
-			'charge.updated',
-			'charge.dispute.closed',
-			'charge.dispute.created',
-			'charge.dispute.funds_reinstated',
-			'charge.dispute.funds_withdrawn',
-			'charge.dispute.updated',
-			'charge.refund.updated',
-			'coupon.created',
-			'coupon.deleted',
-			'coupon.updated',
-			'customer.created',
-			'customer.deleted',
-			'customer.updated',
-			'customer.discount.created',
-			'customer.discount.deleted',
-			'customer.discount.updated',
-			'customer.source.created',
-			'customer.source.deleted',
-			'customer.source.updated',
-			'customer.subscription.created',
-			'customer.subscription.deleted',
-			'customer.subscription.trial_will_end',
-			'customer.subscription.updated',
-			'invoice.created',
-			'invoice.payment_failed',
-			'invoice.payment_succeeded',
-			'invoice.upcoming',
-			'invoice.updated',
-			'invoiceitem.created',
-			'invoiceitem.deleted',
-			'invoiceitem.updated',
-			'order.created',
-			'order.payment_failed',
-			'order.payment_succeeded',
-			'order.updated',
-			'order_return.created',
-			'payout.canceled',
-			'payout.created',
-			'payout.failed',
-			'payout.paid',
-			'payout.updated',
-			'plan.created',
-			'plan.deleted',
-			'plan.updated',
-			'product.created',
-			'product.deleted',
-			'product.updated',
-			'recipient.created',
-			'recipient.deleted',
-			'recipient.updated',
-			'review.closed',
-			'review.opened',
-			'sku.created',
-			'sku.deleted',
-			'sku.updated',
-			'source.canceled',
-			'source.chargeable',
-			'source.failed',
-			'source.transaction.created',
-			'transfer.created',
-			'transfer.reversed',
-			'transfer.updated',
-			'ping',
-		)
-	);
+  return in_array($eventType, [
+      'account.external_account.created',
+      'account.external_account.deleted',
+      'account.external_account.updated',
+      'application_fee.created',
+      'application_fee.refunded',
+      'application_fee.refund.updated',
+      'balance.available',
+      'bitcoin.receiver.created',
+      'bitcoin.receiver.filled',
+      'bitcoin.receiver.updated',
+      'bitcoin.receiver.transaction.created',
+      'charge.captured',
+      'charge.failed',
+      'charge.pending',
+      'charge.refunded',
+      'charge.succeeded',
+      'charge.updated',
+      'charge.dispute.closed',
+      'charge.dispute.created',
+      'charge.dispute.funds_reinstated',
+      'charge.dispute.funds_withdrawn',
+      'charge.dispute.updated',
+      'charge.refund.updated',
+      'coupon.created',
+      'coupon.deleted',
+      'coupon.updated',
+      'customer.created',
+      'customer.deleted',
+      'customer.updated',
+      'customer.discount.created',
+      'customer.discount.deleted',
+      'customer.discount.updated',
+      'customer.source.created',
+      'customer.source.deleted',
+      'customer.source.updated',
+      'customer.subscription.created',
+      'customer.subscription.deleted',
+      'customer.subscription.trial_will_end',
+      'customer.subscription.updated',
+      'invoice.created',
+      'invoice.payment_failed',
+      'invoice.payment_succeeded',
+      'invoice.upcoming',
+      'invoice.updated',
+      'invoiceitem.created',
+      'invoiceitem.deleted',
+      'invoiceitem.updated',
+      'order.created',
+      'order.payment_failed',
+      'order.payment_succeeded',
+      'order.updated',
+      'order_return.created',
+      'payout.canceled',
+      'payout.created',
+      'payout.failed',
+      'payout.paid',
+      'payout.updated',
+      'plan.created',
+      'plan.deleted',
+      'plan.updated',
+      'product.created',
+      'product.deleted',
+      'product.updated',
+      'recipient.created',
+      'recipient.deleted',
+      'recipient.updated',
+      'review.closed',
+      'review.opened',
+      'sku.created',
+      'sku.deleted',
+      'sku.updated',
+      'source.canceled',
+      'source.chargeable',
+      'source.failed',
+      'source.transaction.created',
+      'transfer.created',
+      'transfer.reversed',
+      'transfer.updated',
+      'ping',
+    ]
+  );
 }
 
 /**
@@ -147,7 +146,7 @@ function civicrm_api3_stripe_ProcessParams($params) {
     $starting_after = $params['starting_after'];
   }
 
-	// Check to see if we should filter by type.
+  // Check to see if we should filter by type.
   if (array_key_exists('type', $params) ) {
     // Validate - since we will be appending this to an URL.
     if (!civicrm_api3_stripe_VerifyEventType($params['type'])) {
@@ -172,10 +171,11 @@ function civicrm_api3_stripe_ProcessParams($params) {
  * Stripe.ListEvents API
  *
  * @param array $params
+ *
  * @return array API result descriptor
- * @see civicrm_api3_create_success
- * @see civicrm_api3_create_error
- * @throws API_Exception
+ * @throws \API_Exception
+ * @throws \CiviCRM_API3_Exception
+ * @throws \Stripe\Error\Api
  */
 function civicrm_api3_stripe_Listevents($params) {
   $parsed = civicrm_api3_stripe_ProcessParams($params);
@@ -184,7 +184,7 @@ function civicrm_api3_stripe_Listevents($params) {
   $limit = $parsed['limit'];
   $starting_after = $parsed['starting_after'];
 
-  $args = array();
+  $args = [];
   if ($type) {
     $args['type'] = $type;
   }
@@ -208,15 +208,15 @@ function civicrm_api3_stripe_Listevents($params) {
   }
   $out = $data_list;
   if ($params['output'] == 'brief') {
-    $out = array();
+    $out = [];
     foreach($data_list['data'] as $data) {
-      $item = array(
+      $item = [
         'id' => $data['id'],
         'created' => date('Y-m-d H:i:s', $data['created']),
         'livemode' => $data['livemode'],
         'pending_webhooks' => $data['pending_webhooks'],
         'type' => $data['type'],
-      );
+      ];
       if (preg_match('/invoice\.payment_/', $data['type'])) {
         $item['invoice'] = $data['data']['object']->id;
         $item['charge'] = $data['data']['object']->charge;
@@ -226,13 +226,14 @@ function civicrm_api3_stripe_Listevents($params) {
 
         // Check if this is in the contributions table.
         $item['processed'] = 'no';
-        $results = civicrm_api3('Contribution', 'get', array('trxn_id' => $item['charge']));
+        $results = civicrm_api3('Contribution', 'get', ['trxn_id' => $item['charge']]);
         if ($results['count'] > 0) {
           $item['processed'] = 'yes';
         }
         else {
-          // Newer versions of stripe store the invoice id in trxn_id.
-          $results = civicrm_api3('Contribution', 'get', array('trxn_id' => $item['invoice']));
+          // From 6.0 we store the Stripe Invoice ID in the Contribution.trxn_id if available (ie it's a recur).
+          // Otherwise we continue to store the Stripe Charge ID.
+          $results = civicrm_api3('Contribution', 'get', ['trxn_id' => $item['invoice']]);
           if ($results['count'] > 0) {
             $item['processed'] = 'yes';
           }
@@ -242,7 +243,4 @@ function civicrm_api3_stripe_Listevents($params) {
     }
   }
   return civicrm_api3_create_success($out);
-
 }
-
-

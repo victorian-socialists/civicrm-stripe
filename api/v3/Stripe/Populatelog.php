@@ -17,8 +17,6 @@
  * Stripe.Populatelog API specification
  *
  * @param array $spec description of fields supported by this API call
- * @return void
- * @see http://wiki.civicrm.org/confluence/display/CRMDOC/API+Architecture+Standards
  */
 function _civicrm_api3_stripe_Populatelog_spec(&$spec) {
   $spec['ppid']['title'] = ts("The id of the payment processor.");
@@ -28,10 +26,10 @@ function _civicrm_api3_stripe_Populatelog_spec(&$spec) {
  * Stripe.Populatelog API
  *
  * @param array $params
+ *
  * @return array API result descriptor
- * @see civicrm_api3_create_success
- * @see civicrm_api3_create_error
- * @throws API_Exception
+ * @throws \API_Exception
+ * @throws \CiviCRM_API3_Exception
  */
 function civicrm_api3_stripe_Populatelog($params) {
   $ppid = NULL;
@@ -41,7 +39,7 @@ function civicrm_api3_stripe_Populatelog($params) {
   else {
     // By default, select the live stripe processor (we expect there to be
     // only one).
-    $query_params = array('class_name' => 'Payment_Stripe', 'is_test' => 0, 'return' => 'id');
+    $query_params = ['class_name' => 'Payment_Stripe', 'is_test' => 0, 'return' => 'id'];
     try {
       $ppid = civicrm_api3('PaymentProcessor', 'getvalue', $params);
     }
@@ -50,12 +48,12 @@ function civicrm_api3_stripe_Populatelog($params) {
     }
   }
 
-  $params = array('limit' => 100, 'type' => 'invoice.payment_succeeded');
+  $params = ['limit' => 100, 'type' => 'invoice.payment_succeeded'];
   if ($ppid) {
     $params['ppid'] = $ppid;
   }
 
-  $items = array();
+  $items = [];
   $last_item = NULL;
   $more = TRUE;
   while(1) {
@@ -71,7 +69,7 @@ function civicrm_api3_stripe_Populatelog($params) {
     $items = array_merge($items, $objects['values']['data']);
     $last_item = end($objects['values']['data']);
   }
-  $results = array();
+  $results = [];
   foreach($items as $item) {
     $id = $item->id;
     // Insert into System Log if it doesn't exist.
@@ -94,7 +92,7 @@ function civicrm_api3_stripe_Populatelog($params) {
 }
 
 function civcrm_api3_stripe_cid_for_trxn($trxn) {
-  $params = array('trxn_id' => $trxn, 'return' => 'contact_id');
+  $params = ['trxn_id' => $trxn, 'return' => 'contact_id'];
   $result = civicrm_api3('Contribution', 'getvalue', $params);
   return $result;
 }
