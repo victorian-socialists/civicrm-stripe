@@ -480,8 +480,19 @@ CRM.$(function($) {
   }
 
   function getIsRecur() {
+    // Auto-renew contributions
     if (document.getElementById('is_recur') !== null) {
+      if (document.getElementById('is_recur').type == 'hidden') {
+        return document.getElementById('is_recur').value == 1;
+      }
       return Boolean(document.getElementById('is_recur').checked);
+    }
+    // Auto-renew memberships
+    if (document.getElementById('auto_renew') !== null) {
+      if (document.getElementById('auto_renew').type == 'hidden') {
+        return document.getElementById('auto_renew').value == 1;
+      }
+      return Boolean(document.getElementById('auto_renew').checked);
     }
     return false;
   }
