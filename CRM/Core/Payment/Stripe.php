@@ -558,12 +558,16 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @throws \CRM_Core_Exception
    */
   public function doRecurPayment($params, $amount, $stripeCustomer, $stripePaymentMethod) {
-    $requiredParams = ['contributionRecurID', 'frequency_unit'];
-    foreach ($requiredParams as $required) {
-      if (!isset($params[$required])) {
-        Civi::log()->error('Stripe doRecurPayment: Missing mandatory parameter: ' . $required);
-        throw new CRM_Core_Exception('Stripe doRecurPayment: Missing mandatory parameter: ' . $required);
-      }
+    $required = NULL;
+    if (empty($this->getRecurringContributionId($params))) {
+      $required = 'contributionRecurID';
+    }
+    if (!isset($params['frequency_unit'])) {
+      $required = 'frequency_unit';
+    }
+    if ($required) {
+      Civi::log()->error('Stripe doRecurPayment: Missing mandatory parameter: ' . $required);
+      throw new CRM_Core_Exception('Stripe doRecurPayment: Missing mandatory parameter: ' . $required);
     }
 
     // Make sure frequency_interval is set (default to 1 if not)
@@ -586,7 +590,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     $this->setPaymentProcessorSubscriptionID($stripeSubscription->id);
 
     $recurParams = [
-      'id' => $params['contributionRecurID'],
+      'id' =>     $this->getRecurringContributionId($params),
       'trxn_id' => $this->getPaymentProcessorSubscriptionID(),
       // FIXME processor_id is deprecated as it is not guaranteed to be unique, but currently (CiviCRM 5.9)
       //  it is required by cancelSubscription (where it is called subscription_id)
@@ -889,10 +893,9 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   public function cancelSubscription(&$message = '', $params = []) {
     $this->setAPIParams();
 
-    $contributionRecurId = $this->getRecurringContributionId($params);
     try {
       $contributionRecur = civicrm_api3('ContributionRecur', 'getsingle', [
-        'id' => $contributionRecurId,
+        'id' => $this->getRecurringContributionId($params),
       ]);
     }
     catch (Exception $e) {
