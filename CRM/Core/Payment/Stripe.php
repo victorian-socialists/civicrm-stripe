@@ -702,7 +702,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return array
    * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
-  public function doRefund($params) {
+  public function doRefund(&$params) {
     $requiredParams = ['trxn_id', 'amount'];
     foreach ($requiredParams as $required) {
       if (!isset($params[$required])) {
