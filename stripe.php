@@ -194,7 +194,6 @@ function stripe_civicrm_buildForm($formName, &$form) {
       }
       break;
   }
-
 }
 
 /**

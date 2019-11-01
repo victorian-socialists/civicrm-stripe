@@ -480,21 +480,32 @@ CRM.$(function($) {
   }
 
   function getIsRecur() {
+    var isRecur = false;
     // Auto-renew contributions
     if (document.getElementById('is_recur') !== null) {
       if (document.getElementById('is_recur').type == 'hidden') {
-        return document.getElementById('is_recur').value == 1;
+        isRecur = (document.getElementById('is_recur').value == 1);
       }
-      return Boolean(document.getElementById('is_recur').checked);
+      else {
+        isRecur = Boolean(document.getElementById('is_recur').checked);
+      }
     }
     // Auto-renew memberships
-    if (document.getElementById('auto_renew') !== null) {
-      if (document.getElementById('auto_renew').type == 'hidden') {
-        return document.getElementById('auto_renew').value == 1;
+    // This gets messy quickly!
+    // input[name="auto_renew"] : set to 1 when there is a force-renew membership with no priceset.
+    else if ($('input[name="auto_renew"]').length !== 0) {
+      if ($('input[name="auto_renew"]').prop('checked')) {
+        isRecur = true;
       }
-      return Boolean(document.getElementById('auto_renew').checked);
+      else if (document.getElementById('auto_renew').type == 'hidden') {
+        isRecur = (document.getElementById('auto_renew').value == 1);
+      }
+      else {
+        isRecur = Boolean(document.getElementById('auto_renew').checked);
+      }
     }
-    return false;
+    debugging('isRecur is ' + isRecur);
+    return isRecur;
   }
 
   function updateFormElementsFromCreditCardDetails(event) {
