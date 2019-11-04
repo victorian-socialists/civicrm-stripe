@@ -1,3 +1,8 @@
+## Release 6.2.2
+
+* Make sure we detect memberships as auto-renew when they are "forced".
+* Make sure we always load the recurring contribution ID properly.
+
 ## Release 6.2.1
 
 * [#121](https://lab.civicrm.org/extensions/stripe/issues/121) Fix auto-recurring membership payments.
