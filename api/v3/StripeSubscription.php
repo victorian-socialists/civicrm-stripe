@@ -199,7 +199,6 @@ function civicrm_api3_stripe_subscription_import($params) {
   $invoiceParams = [
     'customer' => CRM_Stripe_Api::getObjectParam('customer_id', $stripeSubscription),
     'limit' => 10,
-    //'due_date[lte]' => time(),
   ];
   $stripeInvoices = \Stripe\Invoice::all($invoiceParams);
   foreach ($stripeInvoices->data as $stripeInvoice) {

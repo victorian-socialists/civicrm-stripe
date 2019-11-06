@@ -99,7 +99,7 @@ class CRM_Stripe_Customer {
    * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
   public static function add($params) {
-    $requiredParams = ['contact_id', 'customer_id', 'processor_id'];
+    $requiredParams = ['contact_id', 'id', 'processor_id'];
     foreach ($requiredParams as $required) {
       if (empty($params[$required])) {
         throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (add): Missing required parameter: ' . $required);
@@ -108,7 +108,7 @@ class CRM_Stripe_Customer {
 
     $queryParams = [
       1 => [$params['contact_id'], 'String'],
-      2 => [$params['customer_id'], 'String'],
+      2 => [$params['id'], 'String'],
       3 => [$params['processor_id'], 'Integer'],
     ];
 
@@ -146,7 +146,7 @@ class CRM_Stripe_Customer {
     // Store the relationship between CiviCRM's email address for the Contact & Stripe's Customer ID.
     $params = [
       'contact_id' => $params['contact_id'],
-      'customer_id' => $stripeCustomer->id,
+      'id' => $stripeCustomer->id,
       'processor_id' => $params['processor_id'],
     ];
     self::add($params);

@@ -18,8 +18,9 @@ use CRM_Stripe_ExtensionUtil as E;
  * @see http://wiki.civicrm.org/confluence/display/CRMDOC/API+Architecture+Standards
  */
 function _civicrm_api3_stripe_customer_get_spec(&$spec) {
-  $spec['customer_id']['title'] = ts("Stripe Customer ID");
-  $spec['customer_id']['type'] = CRM_Utils_Type::T_STRING;
+  $spec['id']['title'] = ts("Stripe Customer ID");
+  $spec['id']['type'] = CRM_Utils_Type::T_STRING;
+  $spec['id']['api.aliases'] = ['customer_id'];
   $spec['contact_id']['title'] = ts("CiviCRM Contact ID");
   $spec['contact_id']['type'] = CRM_Utils_Type::T_INT;
   $spec['processor_id']['title'] = ts("Payment Processor ID");
@@ -39,7 +40,7 @@ function civicrm_api3_stripe_customer_get($params) {
   $index = 1;
   foreach ($params as $key => $value) {
     switch ($key) {
-      case 'customer_id':
+      case 'id':
         $where[$index] = "{$key}=%{$index}";
         $whereParam[$index] = [$value, 'String'];
         $index++;
@@ -64,7 +65,7 @@ function civicrm_api3_stripe_customer_get($params) {
 
   while ($dao->fetch()) {
     $result = [
-      'customer_id' => $dao->id,
+      'id' => $dao->id,
       'contact_id' => $dao->contact_id,
       'processor_id' => $dao->processor_id,
     ];
@@ -84,8 +85,9 @@ function civicrm_api3_stripe_customer_get($params) {
  * @see http://wiki.civicrm.org/confluence/display/CRMDOC/API+Architecture+Standards
  */
 function _civicrm_api3_stripe_customer_delete_spec(&$spec) {
-  $spec['customer_id']['title'] = ts("Stripe Customer ID");
-  $spec['customer_id']['type'] = CRM_Utils_Type::T_STRING;
+  $spec['id']['title'] = ts("Stripe Customer ID");
+  $spec['id']['type'] = CRM_Utils_Type::T_STRING;
+  $spec['id']['api.aliases'] = ['customer_id'];
   $spec['contact_id']['title'] = ts("CiviCRM Contact ID");
   $spec['contact_id']['type'] = CRM_Utils_Type::T_INT;
   $spec['processor_id']['title'] = ts("Payment Processor ID");
@@ -116,9 +118,10 @@ function civicrm_api3_stripe_customer_delete($params) {
  * @see http://wiki.civicrm.org/confluence/display/CRMDOC/API+Architecture+Standards
  */
 function _civicrm_api3_stripe_customer_create_spec(&$spec) {
-  $spec['customer_id']['title'] = ts("Stripe Customer ID");
-  $spec['customer_id']['type'] = CRM_Utils_Type::T_STRING;
-  $spec['customer_id']['api.required'] = TRUE;
+  $spec['id']['title'] = ts("Stripe Customer ID");
+  $spec['id']['type'] = CRM_Utils_Type::T_STRING;
+  $spec['id']['api.required'] = TRUE;
+  $spec['id']['api.aliases'] = ['customer_id'];
   $spec['contact_id']['title'] = ts("CiviCRM Contact ID");
   $spec['contact_id']['type'] = CRM_Utils_Type::T_INT;
   $spec['contact_id']['api.required'] = TRUE;
@@ -169,33 +172,17 @@ function civicrm_api3_stripe_customer_updatecontactids($params) {
     catch (Exception $e) {
       // Most common problem is duplicates.
       if(preg_match("/Expected one Contact but found/", $e->getMessage())) {
-        // If we find more than one, first try to find it via a related subscription record
-        // using the customer id.
+        // Still no luck. Now get desperate.
         $sql = "SELECT c.id
-          FROM civicrm_contribution_recur rc
-            JOIN civicrm_stripe_subscriptions sc ON
-              rc.id = sc.contribution_recur_id
-            JOIN civicrm_contact c ON c.id = rc.contact_id
-          WHERE c.is_deleted = 0 AND customer_id = %0
-          ORDER BY start_date DESC LIMIT 1";
-        $dao_contribution = CRM_Core_DAO::executeQuery($sql, [0 => [$dao->id, 'String']]);
-        $dao_contribution->fetch();
-        if ($dao_contribution->id) {
-          $contactId = $dao_contribution->id;
-        }
-        if (empty($contactId)) {
-          // Still no luck. Now get desperate.
-          $sql = "SELECT c.id
             FROM civicrm_contact c JOIN civicrm_email e ON c.id = e.contact_id
             JOIN civicrm_contribution cc ON c.id = cc.contact_id
             WHERE e.email = %0 AND c.is_deleted = 0 AND is_test = 0 AND
               trxn_id LIKE 'ch_%' AND contribution_status_id = 1
             ORDER BY receive_date DESC LIMIT 1";
-          $dao_contribution = CRM_Core_DAO::executeQuery($sql, [0 => [$dao->email, 'String']]);
-          $dao_contribution->fetch();
-          if ($dao_contribution->id) {
-            $contactId = $dao_contribution->id;
-          }
+        $dao_contribution = CRM_Core_DAO::executeQuery($sql, [0 => [$dao->email, 'String']]);
+        $dao_contribution->fetch();
+        if ($dao_contribution->id) {
+          $contactId = $dao_contribution->id;
         }
       }
       if (empty($contactId)) {
@@ -219,10 +206,11 @@ function civicrm_api3_stripe_customer_updatecontactids($params) {
 }
 
 function _civicrm_api3_stripe_customer_updatestripemetadata_spec(&$spec) {
-  $spec['customer_id']['title'] = E::ts("Stripe Customer ID");
-  $spec['customer_id']['description'] = E::ts('If set only this customer will be updated, otherwise we try and update ALL customers');
-  $spec['customer_id']['type'] = CRM_Utils_Type::T_STRING;
-  $spec['customer_id']['api.required'] = FALSE;
+  $spec['id']['title'] = E::ts("Stripe Customer ID");
+  $spec['id']['description'] = E::ts('If set only this customer will be updated, otherwise we try and update ALL customers');
+  $spec['id']['type'] = CRM_Utils_Type::T_STRING;
+  $spec['id']['api.required'] = FALSE;
+  $spec['id']['api.aliases'] = ['customer_id'];
   $spec['dryrun']['api.required'] = TRUE;
   $spec['dryrun']['type'] = CRM_Utils_Type::T_BOOLEAN;
   $spec['processor_id']['api.required'] = FALSE;
@@ -245,7 +233,7 @@ function civicrm_api3_stripe_customer_updatestripemetadata($params) {
     throw new CiviCRM_API3_Exception('Missing required parameter dryrun');
   }
   // Check params
-  if (empty($params['customer_id'])) {
+  if (empty($params['id'])) {
     // We're doing an update on all stripe customers
     if (!isset($params['processor_id'])) {
       throw new CiviCRM_API3_Exception('Missing required parameters processor_id when using without a customer id');
@@ -253,7 +241,7 @@ function civicrm_api3_stripe_customer_updatestripemetadata($params) {
     $customerIds = CRM_Stripe_Customer::getAll($params['processor_id'], $params['options']);
   }
   else {
-    $customerIds = [$params['customer_id']];
+    $customerIds = [$params['id']];
   }
   foreach ($customerIds as $customerId) {
     $customerParams = CRM_Stripe_Customer::getParamsForCustomerId($customerId);
