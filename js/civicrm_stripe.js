@@ -16,7 +16,7 @@ CRM.$(function($) {
   var stripe;
   var card;
   var form;
-  var submitButton;
+  var submitButtons;
   var stripeLoading = false;
 
   // Disable the browser "Leave Page Alert" which is triggered because we mess with the form submit function.
@@ -55,7 +55,9 @@ CRM.$(function($) {
 
   function nonStripeSubmit() {
     // Disable the submit button to prevent repeated clicks
-    submitButton.setAttribute('disabled', true);
+    for (i = 0; i < submitButtons.length; ++i) {
+      submitButtons[i].setAttribute('disabled', true);
+    }
     return form.submit();
   }
 
@@ -69,7 +71,9 @@ CRM.$(function($) {
     document.querySelector('#billing-payment-block').scrollIntoView();
     window.scrollBy(0, -50);
     form.dataset.submitted = false;
-    submitButton.removeAttribute('disabled');
+    for (i = 0; i < submitButtons.length; ++i) {
+      submitButtons[i].removeAttribute('disabled');
+    }
   }
 
   function handleCardPayment() {
@@ -244,7 +248,7 @@ CRM.$(function($) {
       debugging('No billing form!');
       return;
     }
-    submitButton = getBillingSubmit();
+    submitButtons = getBillingSubmit();
 
     // If another submit button on the form is pressed (eg. apply discount)
     //  add a flag that we can set to stop payment submission
@@ -264,7 +268,9 @@ CRM.$(function($) {
       form.dataset.submitdontprocess = true;
     }
 
-    submitButton.addEventListener('click', submitButtonClick);
+    for (i = 0; i < submitButtons.length; ++i) {
+      submitButtons[i].addEventListener('click', submitButtonClick);
+    }
 
     function submitButtonClick(event) {
       if (form.dataset.submitted === true) {
@@ -285,7 +291,9 @@ CRM.$(function($) {
     }
 
     // Remove the onclick attribute added by CiviCRM.
-    submitButton.removeAttribute('onclick');
+    for (i = 0; i < submitButtons.length; ++i) {
+      submitButtons[i].removeAttribute('onclick');
+    }
 
     addSupportForCiviDiscount();
 
@@ -409,7 +417,9 @@ CRM.$(function($) {
       }
 
       // Disable the submit button to prevent repeated clicks
-      submitButton.setAttribute('disabled', true);
+      for (i = 0; i < submitButtons.length; ++i) {
+        submitButtons[i].setAttribute('disabled', true);
+      }
 
       // Create a token when the form is submitted.
       handleCardPayment();
@@ -440,14 +450,14 @@ CRM.$(function($) {
   function getBillingSubmit() {
     var submit = null;
     if (getIsDrupalWebform()) {
-      submit = form.querySelector('[type="submit"].webform-submit');
+      submit = form.querySelectorAll('[type="submit"].webform-submit');
       if (!submit) {
         // drupal 8 webform
-        submit = form.querySelector('[type="submit"].webform-button--submit');
+        submit = form.querySelectorAll('[type="submit"].webform-button--submit');
       }
     }
     else {
-      submit = form.querySelector('[type="submit"].validate');
+      submit = form.querySelectorAll('[type="submit"].validate');
     }
     return submit;
   }
