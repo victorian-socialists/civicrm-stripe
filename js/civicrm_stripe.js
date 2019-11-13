@@ -453,18 +453,20 @@ CRM.$(function($) {
   }
 
   function getTotalAmount() {
-    var totalFee = null;
-
+    var totalFee = 0.0;
     if ((document.getElementById('additional_participants') !== null) &&
        (document.getElementById('additional_participants').value.length !== 0)) {
-      debugging('Cannot setup paymentIntent because we don\'t know the final price');
-      return totalFee;
+      debugging('We don\'t know the final price - registering additional participants');
     }
-    if (typeof calculateTotalFee == 'function') {
+    else if (document.getElementById('totalTaxAmount') !== null) {
+      totalFee = parseFloat(calculateTaxAmount());
+      debugging('Calculated amount using internal calculateTaxAmount()');
+    }
+    else if (typeof calculateTotalFee == 'function') {
       // This is ONLY triggered in the following circumstances on a CiviCRM contribution page:
       // - With a priceset that allows a 0 amount to be selected.
       // - When Stripe is the ONLY payment processor configured on the page.
-      totalFee = calculateTotalFee();
+      totalFee = parseFloat(calculateTotalFee());
     }
     else if (getIsDrupalWebform()) {
       // This is how webform civicrm calculates the amount in webform_civicrm_payment.js
@@ -474,9 +476,25 @@ CRM.$(function($) {
     }
     else if (document.getElementById('total_amount')) {
       // The input#total_amount field exists on backend contribution forms
-      totalFee = document.getElementById('total_amount').value;
+      totalFee = parseFloat(document.getElementById('total_amount').value);
     }
-    return totalFee;
+    debugging('getTotalAmount: ' + totalFee.toFixed(2));
+    return totalFee.toFixed(2);
+  }
+
+  // This is calculated in CRM/Contribute/Form/Contribution.tpl and is used to calculate the total
+  //   amount with tax on backend submit contribution forms.
+  // The only way we can get the amount is by parsing the text field and extracting the final bit after the space.
+  // eg. "Amount including Tax: $ 4.50" gives us 4.50.
+  // The PHP side is responsible for converting money formats (we just parse to cents and remove any ,. chars).
+  function calculateTaxAmount() {
+    var totalTaxAmount = 0;
+    if (document.getElementById('totalTaxAmount') === null) {
+      return totalTaxAmount;
+    }
+
+    totalTaxAmount = document.getElementById('totalTaxAmount').textContent.split(' ').pop();
+    return totalTaxAmount;
   }
 
   function getIsRecur() {

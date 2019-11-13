@@ -41,7 +41,7 @@ class CRM_Stripe_AJAX {
   public static function confirmPayment() {
     $paymentMethodID = CRM_Utils_Request::retrieveValue('payment_method_id', 'String');
     $paymentIntentID = CRM_Utils_Request::retrieveValue('payment_intent_id', 'String');
-    $amount = CRM_Utils_Request::retrieveValue('amount', 'Money');
+    $amount = CRM_Utils_Request::retrieveValue('amount', 'String');
     $capture = CRM_Utils_Request::retrieveValue('capture', 'Boolean', FALSE);
     $title = CRM_Utils_Request::retrieveValue('description', 'String');
     $confirm = TRUE;
@@ -70,7 +70,7 @@ class CRM_Stripe_AJAX {
       try {
         $intent = \Stripe\PaymentIntent::create([
           'payment_method' => $paymentMethodID,
-          'amount' => $processor->getAmount(['amount' => $amount]),
+          'amount' => $processor->getAmount(['amount' => $amount, 'currency' => $currency]),
           'currency' => $currency,
           'confirmation_method' => 'manual',
           'capture_method' => 'manual',

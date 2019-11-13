@@ -171,13 +171,14 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    *
    * @param $params
    *
-   * @return string
+   * @return int
    */
-  public function getAmount($params) {
+  public function getAmount($params): int {
+    $amount = $params['amount'] ?? 0.0;
+    $amount = number_format($amount, CRM_Utils_Money::getCurrencyPrecision($this->getCurrency($params)), '.', '');
     // Stripe amount required in cents.
-    $amount = number_format($params['amount'], 2, '.', '');
-    $amount = (int) preg_replace('/[^\d]/', '', strval($amount));
-    return $amount;
+    $amount = preg_replace('/[^\d]/', '', strval($amount));
+    return (int) $amount;
   }
 
   /**
@@ -517,9 +518,8 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     // This is where we actually charge the customer
     try {
       $intent = \Stripe\PaymentIntent::retrieve($params['paymentIntentID']);
-      if ($intent->amount !== $this->getAmount($params)) {
+      if ($intent->amount != $this->getAmount($params)) {
         $intentParams['amount'] = $this->getAmount($params);
-        //$this->handleError('Amount differs', E::ts('Amount is different from the authorised amount (%1, %2)', [1 => $intent->amount, 2=> $this->getAmount($params)]), $params['stripe_error_url']);
       }
       $intent = \Stripe\PaymentIntent::update($intent->id, $intentParams);
     }
