@@ -13,11 +13,11 @@
     <author>Matthew Wire (MJW Consulting)</author>
     <email>mjw@mjwconsult.co.uk</email>
   </maintainer>
-  <releaseDate>2019-11-04</releaseDate>
-  <version>6.2.2</version>
+  <releaseDate>2019-11-14</releaseDate>
+  <version>6.3.alpha1</version>
   <develStage>stable</develStage>
   <compatibility>
-    <ver>5.13</ver>
+    <ver>5.19</ver>
   </compatibility>
   <comments>Original Author: Joshua Walker (drastik) - Drastik by Design.
     Jamie Mcclelland (ProgressiveTech) did a lot of the 5.x compatibility work.

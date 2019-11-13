@@ -1,7 +1,16 @@
 ## Release 6.3 (Not yet released)
+**This release REQUIRES that you upgrade mjwshared to 0.6 and your Stripe API version to 2019-11-05.**
+
+*If you wish to test the upgrade you can remain on 2019-09-09 but should update the API version as soon as you are happy.*
 
 * **Update required Stripe API version to 2019-11-05**
-
+* Add support for recording partial refunds from Stripe.
+* For forms that have multiple submit buttons (eg. Save, Save and New) override the submit handler on all of them *(This fixes some more instances of missing PaymentIntentID on the backend forms).*
+* Resolve issues with backend forms and tax amounts *(fixes issues with backend forms that include an additional tax amount)*. 
+* Resolve issues with money formats that don't use a dot as decimal separator (eg. €1.024,20).
+* Update required Stripe API verison to 2019-11-05.
+* Fix issues with StripeSubscription.import and mismatched id/customer_id params.
+* Fix [#125](https://lab.civicrm.org/extensions/stripe/issues/125) Thousands of failed/spam transactions for charge.failed webhook *(We ignore and return 200 OK to Stripe so it does not retry if there is no customer ID)*.
 
 ## Release 6.2.2
 

@@ -8,10 +8,9 @@ View/Download this extension in the [Extension Directory](https://civicrm.org/ex
 ## Supports
 * PSD2 / SCA payments on one-off payments, partial support for recurring payments (may not be able to authorise card in some cases).
 * Cancellation of subscriptions from Stripe / CiviCRM.
-* Full refund of payments from Stripe.
+* Refund of payments from Stripe.
 
 ### Does not support
-* Partial refunds (they will not be processed by CiviCRM correctly and will be recorded as a full refund of a contribution).
 * Updating Stripe subscriptions from CiviCRM.
 
 ## Compatibility / Requirements
