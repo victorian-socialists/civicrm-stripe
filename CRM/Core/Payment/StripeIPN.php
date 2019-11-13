@@ -72,12 +72,12 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   /**
    * @var float The amount paid
    */
-  protected $amount = NULL;
+  protected $amount = 0.0;
 
   /**
    * @var float The fee charged by Stripe
    */
-  protected $fee = NULL;
+  protected $fee = 0.0;
 
   /**
    * @var array The current contribution (linked to Stripe charge(single)/invoice(subscription)
@@ -254,12 +254,21 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         };
         // This charge was actually captured, so record the refund in CiviCRM
         $this->setInfo();
+        // This gives us the actual amount refunded
+        $amountRefunded = CRM_Stripe_Api::getObjectParam('amount_refunded', $this->_inputParameters->data->object);
+        // This gives us the refund date + reason code
         $refunds = \Stripe\Refund::all(['charge' => $this->charge_id, 'limit' => 1]);
+        // This gets the fee refunded
+        $this->setBalanceTransactionDetails($refunds->data[0]->balance_transaction);
+
         $params = [
-          'id' => $this->contribution['id'],
-          'payment_trxn_id' => $this->charge_id,
-          'cancel_reason' => $refunds->data[0]->reason,
-          'cancel_date' => date('YmdHis', $refunds->data[0]->created),
+          'contribution_id' => $this->contribution['id'],
+          'total_amount' => 0 - abs($amountRefunded),
+          'trxn_date' => date('YmdHis', $refunds->data[0]->created),
+          'trxn_result_code' => $refunds->data[0]->reason,
+          'fee_amount' => 0 - abs($this->fee),
+          'trxn_id' => $this->charge_id,
+          'order_reference' => $this->invoice_id ?? NULL,
         ];
         $this->updateContributionRefund($params);
         return TRUE;
@@ -341,24 +350,9 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
       $balanceTransactionID = CRM_Stripe_Api::getObjectParam('balance_transaction', $charge);
     }
     else {
-      $charge = $this->_inputParameters->data->object;
       $balanceTransactionID = CRM_Stripe_Api::getObjectParam('balance_transaction', $this->_inputParameters->data->object);
     }
-    // Gather info about the amount and fee.
-    // Get the Stripe charge object if one exists. Null charge still needs processing.
-    // If the transaction is declined, there won't be a balance_transaction_id.
-    $this->amount = 0;
-    $this->fee = 0;
-    if ($balanceTransactionID) {
-      try {
-        $balanceTransaction = \Stripe\BalanceTransaction::retrieve($balanceTransactionID);
-        $this->amount = $charge->amount / 100;
-        $this->fee = $balanceTransaction->fee / 100;
-      }
-      catch(Exception $e) {
-        $this->exception('Error retrieving balance transaction. ' . $e->getMessage());
-      }
-    }
+    $this->setBalanceTransactionDetails($balanceTransactionID);
 
     // Additional processing of values is only relevant if there is a subscription id.
     if ($this->subscription_id) {
@@ -424,6 +418,24 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
     }
     if (!$this->contribution) {
       $this->exception('No matching contributions for event ' . CRM_Stripe_Api::getParam('id', $this->_inputParameters));
+    }
+  }
+
+  private function setBalanceTransactionDetails($balanceTransactionID) {
+    // Gather info about the amount and fee.
+    // Get the Stripe charge object if one exists. Null charge still needs processing.
+    // If the transaction is declined, there won't be a balance_transaction_id.
+    $this->amount = 0.0;
+    $this->fee = 0.0;
+    if ($balanceTransactionID) {
+      try {
+        $balanceTransaction = \Stripe\BalanceTransaction::retrieve($balanceTransactionID);
+        $this->amount = $balanceTransaction->amount / 100;
+        $this->fee = $balanceTransaction->fee / 100;
+      }
+      catch(Exception $e) {
+        $this->exception('Error retrieving balance transaction. ' . $e->getMessage());
+      }
     }
   }
 
