@@ -1,3 +1,8 @@
+## Release 6.3 (Not yet released)
+
+* **Update required Stripe API version to 2019-11-05**
+
+
 ## Release 6.2.2
 
 * Make sure we detect memberships as auto-renew when they are "forced".
