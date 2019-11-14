@@ -237,6 +237,12 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
 
       // One-time donation and per invoice payment.
       case 'charge.failed':
+        // If we don't have a customer_id we can't do anything with it!
+        // It's quite likely to be a fraudulent/spam so we ignore.
+        if (empty(CRM_Stripe_Api::getObjectParam('customer_id', $this->_inputParameters->data->object))) {
+          return TRUE;
+        }
+
         $this->setInfo();
         $params = [
           'id' => $this->contribution['id'],
