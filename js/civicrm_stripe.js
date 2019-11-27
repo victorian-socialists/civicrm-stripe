@@ -509,6 +509,12 @@ CRM.$(function($) {
 
   function getIsRecur() {
     var isRecur = false;
+    // Auto-renew contributions for CiviCRM Webforms.
+    if (getIsDrupalWebform()) {
+      if($('input[id$="contribution-installments"]').length !== 0 && $('input[id$="contribution-installments"]').val() > 1 ) {
+        isRecur = true;
+      }
+    }
     // Auto-renew contributions
     if (document.getElementById('is_recur') !== null) {
       if (document.getElementById('is_recur').type == 'hidden') {
