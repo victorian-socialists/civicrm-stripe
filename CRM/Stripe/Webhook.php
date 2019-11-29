@@ -59,7 +59,7 @@ class CRM_Stripe_Webhook {
           // Check and update webhook
           try {
             $updates = self::checkWebhook($wh);
-            if ($updates) {
+            if ($updates && $wh->status != 'disabled') {
               if ($attemptFix) {
                 // We should try to update the webhook.
                 $messageTexts[] = E::ts('Unable to update the webhook %1. To correct this please delete the webhook at Stripe and then revisit this page which will recreate it correctly.',
