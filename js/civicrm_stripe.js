@@ -231,13 +231,24 @@ CRM.$(function($) {
       },
     };
 
+    // Pre-fill postcode field with existing value from form
+    debugging('billingAddressID: ' + CRM.vars.stripe.billingAddressID);
+    debugging(document.getElementById('billing_postal_code-' + CRM.vars.stripe.billingAddressID).value);
+    var postCode = document.getElementById('billing_postal_code-' + CRM.vars.stripe.billingAddressID).value;
+    debugging('existing postcode: ' + postCode);
+
     // Create an instance of the card Element.
-    card = elements.create('card', {style: style});
+    card = elements.create('card', {style: style, value: {postalCode: postCode}});
     card.mount('#card-element');
     debugging("created new card element", card);
 
     // Hide the CiviCRM postcode field so it will still be submitted but will contain the value set in the stripe card-element.
-    document.getElementsByClassName('billing_postal_code-' + CRM.vars.stripe.billingAddressID + '-section')[0].setAttribute('hidden', true);
+    if (document.getElementById('billing_postal_code-5').value) {
+      document.getElementById('billing_postal_code-5').setAttribute('disabled', true);
+    }
+    else {
+      document.getElementsByClassName('billing_postal_code-' + CRM.vars.stripe.billingAddressID + '-section')[0].setAttribute('hidden', true);
+    }
     card.addEventListener('change', function(event) {
       updateFormElementsFromCreditCardDetails(event);
     });

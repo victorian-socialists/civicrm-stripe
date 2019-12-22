@@ -19,11 +19,11 @@ View/Download this extension in the [Extension Directory](https://civicrm.org/ex
 * Jquery 1.10 (Use jquery_update module on Drupal).
 * Drupal 7 / Joomla / Wordpress (latest supported release). *Not currently tested with other CMS but it may work.*
 * Stripe API version: 2019-11-05
-* Drupal webform_civicrm 7.x-4.28+ (if using webform integration) - does NOT support test mode:  
+* Drupal webform_civicrm 7.x-4.28+ (if using webform integration) - does NOT support test mode:
   * If using test mode with drupal webform_civicrm (4.x) you need [this patch for webform_civicrm](https://github.com/colemanw/webform_civicrm/pull/266).
   * If using drupal webform_civicrm (4.x) you need [this patch for CiviCRM core](https://github.com/civicrm/civicrm-core/pull/15340).
 
-* [MJWShared extension](https://civicrm.org/extensions/mjwshared) version 0.3. 
+* [MJWShared extension](https://civicrm.org/extensions/mjwshared) version 0.6.
 
 ## Troubleshooting
 Under *Administer->CiviContribute->Stripe Settings* you can find a setting:

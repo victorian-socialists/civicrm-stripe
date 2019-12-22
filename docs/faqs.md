@@ -1,10 +1,14 @@
-# Contributions, Payments and Customers
+## Terminology
 
-A CiviCRM **Contribution** is the equivalent of a Stripe **Invoice**.
+#### CiviCRM <=> Stripe
 
-A CiviCRM **Payment** is the equivalent of a Stripe **Charge**.
+* A CiviCRM **Contribution** is the equivalent of a Stripe **Invoice**.
+* A CiviCRM **Payment** is the equivalent of a Stripe **Charge**.
+* A CiviCRM **Contact** is the equivalent of a Stripe **Customer**.
 
-A CiviCRM **Contact** is the equivalent of a Stripe **Customer**.
+#### Stripe
+
+* Charge: A charge / payment that shows on a users credit card.
 
 ## Invoices and Charges?
 
@@ -15,15 +19,15 @@ For a **recurring contribution** an invoice is created for each contribution:
 * We set the contribution `trxn_id` = Stripe `Invoice ID`.
 * We set individual payments on that contribution (which could be a payment, a failed payment, a refund) to have `trxn_id` = Stripe `Charge ID`
 
-## Uncaptured Charges
+## Uncaptured Payments / Charges
 
 Stripe uses **PaymentIntents** to pre-authorise and authenticate a card.
 
 These paymentIntents work in the same way as a pre-authorisation on Credit Card (such as a damage deposit on car-hire).
-For this reason they can be problematic when there are multiple failures as a customer card will remain *authorised* for 7 days 
+For this reason they can be problematic when there are multiple failures as a customer card will remain *authorised* for 7 days
 and shows as a charge on the customer card. They can be manually cancelled via the Stripe Dashboard.
 
-To mitigate this the Stripe extension tracks and records all paymentIntents created through CiviCRM and manages them 
+To mitigate this the Stripe extension tracks and records all paymentIntents created through CiviCRM and manages them
 using a scheduled job `Job.process_stripe`.
 
 The defaults for this are to cancel uncaptured payments after 24 hours and clear out old records (from the CiviCRM database) after three months.
@@ -54,3 +58,12 @@ The following metadata is created for a Stripe Customer:
 ![Stripe Customer](/images/stripedashboard_customerdetail.png)
 
 In addition, if you have enabled receipts (see [Setup](/setup)) the email address will be sent to Stripe and used to send a receipt to the contact.
+
+## Postcode and Billing Address
+
+Stripe performs advanced validation and detection of postal/zip code and whether it is required or not. So we use the postal code value from the stripe "element" as the "master".
+
+The Stripe "element" collects the billing postcode.  CiviCRM uses the following logic for the billing postcode:
+* If contact has existing billing address copy existing postcode to stripe element and **disable** the standard postcode field on the form.
+* If contact has no billing address (or blank postcode) **hide** the standard postcode field and copy it from the stripe "element" when it is filled in.
+

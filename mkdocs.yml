@@ -20,7 +20,7 @@ pages:
 - Installation: install.md
 - Setup: setup.md
 - Webhooks (Notifications): webhook.md
-- Contributions, Payments and Customers: contribution.md
+- FAQs: faqs.md
 - Recurring Contributions (Subscriptions): recur.md
 - Advanced:
   - API: api.md
