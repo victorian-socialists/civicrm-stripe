@@ -24,7 +24,7 @@ function civicrm_api3_job_process_stripe($params) {
   }
 
   if ($params['cancel_incomplete'] !== 0 && !empty($params['cancel_incomplete'])) {
-    // Cancel incomplete paymentIntents after 1 day
+    // Cancel incomplete paymentIntents after 1 hour
     $incompletePaymentIntents = civicrm_api3('StripePaymentintent', 'get', [
       'status' => ['NOT IN' => ["succeeded", "cancelled"]],
       'created_date' => ['<' => $params['cancel_incomplete']],
@@ -61,7 +61,7 @@ function _civicrm_api3_job_process_stripe_spec(&$params) {
   $params['delete_old']['api.default'] = '-3 month';
   $params['delete_old']['title'] = 'Delete old records after (default: -3 month)';
   $params['delete_old']['description'] = 'Delete old records from database. Specify 0 to disable. Default is "-3 month"';
-  $params['cancel_incomplete']['api.default'] = '-1 day';
-  $params['cancel_incomplete']['title'] = 'Cancel incomplete records after (default: -1 day)';
-  $params['cancel_incomplete']['description'] = 'Cancel incomplete paymentIntents in your stripe account. Specify 0 to disable. Default is "-1 day"';
+  $params['cancel_incomplete']['api.default'] = '-1 hour';
+  $params['cancel_incomplete']['title'] = 'Cancel incomplete records after (default: -1hour)';
+  $params['cancel_incomplete']['description'] = 'Cancel incomplete paymentIntents in your stripe account. Specify 0 to disable. Default is "-1hour"';
 }

@@ -14,7 +14,7 @@ return [
       'api_entity' => 'Job',
       'api_action' => 'process_stripe',
       'parameters' => 'delete_old=-3 month
-cancel_incomplete=-1 day',
+cancel_incomplete=-1 hour',
     ],
   ],
 ];

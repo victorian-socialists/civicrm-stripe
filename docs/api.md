@@ -29,9 +29,9 @@ The api commands are:
 ## StripeSubscription
 * `StripeSubscription.updatetransactionids` - Used to migrate civicrm_stripe_subscriptions to use recurring contributions directly.
 * `StripeSubscription.copytrxnidtoprocessorid` - Used to copy trxn_id to processor_id in civicrm_contribution_recur table so we can use cancelSubscription. Hopefully this won't be needed in future versions of CiviCRM if we can pass more sensible values to the cancelSubscription function.
-* `StripeSubscription.import` - Use to import subscriptions into CiviCRM that are in Stripe but not CiviCRM.  
+* `StripeSubscription.import` - Use to import subscriptions into CiviCRM that are in Stripe but not CiviCRM.
 Accepts various parameters but requires: Payment Processor ID, Stripe subscription ID and CiviCRM contact ID.
-![StripeSubscription.import](/images/StripeSubscription.import.png) 
+![StripeSubscription.import](/images/StripeSubscription.import.png)
 
 ## StripePaymentintents
 
@@ -42,7 +42,7 @@ It's not advised that you use this API for anything else.
 ## Scheduled Jobs
 
 * `Job.process_stripe` - this cancels uncaptured paymentIntents and removes successful ones from the local database cache after a period of time:
-  
+
   Parameters:
   * delete_old: Delete old records from database. Specify 0 to disable. Default is "-3 month"
-  * cancel_incomplete: Cancel incomplete paymentIntents in your stripe account. Specify 0 to disable. Default is "-1 day"
+  * cancel_incomplete: Cancel incomplete paymentIntents in your stripe account. Specify 0 to disable. Default is "-1 hour"

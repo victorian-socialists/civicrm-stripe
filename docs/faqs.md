@@ -30,7 +30,7 @@ and shows as a charge on the customer card. They can be manually cancelled via t
 To mitigate this the Stripe extension tracks and records all paymentIntents created through CiviCRM and manages them
 using a scheduled job `Job.process_stripe`.
 
-The defaults for this are to cancel uncaptured payments after 24 hours and clear out old records (from the CiviCRM database) after three months.
+The defaults for this are to cancel uncaptured payments after 1 hour and clear out old records (from the CiviCRM database) after three months.
 
 ## Payment Metadata
 
