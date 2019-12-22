@@ -174,8 +174,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return string
    */
   public function getAmount($params = []): string {
-    $amount = $params['amount'] ?? 0.0;
-    $amount = number_format($amount, CRM_Utils_Money::getCurrencyPrecision($this->getCurrency($params)), '.', '');
+    $amount = number_format((float) $params['amount'] ?? 0.0, CRM_Utils_Money::getCurrencyPrecision($this->getCurrency($params)), '.', '');
     // Stripe amount required in cents.
     $amount = preg_replace('/[^\d]/', '', strval($amount));
     return $amount;
