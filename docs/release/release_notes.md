@@ -11,6 +11,11 @@
 * Update required Stripe API verison to 2019-12-03.
 * Fix issues with StripeSubscription.import and mismatched id/customer_id params.
 * Fix [#125](https://lab.civicrm.org/extensions/stripe/issues/125) Thousands of failed/spam transactions for charge.failed webhook *(We ignore and return 200 OK to Stripe so it does not retry if there is no customer ID)*.
+* Change default to 1 hour to cancel uncaptured payments based on client feedback.
+* Update definition of getAmount to match current version in CiviCRM core.
+* Pre-fill existing billing postcode if we already have address.
+* Fix recurring contribution issue on drupal webform.
+* [#148](https://lab.civicrm.org/extensions/stripe/issues/148) Fix Credit or debit card translation.
 
 ## Release 6.2.2
 
