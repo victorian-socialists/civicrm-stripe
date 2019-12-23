@@ -512,7 +512,14 @@ CRM.$(function($) {
       return totalTaxAmount;
     }
 
-    totalTaxAmount = document.getElementById('totalTaxAmount').textContent.split(' ').pop();
+    // If tax and invoicing is disabled totalTaxAmount div exists but is empty
+    if (document.getElementById('totalTaxAmount').textContent.length === 0) {
+      totalTaxAmount = document.getElementById('total_amount').value;
+    }
+    else {
+      // Otherwise totalTaxAmount div contains a textual amount including currency symbol
+      totalTaxAmount = document.getElementById('totalTaxAmount').textContent.split(' ').pop();
+    }
     return totalTaxAmount;
   }
 
