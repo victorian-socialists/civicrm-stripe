@@ -232,8 +232,6 @@ CRM.$(function($) {
     };
 
     // Pre-fill postcode field with existing value from form
-    debugging('billingAddressID: ' + CRM.vars.stripe.billingAddressID);
-    debugging(document.getElementById('billing_postal_code-' + CRM.vars.stripe.billingAddressID).value);
     var postCode = document.getElementById('billing_postal_code-' + CRM.vars.stripe.billingAddressID).value;
     debugging('existing postcode: ' + postCode);
 
