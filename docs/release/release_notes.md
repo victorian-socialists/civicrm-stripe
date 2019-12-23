@@ -16,6 +16,8 @@
 * Pre-fill existing billing postcode if we already have address.
 * Fix recurring contribution issue on drupal webform.
 * [#148](https://lab.civicrm.org/extensions/stripe/issues/148) Fix Credit or debit card translation.
+* Fix [#149](https://lab.civicrm.org/extensions/stripe/issues/149) Cannot submit payment from back end when tax and invoicing disabled.
+
 
 ## Release 6.2.2
 
