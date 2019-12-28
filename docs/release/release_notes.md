@@ -1,7 +1,7 @@
-## Release 6.3 (Not yet released)
+## Release 6.3
 **This release REQUIRES that you upgrade mjwshared to 0.6 and your Stripe API version to 2019-12-03.**
 
-*If you wish to test the upgrade you can remain on 2019-09-09 or later but should update the API version as soon as you are happy.*
+*If you wish to test the upgrade you can remain on an older version or later but should update the API version as soon as you are happy.*
 
 * **Update required Stripe API version to 2019-12-03**
 * Add support for recording partial refunds from Stripe.
