@@ -18,7 +18,6 @@
 * [#148](https://lab.civicrm.org/extensions/stripe/issues/148) Fix Credit or debit card translation.
 * Fix [#149](https://lab.civicrm.org/extensions/stripe/issues/149) Cannot submit payment from back end when tax and invoicing disabled.
 
-
 ## Release 6.2.2
 
 * Make sure we detect memberships as auto-renew when they are "forced".
