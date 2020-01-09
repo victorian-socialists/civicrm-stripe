@@ -65,14 +65,33 @@ function civicrm_api3_stripe_Ipn($params) {
 
     $object = \Stripe\Event::retrieve($params['evtid']);
   }
-  // Avoid a SQL error if this one has been processed already.
-  $sql = "SELECT COUNT(*) AS count FROM civicrm_contribution WHERE trxn_id = %0";
-  $sql_params = array(0 => array($object->data->object->charge, 'String'));
-  $dao = CRM_Core_DAO::executeQuery($sql, $sql_params);
-  $dao->fetch();
-  if ($dao->count > 0) {
-    return civicrm_api3_create_error("Ipn already processed.");
+
+  // See if we've already processed the IPN (do we have a contribution not in pending state?)
+  if ($object->data->object->object === 'charge') {
+    // For a charge event we get the ID here
+    $trxnID = $object->data->object->id;
   }
+  else {
+    // I'm not sure if this is still used for any events?
+    $trxnID = $object->data->object->charge;
+  }
+  if (empty($trxnID)) {
+    throw new API_Exception('Could not get Charge ID from event.');
+  }
+  try {
+    $contribution = civicrm_api3('Contribution', 'getsingle', [
+      'trxn_id' => $trxnID,
+    ]);
+    if ($contribution['contribution_status_id'] !== CRM_Core_PseudoConstant::getKey(
+      'CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending')
+    ) {
+      return civicrm_api3_create_error("Ipn already processed.");
+    }
+  }
+  catch (Exception $e) {
+    // No existing contribution so we process IPN
+  }
+
   if (class_exists('CRM_Core_Payment_StripeIPN')) {
     // The $_GET['processor_id'] value is normally set by
     // CRM_Core_Payment::handlePaymentMethod
