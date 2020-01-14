@@ -19,5 +19,5 @@
 <label for="card-element"><legend>{ts}Credit or debit card{/ts}</legend></label>
 <div id="card-element"></div>
 {* Area for Stripe to report errors *}
-<div id="card-errors" role="alert" class="alert alert-danger"></div>
+<div id="card-errors" role="alert" class="crm-error alert alert-danger"></div>
 {/crmScope}
