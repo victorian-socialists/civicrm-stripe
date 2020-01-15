@@ -1,3 +1,12 @@
+## Release 6.3.1
+
+* Add crm-error class to stripe card errors block so it is highlighted on non bootstrap themes
+* Fix Stripe.ipn API when working with charge.captured/succeeded
+* Update documentation to mention contributiontransactlegacy extension
+* [#147](https://lab.civicrm.org/extensions/stripe/issues/147) Add workaround and set required billing fields via jquery
+* [#153](https://lab.civicrm.org/extensions/stripe/issues/153) Support multiple participant registration and CiviDiscount with zero amount.
+* Fix non-stripe submit check - if amount is zero.
+
 ## Release 6.3
 **This release REQUIRES that you upgrade mjwshared to 0.6 and your Stripe API version to 2019-12-03.**
 
