@@ -240,6 +240,8 @@ CRM.$(function($) {
     card.mount('#card-element');
     debugging("created new card element", card);
 
+    setBillingFieldsRequiredForJQueryValidate();
+
     // Hide the CiviCRM postcode field so it will still be submitted but will contain the value set in the stripe card-element.
     if (document.getElementById('billing_postal_code-5').value) {
       document.getElementById('billing_postal_code-5').setAttribute('disabled', true);
@@ -331,6 +333,8 @@ CRM.$(function($) {
 
       if ($(form).valid() === false) {
         debugging('Form not valid');
+        document.querySelector('#billing-payment-block').scrollIntoView();
+        window.scrollBy(0, -50);
         return false;
       }
 
@@ -578,6 +582,14 @@ CRM.$(function($) {
     for (i = 0; i < cividiscountElements.length; ++i) {
       cividiscountElements[i].addEventListener('keydown', cividiscountHandleKeydown);
     }
+  }
+
+  function setBillingFieldsRequiredForJQueryValidate() {
+    // Work around https://github.com/civicrm/civicrm-core/compare/master...mattwire:stripe_147
+    // The main billing fields do not get set to required so don't get checked by jquery validateform.
+    $('.billing_name_address-section div.label span.crm-marker').each(function() {
+      $(this).closest('div').next('div').children('input').addClass('required');
+    });
   }
 
   function isEventAdditionalParticipants() {
