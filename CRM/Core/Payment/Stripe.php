@@ -408,7 +408,8 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    */
   public function doPayment(&$params, $component = 'contribute') {
     $params = $this->beginDoPayment($params);
-    if (CRM_Utils_Array::value('is_recur', $params) && $this->getRecurringContributionId($params)) {
+    if ((CRM_Utils_Array::value('is_recur', $params) && $this->getRecurringContributionId($params))
+        || $this->isPaymentForEventAdditionalParticipants()) {
       $params = $this->getTokenParameter('paymentMethodID', $params, TRUE);
     }
     else {
@@ -494,6 +495,8 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
 
     // Handle recurring payments in doRecurPayment().
     if (CRM_Utils_Array::value('is_recur', $params) && $this->getRecurringContributionId($params)) {
+      // We're processing a recurring payment - for recurring payments we first saved a paymentMethod via the browser js.
+      // Now we use that paymentMethod to setup a stripe subscription and take the first payment.
       // This is where we save the customer card
       // @todo For a recurring payment we have to save the card. For a single payment we'd like to develop the
       //   save card functionality but should not save by default as the customer has not agreed.
@@ -505,8 +508,27 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       $params['payment_status_id'] = $pendingStatusId;
       return $this->doRecurPayment($params, $amount, $stripeCustomer, $paymentMethod);
     }
+    elseif ($this->isPaymentForEventAdditionalParticipants()) {
+      // We're processing an event registration for multiple participants - because we did not know
+      //   the amount until now we process via a saved paymentMethod.
+      $paymentMethod = \Stripe\PaymentMethod::retrieve($params['paymentMethodID']);
+      $paymentMethod->attach(['customer' => $stripeCustomer->id]);
+      $stripeCustomer = \Stripe\Customer::retrieve($stripeCustomer->id);
+      $intent = \Stripe\PaymentIntent::create([
+        'payment_method' => $params['paymentMethodID'],
+        'customer' => $stripeCustomer->id,
+        'amount' => $amount,
+        'currency' => $this->getCurrency($params),
+        'confirmation_method' => 'automatic',
+        'capture_method' => 'manual',
+        // authorize the amount but don't take from card yet
+        'setup_future_usage' => 'off_session',
+        // Setup the card to be saved and used later
+        'confirm' => true,
+      ]);
+      $params['paymentIntentID'] = $intent->id;
+    }
 
-    $contactContribution = $this->getContactId($params) . '-' . ($this->getContributionId($params) ?: 'XX');
     $intentParams = [
       'customer' => $stripeCustomer->id,
       'description' => $this->getDescription($params, 'description'),
@@ -536,6 +558,13 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     // For contribution workflow we have a contributionId so we can set parameters directly.
     // For events/membership workflow we have to return the parameters and they might get set...
     return $this->endDoPayment($params, $newParams);
+  }
+
+  /**
+   * @return bool
+   */
+  private function isPaymentForEventAdditionalParticipants() {
+    return !empty($this->getParam('additional_participants'));
   }
 
   /**

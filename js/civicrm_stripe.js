@@ -84,7 +84,7 @@ CRM.$(function($) {
         displayError(result);
       }
       else {
-        if (getIsRecur() === true) {
+        if (getIsRecur() || isEventAdditionalParticipants()) {
           // Submit the form, if we need to do 3dsecure etc. we do it at the end (thankyou page) once subscription etc has been created
           successHandler('paymentMethodID', result.paymentMethod);
         }
@@ -473,9 +473,8 @@ CRM.$(function($) {
 
   function getTotalAmount() {
     var totalFee = 0.0;
-    if ((document.getElementById('additional_participants') !== null) &&
-       (document.getElementById('additional_participants').value.length !== 0)) {
-      debugging('We don\'t know the final price - registering additional participants');
+    if (isEventAdditionalParticipants()) {
+      totalFee = null;
     }
     else if (document.getElementById('totalTaxAmount') !== null) {
       totalFee = parseFloat(calculateTaxAmount());
@@ -497,7 +496,7 @@ CRM.$(function($) {
       // The input#total_amount field exists on backend contribution forms
       totalFee = parseFloat(document.getElementById('total_amount').value);
     }
-    debugging('getTotalAmount: ' + totalFee.toFixed(2));
+    debugging('getTotalAmount: ' + totalFee);
     return totalFee;
   }
 
@@ -579,6 +578,15 @@ CRM.$(function($) {
     for (i = 0; i < cividiscountElements.length; ++i) {
       cividiscountElements[i].addEventListener('keydown', cividiscountHandleKeydown);
     }
+  }
+
+  function isEventAdditionalParticipants() {
+    if ((document.getElementById('additional_participants') !== null) &&
+      (document.getElementById('additional_participants').value.length !== 0)) {
+      debugging('We don\'t know the final price - registering additional participants');
+      return true;
+    }
+    return false;
   }
 
   function debugging(errorCode) {
