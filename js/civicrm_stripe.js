@@ -93,7 +93,7 @@ CRM.$(function($) {
           var url = CRM.url('civicrm/stripe/confirm-payment');
           $.post(url, {
             payment_method_id: result.paymentMethod.id,
-            amount: getTotalAmount(),
+            amount: getTotalAmount().toFixed(2),
             currency: CRM.vars.stripe.currency,
             id: CRM.vars.stripe.id,
             description: document.title,
@@ -410,7 +410,7 @@ CRM.$(function($) {
       }
 
       var totalFee = getTotalAmount();
-      if (totalFee == '0') {
+      if (totalFee === 0.0) {
         debugging("Total amount is 0");
         return nonStripeSubmit();
       }
@@ -498,7 +498,7 @@ CRM.$(function($) {
       totalFee = parseFloat(document.getElementById('total_amount').value);
     }
     debugging('getTotalAmount: ' + totalFee.toFixed(2));
-    return totalFee.toFixed(2);
+    return totalFee;
   }
 
   // This is calculated in CRM/Contribute/Form/Contribution.tpl and is used to calculate the total
