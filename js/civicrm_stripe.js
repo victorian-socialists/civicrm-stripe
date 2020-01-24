@@ -338,6 +338,7 @@ CRM.$(function($) {
         $('div#card-errors').hide();
         document.querySelector('#billing-payment-block').scrollIntoView();
         window.scrollBy(0, -50);
+        $(form).trigger('crmBillingFormNotValid');
         return false;
       }
 
