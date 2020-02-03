@@ -25,6 +25,7 @@ nav:
 - Recurring Contributions (Subscriptions): recur.md
 - Advanced:
   - API: api.md
+  - Events (jQuery): events.md
   - Hooks: hooks.md
   - Testing: testing.md
 - Release Notes: release/release_notes.md

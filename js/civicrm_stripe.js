@@ -35,6 +35,8 @@ CRM.$(function($) {
         checkAndLoad();
       }
     }
+    debugging('reload completed.');
+    $(form).trigger('crmBillingFormReloadComplete');
   };
   // On initial run we need to call this now.
   window.civicrmStripeHandleReload();
