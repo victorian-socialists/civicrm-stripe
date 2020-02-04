@@ -175,7 +175,6 @@ class CRM_Stripe_Webhook {
     $params = [
       'enabled_events' => self::getDefaultEnabledEvents(),
       'url' => self::getWebhookPath($paymentProcessorId),
-      'api_version' => CRM_Core_Payment_Stripe::getApiVersion(),
       'connect' => FALSE,
     ];
     \Stripe\WebhookEndpoint::create($params);
