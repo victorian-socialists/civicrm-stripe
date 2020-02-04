@@ -20,7 +20,7 @@ define('STRIPE_PHPUNIT_TEST', 1);
  *
  * @group headless
  */
-class CRM_Stripe_BaseTest extends \PHPUnit_Framework_TestCase implements HeadlessInterface, HookInterface, TransactionalInterface {
+class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements HeadlessInterface, HookInterface, TransactionalInterface {
 
   protected $_contributionID;
   protected $_invoiceID = 'in_19WvbKAwDouDdbFCkOnSwAN7';

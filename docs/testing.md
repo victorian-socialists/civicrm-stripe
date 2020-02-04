@@ -11,8 +11,8 @@ This extension comes with two PHP Unit tests:
 
 Tests can be run most easily via an installation made through CiviCRM Buildkit (https://github.com/civicrm/civicrm-buildkit) by changing into the extension directory and running:
 
-    phpunit4 tests/phpunit/CRM/Stripe/IpnTest.php
-    phpunit4 tests/phpunit/CRM/Stripe/DirectTest.php
+    phpunit6 tests/phpunit/CRM/Stripe/IpnTest.php
+    phpunit6 tests/phpunit/CRM/Stripe/DirectTest.php
 
 ### Katalon Tests
 See the test/katalon folder for instructions on running full web-browser based automation tests.
