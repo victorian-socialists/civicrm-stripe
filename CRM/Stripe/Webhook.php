@@ -30,9 +30,7 @@ class CRM_Stripe_Webhook {
     ]);
 
     foreach ($result['values'] as $paymentProcessor) {
-      $messageTexts = [];
       $webhook_path = self::getWebhookPath($paymentProcessor['id']);
-
       $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $paymentProcessor['id']]));
       $processor->setAPIParams();
 
@@ -62,23 +60,47 @@ class CRM_Stripe_Webhook {
             if ($updates && $wh->status != 'disabled') {
               if ($attemptFix) {
                 // We should try to update the webhook.
-                $messageTexts[] = E::ts('Unable to update the webhook %1. To correct this please delete the webhook at Stripe and then revisit this page which will recreate it correctly.',
-                  [1 => urldecode($webhook_path)]
+                $messages[] = new CRM_Utils_Check_Message(
+                  'stripe_webhook',
+                  E::ts('Unable to update the webhook %1. To correct this please delete the webhook at Stripe and then revisit this page which will recreate it correctly.',
+                    [1 => urldecode($webhook_path)]
+                  ),
+                  self::getTitle($paymentProcessor),
+                  \Psr\Log\LogLevel::WARNING,
+                  'fa-money'
                 );
                 \Stripe\WebhookEndpoint::update($wh['id'], $updates);
               }
               else {
-                $messageTexts[] = E::ts('Problems detected with Stripe webhook %1. Please visit <a href="%2">Fix Stripe Webhook</a> to fix.', [
-                  1 => urldecode($webhook_path),
-                  2 => CRM_Utils_System::url('civicrm/stripe/fix-webhook'),
-                ]);
+                $message = new CRM_Utils_Check_Message(
+                  'stripe_webhook',
+                  E::ts('Problems detected with Stripe webhook! <em>Webhook path is: <a href="%1" target="_blank">%1</a>.</em>',
+                    [1 => urldecode($webhook_path)]
+                  ),
+                  self::getTitle($paymentProcessor),
+                  \Psr\Log\LogLevel::WARNING,
+                  'fa-money'
+                );
+                $message->addAction(
+                  E::ts('View and fix problems'),
+                  NULL,
+                  'href',
+                  ['path' => 'civicrm/stripe/fix-webhook', 'query' => ['reset' => 1]]
+                );
+                $messages[] = $message;
               }
             }
           }
           catch (Exception $e) {
-            $messageTexts[] = E::ts('Could not check/update existing webhooks, got error from stripe <em>%1</em>', [
-                1 => htmlspecialchars($e->getMessage())
-              ]
+            $messages[] = new CRM_Utils_Check_Message(
+              'stripe_webhook',
+              E::ts('Could not check/update existing webhooks, got error from stripe <em>%1</em>', [
+                  1 => htmlspecialchars($e->getMessage())
+                ]
+              ),
+              self::getTitle($paymentProcessor),
+              \Psr\Log\LogLevel::WARNING,
+              'fa-money'
             );
           }
         }
@@ -91,29 +113,36 @@ class CRM_Stripe_Webhook {
             self::createWebhook($paymentProcessor['id']);
           }
           catch (Exception $e) {
-            $messageTexts[] = E::ts('Could not create webhook, got error from stripe <em>%1</em>', [
-              1 => htmlspecialchars($e->getMessage())
-            ]);
+            $messages[] = new CRM_Utils_Check_Message(
+              'stripe_webhook',
+              E::ts('Could not create webhook, got error from stripe <em>%1</em>', [
+                1 => htmlspecialchars($e->getMessage())
+              ]),
+              self::getTitle($paymentProcessor),
+              \Psr\Log\LogLevel::WARNING,
+              'fa-money'
+            );
           }
         }
         else {
-          $messageTexts[] = E::ts('Stripe Webhook missing! Please visit <a href="%1">Fix Stripe Webhook</a> to fix.<br />Expected webhook path is: <a href="%2" target="_blank">%2</a>',
-            [
-              1 => CRM_Utils_System::url('civicrm/stripe/fix-webhook'),
-              2 => $webhook_path,
-            ]
+          $message = new CRM_Utils_Check_Message(
+            'stripe_webhook',
+            E::ts(
+              'Stripe Webhook missing or needs update! <em>Expected webhook path is: <a href="%1" target="_blank">%1</a></em>',
+              [1 => $webhook_path]
+            ),
+            self::getTitle($paymentProcessor),
+            \Psr\Log\LogLevel::WARNING,
+            'fa-money'
           );
+          $message->addAction(
+            E::ts('View and fix problems'),
+            NULL,
+            'href',
+            ['path' => 'civicrm/stripe/fix-webhook', 'query' => ['reset' => 1]]
+          );
+          $messages[] = $message;
         }
-      }
-
-      foreach ($messageTexts as $messageText) {
-        $messages[] = new CRM_Utils_Check_Message(
-          'stripe_webhook',
-          $messageText,
-          self::getTitle($paymentProcessor),
-          \Psr\Log\LogLevel::WARNING,
-          'fa-money'
-        );
       }
     }
   }
