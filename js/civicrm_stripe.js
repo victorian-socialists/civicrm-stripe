@@ -590,7 +590,7 @@ CRM.$(function($) {
     // The main billing fields do not get set to required so don't get checked by jquery validateform.
     // This also applies to any radio button in billing/profiles so we flag every element with a crm-marker
     $('div.label span.crm-marker').each(function() {
-      $(this).closest('div').next('div').children('input').addClass('required');
+      $(this).closest('div').next('div').find('input').addClass('required');
     });
   }
 
