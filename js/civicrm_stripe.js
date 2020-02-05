@@ -483,6 +483,10 @@ CRM.$(function($) {
     return submit;
   }
 
+  /**
+   * Get the total amount on the form
+   * @returns {number}
+   */
   function getTotalAmount() {
     var totalFee = 0.0;
     if (isEventAdditionalParticipants()) {
@@ -512,11 +516,15 @@ CRM.$(function($) {
     return totalFee;
   }
 
-  // This is calculated in CRM/Contribute/Form/Contribution.tpl and is used to calculate the total
-  //   amount with tax on backend submit contribution forms.
-  // The only way we can get the amount is by parsing the text field and extracting the final bit after the space.
-  // eg. "Amount including Tax: $ 4.50" gives us 4.50.
-  // The PHP side is responsible for converting money formats (we just parse to cents and remove any ,. chars).
+  /**
+   * This is calculated in CRM/Contribute/Form/Contribution.tpl and is used to calculate the total
+   *   amount with tax on backend submit contribution forms.
+   *   The only way we can get the amount is by parsing the text field and extracting the final bit after the space.
+   *   eg. "Amount including Tax: $ 4.50" gives us 4.50.
+   *   The PHP side is responsible for converting money formats (we just parse to cents and remove any ,. chars).
+   *
+   * @returns {string|prototype.value|number}
+   */
   function calculateTaxAmount() {
     var totalTaxAmount = 0;
     if (document.getElementById('totalTaxAmount') === null) {
@@ -534,6 +542,10 @@ CRM.$(function($) {
     return totalTaxAmount;
   }
 
+  /**
+   * Are we creating a recurring contribution?
+   * @returns {boolean}
+   */
   function getIsRecur() {
     var isRecur = false;
     // Auto-renew contributions for CiviCRM Webforms.
@@ -614,6 +626,9 @@ CRM.$(function($) {
     validator.settings.ignore = '.select2-offscreen, [readonly], :hidden:not(.crm-select2)';
   }
 
+  /**
+   * @returns {boolean}
+   */
   function isEventAdditionalParticipants() {
     if ((document.getElementById('additional_participants') !== null) &&
       (document.getElementById('additional_participants').value.length !== 0)) {
@@ -640,7 +655,7 @@ CRM.$(function($) {
 
   /**
    * Get the selected payment processor on the form
-   * @returns int
+   * @returns {null|number}
    */
   function getPaymentProcessorSelectorValue() {
     if ((typeof form === 'undefined') || (!form)) {
