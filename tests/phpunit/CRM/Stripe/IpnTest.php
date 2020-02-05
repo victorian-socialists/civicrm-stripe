@@ -32,6 +32,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
   public function setUpHeadless() {
     $force = TRUE;
     return \Civi\Test::headless()
+      ->install('mjwshared')
       ->installMe(__DIR__)
       ->apply($force);
   }
@@ -298,4 +299,5 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     $this->_contributionRecurID = $contributionRecur['id'];
     $this->_contributionID = $contributionRecur['values']['0']['api.contribution.create']['id'];
   }
+
 }

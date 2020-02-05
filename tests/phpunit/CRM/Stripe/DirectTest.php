@@ -19,7 +19,7 @@ use Civi\Test\TransactionalInterface;
  * @group headless
  */
 require ('BaseTest.php');
-class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
+class CRM_Stripe_DirectTest extends CRM_Stripe_BaseTest {
 
   protected $_contributionRecurID;
   protected $_total = '200';
@@ -28,6 +28,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     // Civi\Test has many helpers, like install(), uninstall(), sql(), and sqlFile().
     // See: https://github.com/civicrm/org.civicrm.testapalooza/blob/master/civi-test.md
     return \Civi\Test::headless()
+      ->install('mjwshared')
       ->installMe(__DIR__)
       ->apply();
   }
@@ -49,5 +50,4 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     $this->assertValidTrxn();
   }
 
-   
 }

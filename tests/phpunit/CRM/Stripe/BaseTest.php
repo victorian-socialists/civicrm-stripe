@@ -45,6 +45,7 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
     // Civi\Test has many helpers, like install(), uninstall(), sql(), and sqlFile().
     // See: https://github.com/civicrm/org.civicrm.testapalooza/blob/master/civi-test.md
     return \Civi\Test::headless()
+      ->install('mjwshared')
       ->installMe(__DIR__)
       ->apply();
   }
@@ -251,6 +252,5 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
     CRM_Member_PseudoConstant::flush('membershipType');
     CRM_Utils_Cache::singleton()->flush();
   }
-
 
 }
