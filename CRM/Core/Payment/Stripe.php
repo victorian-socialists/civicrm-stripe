@@ -334,6 +334,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'publishableKey' => CRM_Core_Payment_Stripe::getPublicKeyById($form->_paymentProcessor['id']),
       'jsDebug' => (boolean) \Civi::settings()->get('stripe_jsdebug'),
       'paymentProcessorTypeID' => $form->_paymentProcessor['payment_processor_type_id'],
+      'locale' => CRM_Core_I18n::getLocale(),
     ];
     \Civi::resources()->addVars(E::SHORT_NAME, $jsVars);
     // Assign to smarty so we can add via Card.tpl for drupal webform because addVars doesn't work in that context

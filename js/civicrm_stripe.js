@@ -223,7 +223,7 @@ CRM.$(function($) {
     if (typeof stripe === 'undefined') {
       stripe = Stripe(CRM.vars.stripe.publishableKey);
     }
-    var elements = stripe.elements();
+    var elements = stripe.elements({ locale: CRM.vars.stripe.locale });
 
     var style = {
       base: {
