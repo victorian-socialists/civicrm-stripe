@@ -321,8 +321,8 @@ CRM.$(function($) {
         addDrupalWebformActionElement(this.value);
       });
       // If enter pressed, use our submit function
-      form.addEventListener('keydown', function (e) {
-        if (e.keyCode === 13) {
+      form.addEventListener('keydown', function (event) {
+        if (event.code === 'Enter') {
           addDrupalWebformActionElement(this.value);
           submit(event);
         }
@@ -588,9 +588,9 @@ CRM.$(function($) {
   function addSupportForCiviDiscount() {
     // Add a keypress handler to set flag if enter is pressed
     cividiscountElements = form.querySelectorAll('input#discountcode');
-    var cividiscountHandleKeydown = function(e) {
-        if (e.keyCode === 13) {
-          e.preventDefault();
+    var cividiscountHandleKeydown = function(event) {
+        if (event.code === 'Enter') {
+          event.preventDefault();
           debugging('adding submitdontprocess');
           form.dataset.submitdontprocess = true;
         }
