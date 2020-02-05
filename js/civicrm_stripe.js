@@ -76,6 +76,7 @@ CRM.$(function($) {
       submitButtons[i].removeAttribute('disabled');
     }
     triggerEvent('crmBillingFormNotValid');
+    notifyUser('error', ts('Oops...'), result.error.message);
   }
 
   function handleCardPayment() {
@@ -341,6 +342,7 @@ CRM.$(function($) {
         document.querySelector('#billing-payment-block').scrollIntoView();
         window.scrollBy(0, -50);
         triggerEvent('crmBillingFormNotValid');
+        notifyUser('error', ts('Oops...'), ts('Please correct the errors on the form and submit again'));
         return false;
       }
 
@@ -621,18 +623,6 @@ CRM.$(function($) {
     return false;
   }
 
-  function debugging(errorCode) {
-    // Uncomment the following to debug unexpected returns.
-    if ((typeof(CRM.vars.stripe) === 'undefined') || (Boolean(CRM.vars.stripe.jsDebug) === true)) {
-      console.log(new Date().toISOString() + ' civicrm_stripe.js: ' + errorCode);
-    }
-  }
-
-  function triggerEvent(event) {
-    debugging('Firing Event: ' + event);
-    $(form).trigger(event);
-  }
-
   function addDrupalWebformActionElement(submitAction) {
     var hiddenInput = null;
     if (document.getElementById('action') !== null) {
@@ -664,6 +654,43 @@ CRM.$(function($) {
       return parseInt(paymentProcessorSelected.value);
     }
     return null;
+  }
+
+  /**
+   * Output debug information
+   * @param {string} errorCode
+   */
+  function debugging(errorCode) {
+    // Uncomment the following to debug unexpected returns.
+    if ((typeof(CRM.vars.stripe) === 'undefined') || (Boolean(CRM.vars.stripe.jsDebug) === true)) {
+      console.log(new Date().toISOString() + ' civicrm_stripe.js: ' + errorCode);
+    }
+  }
+
+  /**
+   * Trigger a jQuery event
+   * @param {string} event
+   */
+  function triggerEvent(event) {
+    debugging('Firing Event: ' + event);
+    $(form).trigger(event);
+  }
+
+  /**
+   * If we have the sweetalert2 library popup a nice message to the user.
+   *   Otherwise do nothing
+   * @param {string} icon
+   * @param {string} title
+   * @param {string} text
+   */
+  function notifyUser(icon, title, text) {
+    if (typeof Swal === 'function') {
+      Swal.fire({
+        icon: icon,
+        title: title,
+        text: text,
+      });
+    }
   }
 
 });
