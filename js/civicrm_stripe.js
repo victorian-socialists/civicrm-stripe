@@ -76,7 +76,7 @@ CRM.$(function($) {
       submitButtons[i].removeAttribute('disabled');
     }
     triggerEvent('crmBillingFormNotValid');
-    notifyUser('error', ts('Oops...'), result.error.message);
+    notifyUser('error', '', result.error.message);
   }
 
   function handleCardPayment() {
@@ -342,7 +342,7 @@ CRM.$(function($) {
         document.querySelector('#billing-payment-block').scrollIntoView();
         window.scrollBy(0, -50);
         triggerEvent('crmBillingFormNotValid');
-        notifyUser('error', ts('Oops...'), ts('Please correct the errors on the form and submit again'));
+        notifyUser('error', '', ts('Please check and fill in all required fields!'));
         return false;
       }
 
