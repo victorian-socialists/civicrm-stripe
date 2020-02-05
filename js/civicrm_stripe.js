@@ -35,8 +35,7 @@ CRM.$(function($) {
         checkAndLoad();
       }
     }
-    debugging('reload completed.');
-    $(form).trigger('crmBillingFormReloadComplete');
+    triggerEvent('crmBillingFormReloadComplete');
   };
   // On initial run we need to call this now.
   window.civicrmStripeHandleReload();
@@ -76,6 +75,7 @@ CRM.$(function($) {
     for (i = 0; i < submitButtons.length; ++i) {
       submitButtons[i].removeAttribute('disabled');
     }
+    triggerEvent('crmBillingFormNotValid');
   }
 
   function handleCardPayment() {
@@ -340,7 +340,7 @@ CRM.$(function($) {
         $('div#card-errors').hide();
         document.querySelector('#billing-payment-block').scrollIntoView();
         window.scrollBy(0, -50);
-        $(form).trigger('crmBillingFormNotValid');
+        triggerEvent('crmBillingFormNotValid');
         return false;
       }
 
@@ -626,6 +626,11 @@ CRM.$(function($) {
     if ((typeof(CRM.vars.stripe) === 'undefined') || (Boolean(CRM.vars.stripe.jsDebug) === true)) {
       console.log(new Date().toISOString() + ' civicrm_stripe.js: ' + errorCode);
     }
+  }
+
+  function triggerEvent(event) {
+    debugging('Firing Event: ' + event);
+    $(form).trigger(event);
   }
 
   function addDrupalWebformActionElement(submitAction) {
