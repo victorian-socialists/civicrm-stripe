@@ -298,6 +298,25 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   }
 
   /**
+   * Get billing fields required for this processor.
+   *
+   * We apply the existing default of returning fields only for payment processor type 1. Processors can override to
+   * alter.
+   *
+   * @param int $billingLocationID
+   *
+   * @return array
+   */
+  public function getBillingAddressFields($billingLocationID = NULL) {
+    if ((boolean) \Civi::settings()->get('stripe_nobillingaddress')) {
+      return [];
+    }
+    else {
+      return parent::getBillingAddressFields($billingLocationID);
+    }
+  }
+
+  /**
    * Get form metadata for billing address fields.
    *
    * @param int $billingLocationID
@@ -306,23 +325,31 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    *    Array of metadata for address fields.
    */
   public function getBillingAddressFieldsMetadata($billingLocationID = NULL) {
-    $metadata = parent::getBillingAddressFieldsMetadata($billingLocationID);
-    if (!$billingLocationID) {
-      // Note that although the billing id is passed around the forms the idea that it would be anything other than
-      // the result of the function below doesn't seem to have eventuated.
-      // So taking this as a param is possibly something to be removed in favour of the standard default.
-      $billingLocationID = CRM_Core_BAO_LocationType::getBilling();
+    if ((boolean) \Civi::settings()->get('stripe_nobillingaddress')) {
+      return [];
     }
-
-    // Stripe does not require some of the billing fields but users may still choose to fill them in.
-    $nonRequiredBillingFields = ["billing_state_province_id-{$billingLocationID}", "billing_postal_code-{$billingLocationID}"];
-    foreach ($nonRequiredBillingFields as $fieldName) {
-      if (!empty($metadata[$fieldName]['is_required'])) {
-        $metadata[$fieldName]['is_required'] = FALSE;
+    else {
+      $metadata = parent::getBillingAddressFieldsMetadata($billingLocationID);
+      if (!$billingLocationID) {
+        // Note that although the billing id is passed around the forms the idea that it would be anything other than
+        // the result of the function below doesn't seem to have eventuated.
+        // So taking this as a param is possibly something to be removed in favour of the standard default.
+        $billingLocationID = CRM_Core_BAO_LocationType::getBilling();
       }
-    }
 
-    return $metadata;
+      // Stripe does not require some of the billing fields but users may still choose to fill them in.
+      $nonRequiredBillingFields = [
+        "billing_state_province_id-{$billingLocationID}",
+        "billing_postal_code-{$billingLocationID}"
+      ];
+      foreach ($nonRequiredBillingFields as $fieldName) {
+        if (!empty($metadata[$fieldName]['is_required'])) {
+          $metadata[$fieldName]['is_required'] = FALSE;
+        }
+      }
+
+      return $metadata;
+    }
   }
 
   /**

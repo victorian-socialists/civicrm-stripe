@@ -250,21 +250,31 @@ CRM.$(function($) {
       },
     };
 
-    // Pre-fill postcode field with existing value from form
-    var postCode = document.getElementById('billing_postal_code-' + CRM.vars.stripe.billingAddressID).value;
-    debugging('existing postcode: ' + postCode);
+    var elementsCreateParams = {style: style, value: {}};
+
+    var postCodeElement = document.getElementById('billing_postal_code-' + CRM.vars.stripe.billingAddressID);
+    if (postCodeElement) {
+      var postCode = document.getElementById('billing_postal_code-' + CRM.vars.stripe.billingAddressID).value;
+      debugging('existing postcode: ' + postCode);
+      elementsCreateParams.value.postalCode = postCode;
+    }
 
     // Create an instance of the card Element.
-    card = elements.create('card', {style: style, value: {postalCode: postCode}});
+    card = elements.create('card', elementsCreateParams);
     card.mount('#card-element');
     debugging("created new card element", card);
 
-    // Hide the CiviCRM postcode field so it will still be submitted but will contain the value set in the stripe card-element.
-    if (document.getElementById('billing_postal_code-5').value) {
-      document.getElementById('billing_postal_code-5').setAttribute('disabled', true);
-    }
-    else {
-      document.getElementsByClassName('billing_postal_code-' + CRM.vars.stripe.billingAddressID + '-section')[0].setAttribute('hidden', true);
+    setBillingFieldsRequiredForJQueryValidate();
+
+    if (postCodeElement) {
+      // Hide the CiviCRM postcode field so it will still be submitted but will contain the value set in the stripe card-element.
+      if (document.getElementById('billing_postal_code-5').value) {
+        document.getElementById('billing_postal_code-5')
+          .setAttribute('disabled', true);
+      }
+      else {
+        document.getElementsByClassName('billing_postal_code-' + CRM.vars.stripe.billingAddressID + '-section')[0].setAttribute('hidden', true);
+      }
     }
 
     card.addEventListener('change', function (event) {
