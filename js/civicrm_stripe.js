@@ -588,7 +588,8 @@ CRM.$(function($) {
   function setBillingFieldsRequiredForJQueryValidate() {
     // Work around https://github.com/civicrm/civicrm-core/compare/master...mattwire:stripe_147
     // The main billing fields do not get set to required so don't get checked by jquery validateform.
-    $('.billing_name_address-section div.label span.crm-marker').each(function() {
+    // This also applies to any radio button in billing/profiles so we flag every element with a crm-marker
+    $('div.label span.crm-marker').each(function() {
       $(this).closest('div').next('div').children('input').addClass('required');
     });
   }
