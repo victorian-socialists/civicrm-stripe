@@ -1,3 +1,9 @@
+## Release 6.3.2
+
+* Don't explicitly set webhook version when creating webhook. It will automatically track the dashboard API version.
+* Add action button to webhook check.
+* Improve workaround for [#147](https://lab.civicrm.org/extensions/stripe/issues/147) to also work with radio buttons and profiles.
+
 ## Release 6.3.1
 
 * Add crm-error class to stripe card errors block so it is highlighted on non bootstrap themes
