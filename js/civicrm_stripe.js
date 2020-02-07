@@ -61,13 +61,13 @@ CRM.$(function($) {
     return form.submit();
   }
 
-  function displayError(result) {
+  function displayError(error) {
     // Display error.message in your UI.
-    debugging('error: ' + result.error.message);
+    debugging('error: ' + error.message);
     // Inform the user if there was an error
     var errorElement = document.getElementById('card-errors');
     errorElement.style.display = 'block';
-    errorElement.textContent = result.error.message;
+    errorElement.textContent = error.message;
     document.querySelector('#billing-payment-block').scrollIntoView();
     window.scrollBy(0, -50);
     form.dataset.submitted = false;
@@ -81,7 +81,7 @@ CRM.$(function($) {
     stripe.createPaymentMethod('card', card).then(function (result) {
       if (result.error) {
         // Show error in payment form
-        displayError(result);
+        displayError(result.error);
       }
       else {
         if (getIsRecur() || isEventAdditionalParticipants()) {
@@ -111,7 +111,7 @@ CRM.$(function($) {
     debugging('handleServerResponse');
     if (result.error) {
       // Show error from server on payment form
-      displayError(result);
+      displayError(result.error);
     } else if (result.requires_action) {
       // Use Stripe.js to handle required card action
       handleAction(result);
@@ -126,7 +126,7 @@ CRM.$(function($) {
       .then(function(result) {
         if (result.error) {
           // Show error in payment form
-          displayError(result);
+          displayError(result.error);
         } else {
           // The card action has been handled
           // The PaymentIntent can be confirmed again on the server
@@ -241,8 +241,6 @@ CRM.$(function($) {
     card.mount('#card-element');
     debugging("created new card element", card);
 
-    setBillingFieldsRequiredForJQueryValidate();
-
     // Hide the CiviCRM postcode field so it will still be submitted but will contain the value set in the stripe card-element.
     if (document.getElementById('billing_postal_code-5').value) {
       document.getElementById('billing_postal_code-5').setAttribute('disabled', true);
@@ -250,8 +248,9 @@ CRM.$(function($) {
     else {
       document.getElementsByClassName('billing_postal_code-' + CRM.vars.stripe.billingAddressID + '-section')[0].setAttribute('hidden', true);
     }
-    card.addEventListener('change', function(event) {
-      updateFormElementsFromCreditCardDetails(event);
+
+    card.addEventListener('change', function (event) {
+      cardElementChanged(event);
     });
 
     // Get the form containing payment details
@@ -260,6 +259,8 @@ CRM.$(function($) {
       debugging('No billing form!');
       return;
     }
+
+    setBillingFieldsRequiredForJQueryValidate();
     submitButtons = getBillingSubmit();
 
     // If another submit button on the form is pressed (eg. apply discount)
@@ -334,6 +335,7 @@ CRM.$(function($) {
 
       if ($(form).valid() === false) {
         debugging('Form not valid');
+        $('div#card-errors').hide();
         document.querySelector('#billing-payment-block').scrollIntoView();
         window.scrollBy(0, -50);
         return false;
@@ -562,11 +564,20 @@ CRM.$(function($) {
     return isRecur;
   }
 
-  function updateFormElementsFromCreditCardDetails(event) {
-    if (!event.complete) {
-      return;
+  function cardElementChanged(event) {
+    if (event.empty) {
+      $('div#card-errors').hide();
     }
-    document.getElementById('billing_postal_code-' + CRM.vars.stripe.billingAddressID).value = event.value.postalCode;
+    else if (event.error) {
+      displayError(event.error);
+    }
+    else if (event.complete) {
+      $('div#card-errors').hide();
+      var postCodeElement = document.getElementById('billing_postal_code-' + CRM.vars.stripe.billingAddressID);
+      if (postCodeElement) {
+        postCodeElement.value = event.value.postalCode;
+      }
+    }
   }
 
   function addSupportForCiviDiscount() {
@@ -589,9 +600,13 @@ CRM.$(function($) {
     // Work around https://github.com/civicrm/civicrm-core/compare/master...mattwire:stripe_147
     // The main billing fields do not get set to required so don't get checked by jquery validateform.
     // This also applies to any radio button in billing/profiles so we flag every element with a crm-marker
+    // See also https://github.com/civicrm/civicrm-core/pull/16488 for a core fix
     $('div.label span.crm-marker').each(function() {
       $(this).closest('div').next('div').find('input').addClass('required');
     });
+    var validator = $(form).validate();
+    validator.settings.errorClass = 'crm-inline-error alert alert-danger';
+    validator.settings.ignore = '.select2-offscreen, [readonly], :hidden:not(.crm-select2)';
   }
 
   function isEventAdditionalParticipants() {
