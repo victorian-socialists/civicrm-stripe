@@ -634,7 +634,7 @@ CRM.$(function($) {
       $(this).closest('div').next('div').find('input').addClass('required');
     });
     var validator = $(form).validate();
-    validator.settings.errorClass = 'crm-inline-error alert-danger';
+    validator.settings.errorClass = 'error alert-danger';
     validator.settings.ignore = '.select2-offscreen, [readonly], :hidden:not(.crm-select2)';
   }
 
