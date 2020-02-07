@@ -69,14 +69,12 @@ CRM.$(function($) {
     var errorElement = document.getElementById('card-errors');
     errorElement.style.display = 'block';
     errorElement.textContent = error.message;
-    document.querySelector('#billing-payment-block').scrollIntoView();
-    window.scrollBy(0, -50);
     form.dataset.submitted = false;
     for (i = 0; i < submitButtons.length; ++i) {
       submitButtons[i].removeAttribute('disabled');
     }
     triggerEvent('crmBillingFormNotValid');
-    notifyUser('error', '', result.error.message);
+    notifyUser('error', '', result.error.message, '#card-element');
   }
 
   function handleCardPayment() {
@@ -339,18 +337,24 @@ CRM.$(function($) {
       if ($(form).valid() === false) {
         debugging('Form not valid');
         $('div#card-errors').hide();
-        document.querySelector('#billing-payment-block').scrollIntoView();
-        window.scrollBy(0, -50);
+        notifyUser('error', '', ts('Please check and fill in all required fields!'), '#crm-container');
         triggerEvent('crmBillingFormNotValid');
-        notifyUser('error', '', ts('Please check and fill in all required fields!'));
+        return false;
+      }
+
+      if (CRM.$('#card-element.StripeElement--empty').length) {
+        debugging('card details not entered!');
+        $('div#card-errors').hide();
+        notifyUser('error', '', ts('Please fill in the card details!', '#card-element'));
+        triggerEvent('crmBillingFormNotValid');
         return false;
       }
 
       if (!(typeof grecaptcha === 'undefined' || (grecaptcha && grecaptcha.getResponse().length !== 0))) {
         debugging('recaptcha active and not valid');
         $('div#card-errors').hide();
+        notifyUser('error', '', ts('Please complete the reCaptcha'), '.recaptcha-section');
         triggerEvent('crmBillingFormNotValid');
-        notifyUser('error', '', ts('Please complete the reCaptcha'));
         return false;
       }
 
@@ -705,14 +709,21 @@ CRM.$(function($) {
    * @param {string} icon
    * @param {string} title
    * @param {string} text
+   * @param {string} scrollToElement
    */
-  function notifyUser(icon, title, text) {
+  function notifyUser(icon, title, text, scrollToElement) {
     if (typeof Swal === 'function') {
-      Swal.fire({
+      swalParams = {
         icon: icon,
-        title: title,
-        text: text,
-      });
+        text: text
+      };
+      if (title) {
+        swalParams.title = title;
+      }
+      if (scrollToElement) {
+        swalParams.onAfterClose = function() { document.querySelector(scrollToElement).scrollIntoView(); window.scrollBy(0, -50); };
+      }
+      Swal.fire(swalParams);
     }
   }
 
