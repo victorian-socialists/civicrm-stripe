@@ -1,3 +1,17 @@
+## Release 6.4 (not yet released)
+
+New Features:
+* The Stripe "element" now follows the current CMS/CiviCRM locale.
+* Add jquery form event 'crmBillingFormReloadComplete' and document jquery events.
+* Add jquery form event 'crmBillingFormNotValid' so 3rd-party integrations can re-enable custom submit buttons etc.
+* Add support for sweetalert library on form validation errors so we popup nice messages when you are missing required fields and for card errors and you click submit.
+
+Behind the scenes:
+* Further tweaks to get tests working
+* Initial steps to modernize the testing infrastructure.
+* Add some docblocks
+* Switch to event.code from deprecated event.keyCode
+
 ## Release 6.3.2 - Security Release
 If you are using Stripe on public forms (without authentication) it is **strongly** recommended that you upgrade and consider installing the new **firewall** extension.
 
@@ -15,7 +29,6 @@ You may still need to delete and re-add your webhook but should not need to next
 
 #### Features
 * [#126](https://lab.civicrm.org/extensions/stripe/issues/126) Stripe element now uses the CMS/CiviCRM locale so it will appear in the same language as the page instead of the browser language.
-
 
 ## Release 6.3.1
 
