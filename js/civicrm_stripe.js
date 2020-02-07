@@ -346,6 +346,14 @@ CRM.$(function($) {
         return false;
       }
 
+      if (!(typeof grecaptcha === 'undefined' || (grecaptcha && grecaptcha.getResponse().length !== 0))) {
+        debugging('recaptcha active and not valid');
+        $('div#card-errors').hide();
+        triggerEvent('crmBillingFormNotValid');
+        notifyUser('error', '', ts('Please complete the reCaptcha'));
+        return false;
+      }
+
       if (typeof CRM.vars.stripe === 'undefined') {
         debugging('Submitting - not a stripe processor');
         return true;

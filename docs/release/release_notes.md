@@ -5,6 +5,7 @@ New Features:
 * Add jquery form event 'crmBillingFormReloadComplete' and document jquery events.
 * Add jquery form event 'crmBillingFormNotValid' so 3rd-party integrations can re-enable custom submit buttons etc.
 * Add support for sweetalert library on form validation errors so we popup nice messages when you are missing required fields and for card errors and you click submit.
+* Make sure we don't submit if we have a reCaptcha and it is not valid.
 
 Behind the scenes:
 * Further tweaks to get tests working
