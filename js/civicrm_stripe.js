@@ -74,7 +74,7 @@ CRM.$(function($) {
       submitButtons[i].removeAttribute('disabled');
     }
     triggerEvent('crmBillingFormNotValid');
-    notifyUser('error', '', result.error.message, '#card-element');
+    notifyUser('error', '', error.message, '#card-element');
   }
 
   function handleCardPayment() {
@@ -342,10 +342,23 @@ CRM.$(function($) {
         return false;
       }
 
+      var cardError = CRM.$('#card-errors').text();
       if (CRM.$('#card-element.StripeElement--empty').length) {
         debugging('card details not entered!');
-        $('div#card-errors').hide();
-        notifyUser('error', '', ts('Please fill in the card details!', '#card-element'));
+        if (!cardError) {
+          cardError = ts('Please fill in your card details!');
+        }
+        notifyUser('error', '', cardError, '#card-element');
+        triggerEvent('crmBillingFormNotValid');
+        return false;
+      }
+
+      if (CRM.$('#card-element.StripeElement--invalid').length) {
+        if (!cardError) {
+          cardError = ts('Please check your card details!');
+        }
+        debugging('card details not valid!');
+        notifyUser('error', '', cardError, '#card-element');
         triggerEvent('crmBillingFormNotValid');
         return false;
       }
@@ -713,7 +726,7 @@ CRM.$(function($) {
    */
   function notifyUser(icon, title, text, scrollToElement) {
     if (typeof Swal === 'function') {
-      swalParams = {
+      var swalParams = {
         icon: icon,
         text: text
       };
@@ -721,7 +734,7 @@ CRM.$(function($) {
         swalParams.title = title;
       }
       if (scrollToElement) {
-        swalParams.onAfterClose = function() { document.querySelector(scrollToElement).scrollIntoView(); window.scrollBy(0, -50); };
+        swalParams.onAfterClose = function() { window.scrollTo($(scrollToElement).position()); };
       }
       Swal.fire(swalParams);
     }
