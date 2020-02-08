@@ -334,7 +334,7 @@ CRM.$(function($) {
       event.preventDefault();
       debugging('submit handler');
 
-      if ($(form).valid() === false) {
+      if (($(form).valid() === false) || $(form).data('crmBillingFormValid') === false) {
         debugging('Form not valid');
         $('div#card-errors').hide();
         notifyUser('error', '', ts('Please check and fill in all required fields!'), '#crm-container');
@@ -346,7 +346,7 @@ CRM.$(function($) {
       if (CRM.$('#card-element.StripeElement--empty').length) {
         debugging('card details not entered!');
         if (!cardError) {
-          cardError = ts('Please fill in your card details!');
+          cardError = ts('Please enter your card details!');
         }
         notifyUser('error', '', cardError, '#card-element');
         triggerEvent('crmBillingFormNotValid');

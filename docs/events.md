@@ -1,4 +1,4 @@
-# Events (jQuery)
+# Events and custom form integrations
 
 Most of the functionality to take card details, validate the form etc. happens on the javascript/jquery side before the form is submitted.
 
@@ -21,3 +21,20 @@ Example code:
 ### crmBillingFormReloadComplete
 This event is triggered when the form has completed reloading and is ready for use (Stripe element visible etc.).
 It is useful for clearing any "loading" indicators and unfreezing form elements.
+
+## Custom validation / Form Data
+
+#### crmBillingFormValid
+If you want to do some validation of the form and prevent Stripe from submitting you can set the boolean data property
+on the form.
+
+Example code:
+```javascript
+    $('#my-custom-submit-button').on('click', e => {
+      e.preventDefault();
+      $form.data('crmBillingFormValid', true);
+      if (myCustomValidation() === false) {
+        $form.data('crmBillingFormValid', false);
+      }
+    });
+```
