@@ -107,7 +107,7 @@ function stripe_civicrm_alterContent( &$content, $context, $tplName, &$object ) 
     || (($context == 'page') && !empty($object->_isPaymentProcessor))) {
     if (!isset(\Civi::$statics[E::LONG_NAME]['stripeJSLoaded']) || $object instanceof CRM_Financial_Form_Payment) {
       $min = ((boolean) \Civi::settings()->get('stripe_jsdebug')) ? '' : '.min';
-      $stripeJSURL = \Civi::resources()->getUrl(E::LONG_NAME, "js/civicrm_stripe{$min}.js");
+      $stripeJSURL = \Civi::resources()->getUrl(E::LONG_NAME, "js/civicrm_stripe{$min}.js", TRUE);
       $content .= "<script src='{$stripeJSURL}'></script>";
       \Civi::$statics[E::LONG_NAME]['stripeJSLoaded'] = TRUE;
     }
@@ -138,7 +138,8 @@ function stripe_civicrm_buildForm($formName, &$form) {
   switch ($formName) {
     case 'CRM_Contribute_Form_Contribution_ThankYou':
     case 'CRM_Event_Form_Registration_ThankYou':
-      \Civi::resources()->addScriptFile(E::LONG_NAME, 'js/civicrmStripeConfirm.js');
+    $min = ((boolean) \Civi::settings()->get('stripe_jsdebug')) ? '' : '.min';
+      \Civi::resources()->addScriptFile(E::LONG_NAME, "js/civicrmStripeConfirm{$min}.js", TRUE);
 
       // This is a fairly nasty way of matching and retrieving our paymentIntent as it is no longer available.
       $qfKey = CRM_Utils_Request::retrieve('qfKey', 'String');

@@ -349,11 +349,11 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
 
     $min = ((boolean) \Civi::settings()->get('stripe_jsdebug')) ? '' : '.min';
     CRM_Core_Region::instance('billing-block')->add([
-      'styleUrl' => \Civi::resources()->getUrl(E::LONG_NAME, "css/elements{$min}.css"),
+      'styleUrl' => \Civi::resources()->getUrl(E::LONG_NAME, "css/elements{$min}.css", TRUE),
       'weight' => -1,
     ]);
     CRM_Core_Region::instance('billing-block')->add([
-      'scriptUrl' => \Civi::resources()->getUrl(E::LONG_NAME, "js/civicrm_stripe{$min}.js"),
+      'scriptUrl' => \Civi::resources()->getUrl(E::LONG_NAME, "js/civicrm_stripe{$min}.js", TRUE),
     ]);
   }
 
