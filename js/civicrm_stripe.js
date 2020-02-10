@@ -71,7 +71,13 @@ CRM.$(function($) {
     return form.submit();
   }
 
-  function displayError(error) {
+  /**
+   * Display a stripe element error
+   *
+   * @param error - the stripe error object
+   * @param {boolean} notify - whether to popup a notification as well as display on the form.
+   */
+  function displayError(error, notify) {
     // Display error.message in your UI.
     debugging('error: ' + error.message);
     // Inform the user if there was an error
@@ -83,7 +89,9 @@ CRM.$(function($) {
       submitButtons[i].removeAttribute('disabled');
     }
     triggerEvent('crmBillingFormNotValid');
-    notifyUser('error', '', error.message, '#card-element');
+    if (notify) {
+      notifyUser('error', '', error.message, '#card-element');
+    }
   }
 
   function handleCardPayment() {
@@ -91,7 +99,7 @@ CRM.$(function($) {
     stripe.createPaymentMethod('card', card).then(function (result) {
       if (result.error) {
         // Show error in payment form
-        displayError(result.error);
+        displayError(result.error, true);
       }
       else {
         if (getIsRecur() || isEventAdditionalParticipants()) {
@@ -121,7 +129,7 @@ CRM.$(function($) {
     debugging('handleServerResponse');
     if (result.error) {
       // Show error from server on payment form
-      displayError(result.error);
+      displayError(result.error, true);
     } else if (result.requires_action) {
       // Use Stripe.js to handle required card action
       handleAction(result);
@@ -136,7 +144,7 @@ CRM.$(function($) {
       .then(function(result) {
         if (result.error) {
           // Show error in payment form
-          displayError(result.error);
+          displayError(result.error, true);
         } else {
           // The card action has been handled
           // The PaymentIntent can be confirmed again on the server
@@ -620,7 +628,7 @@ CRM.$(function($) {
       $('div#card-errors').hide();
     }
     else if (event.error) {
-      displayError(event.error);
+      displayError(event.error, false);
     }
     else if (event.complete) {
       $('div#card-errors').hide();
