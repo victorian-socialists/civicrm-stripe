@@ -39,6 +39,9 @@ class CRM_Stripe_AJAX {
    * @throws \CiviCRM_API3_Exception
    */
   public static function confirmPayment() {
+    $_SERVER['REQUEST_METHOD'] === 'POST' ?: self::returnInvalid();
+    (CRM_Utils_Request::retrieveValue('reset', 'String') === NULL) ?: self::returnInvalid();
+
     $paymentMethodID = CRM_Utils_Request::retrieveValue('payment_method_id', 'String');
     $paymentIntentID = CRM_Utils_Request::retrieveValue('payment_intent_id', 'String');
     $amount = CRM_Utils_Request::retrieveValue('amount', 'String');
@@ -50,9 +53,16 @@ class CRM_Stripe_AJAX {
       $confirm = FALSE;
     }
     $currency = CRM_Utils_Request::retrieveValue('currency', 'String', CRM_Core_Config::singleton()->defaultCurrency);
-    $processorID = CRM_Utils_Request::retrieveValue('id', 'Integer', NULL, TRUE);
-    $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $processorID]));
+    $processorID = CRM_Utils_Request::retrieveValue('id', 'Positive');
+    !empty($processorID) ?: self::returnInvalid();
+    $paymentProcessor = civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $processorID]);
+    ($paymentProcessor['class_name'] === 'Payment_Stripe') ?: self::returnInvalid();
+    $processor = new CRM_Core_Payment_Stripe('', $paymentProcessor);
     $processor->setAPIParams();
+
+    if (empty($paymentIntentID) && empty($paymentMethodID)) {
+      self::returnInvalid();
+    }
 
     if ($paymentIntentID) {
       // We already have a PaymentIntent, retrieve and attempt confirm.
@@ -129,6 +139,14 @@ class CRM_Stripe_AJAX {
       // Invalid status
       CRM_Utils_JSON::output(['error' => ['message' => 'Invalid PaymentIntent status']]);
     }
+  }
+
+  /**
+   * Passed parameters were invalid
+   */
+  private static function returnInvalid() {
+    http_response_code(400);
+    exit(1);
   }
 
 }
