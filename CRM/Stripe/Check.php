@@ -10,8 +10,6 @@ use CRM_Stripe_ExtensionUtil as E;
  */
 class CRM_Stripe_Check {
 
-  const MIN_VERSION_MJWSHARED = '0.6';
-
   public static function checkRequirements(&$messages) {
     $extensions = civicrm_api3('Extension', 'get', [
       'full_name' => "mjwshared",
@@ -27,12 +25,12 @@ class CRM_Stripe_Check {
       );
     }
 
-    if (version_compare($extensions['values'][$extensions['id']]['version'], self::MIN_VERSION_MJWSHARED) === -1) {
+    if (version_compare($extensions['values'][$extensions['id']]['version'], CRM_Core_Payment_Stripe::MIN_VERSION_MJWSHARED) === -1) {
       $messages[] = new CRM_Utils_Check_Message(
         'stripe_requirements',
         E::ts('The Stripe extension requires the mjwshared extension version %1 or greater but your system has version %2.',
           [
-            1 => self::MIN_VERSION_MJWSHARED,
+            1 => CRM_Core_Payment_Stripe::MIN_VERSION_MJWSHARED,
             2 => $extensions['values'][$extensions['id']]['version']
           ]),
         E::ts('Stripe: Missing Requirements'),

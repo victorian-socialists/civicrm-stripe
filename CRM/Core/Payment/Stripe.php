@@ -13,10 +13,15 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   use CRM_Core_Payment_MJWTrait;
 
   /**
-   *
    * @var string
    */
   const API_VERSION = '2019-12-03';
+
+  /**
+   * @var string
+   */
+  const MIN_VERSION_MJWSHARED = '0.7';
+
 
   /**
    * Mode of operation: live or test.
@@ -349,13 +354,18 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       ['template' => 'CRM/Core/Payment/Stripe/Card.tpl', 'weight' => -1]);
     // Add CSS via region (it won't load on drupal webform if added via \Civi::resources()->addStyleFile)
 
-    $min = ((boolean) \Civi::settings()->get('stripe_jsdebug')) ? '' : '.min';
     CRM_Core_Region::instance('billing-block')->add([
-      'styleUrl' => \Civi::resources()->getUrl(E::LONG_NAME, "css/elements{$min}.css", TRUE),
+      'styleUrl' => \Civi::service('asset_builder')->getUrl(
+        'elements.css',
+        ['path' => \Civi::resources()->getPath(E::LONG_NAME, 'css/elements.css')]
+      ),
       'weight' => -1,
     ]);
     CRM_Core_Region::instance('billing-block')->add([
-      'scriptUrl' => \Civi::resources()->getUrl(E::LONG_NAME, "js/civicrm_stripe{$min}.js", TRUE),
+      'scriptUrl' => \Civi::service('asset_builder')->getUrl(
+        'civicrmStripe.js',
+        ['path' => \Civi::resources()->getPath(E::LONG_NAME, 'js/civicrm_stripe.js')]
+      )
     ]);
   }
 
