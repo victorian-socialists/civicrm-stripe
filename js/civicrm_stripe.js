@@ -352,7 +352,7 @@ CRM.$(function($) {
       }
 
       var cardError = CRM.$('#card-errors').text();
-      if (CRM.$('#card-element.StripeElement--empty').length) {
+      if (CRM.$('#card-element.StripeElement--empty').length && (getTotalAmount() !== 0.0)) {
         debugging('card details not entered!');
         if (!cardError) {
           cardError = ts('Please enter your card details!');
