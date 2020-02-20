@@ -108,7 +108,10 @@ function stripe_civicrm_alterContent( &$content, $context, $tplName, &$object ) 
     if (!isset(\Civi::$statics[E::LONG_NAME]['stripeJSLoaded']) || $object instanceof CRM_Financial_Form_Payment) {
       $stripeJSURL = \Civi::service('asset_builder')->getUrl(
         'civicrmStripe.js',
-        ['path' => \Civi::resources()->getPath(E::LONG_NAME, 'js/civicrm_stripe.js')]
+        [
+          'path' => \Civi::resources()->getPath(E::LONG_NAME, 'js/civicrm_stripe.js'),
+          'mimetype' => 'application/javascript',
+        ]
       );
       $content .= "<script src='{$stripeJSURL}'></script>";
       \Civi::$statics[E::LONG_NAME]['stripeJSLoaded'] = TRUE;
@@ -142,7 +145,10 @@ function stripe_civicrm_buildForm($formName, &$form) {
     case 'CRM_Event_Form_Registration_ThankYou':
       \Civi::resources()->addScriptUrl(\Civi::service('asset_builder')->getUrl(
         'civicrmStripeConfirm.js',
-        ['path' => \Civi::resources()->getPath(E::LONG_NAME, 'js/civicrmStripeConfirm.js')]
+        [
+          'path' => \Civi::resources()->getPath(E::LONG_NAME, 'js/civicrmStripeConfirm.js'),
+          'mimetype' => 'application/javascript',
+        ]
       ));
 
       // This is a fairly nasty way of matching and retrieving our paymentIntent as it is no longer available.

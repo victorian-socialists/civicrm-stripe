@@ -384,14 +384,20 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     CRM_Core_Region::instance('billing-block')->add([
       'styleUrl' => \Civi::service('asset_builder')->getUrl(
         'elements.css',
-        ['path' => \Civi::resources()->getPath(E::LONG_NAME, 'css/elements.css')]
+        [
+          'path' => \Civi::resources()->getPath(E::LONG_NAME, 'css/elements.css'),
+          'mimetype' => 'text/css',
+        ]
       ),
       'weight' => -1,
     ]);
     CRM_Core_Region::instance('billing-block')->add([
       'scriptUrl' => \Civi::service('asset_builder')->getUrl(
         'civicrmStripe.js',
-        ['path' => \Civi::resources()->getPath(E::LONG_NAME, 'js/civicrm_stripe.js')]
+        [
+          'path' => \Civi::resources()->getPath(E::LONG_NAME, 'js/civicrm_stripe.js'),
+          'mimetype' => 'application/javascript',
+        ]
       )
     ]);
   }
