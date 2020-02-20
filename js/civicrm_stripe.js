@@ -264,8 +264,6 @@ CRM.$(function($) {
     card.mount('#card-element');
     debugging("created new card element", card);
 
-    setBillingFieldsRequiredForJQueryValidate();
-
     if (postCodeElement) {
       // Hide the CiviCRM postcode field so it will still be submitted but will contain the value set in the stripe card-element.
       if (document.getElementById('billing_postal_code-5').value) {
