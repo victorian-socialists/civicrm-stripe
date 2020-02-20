@@ -97,6 +97,7 @@ CRM.$(function($) {
             currency: CRM.vars.stripe.currency,
             id: CRM.vars.stripe.id,
             description: document.title,
+            token: CRM.vars.stripe.token,
           }).then(function (result) {
             // Handle server response (see Step 3)
             handleServerResponse(result);

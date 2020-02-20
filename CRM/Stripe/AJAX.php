@@ -42,6 +42,11 @@ class CRM_Stripe_AJAX {
     $_SERVER['REQUEST_METHOD'] === 'POST' ?: self::returnInvalid();
     (CRM_Utils_Request::retrieveValue('reset', 'String') === NULL) ?: self::returnInvalid();
 
+    if (class_exists('\Civi\Firewall\Firewall')) {
+      if (!\Civi\Firewall\Firewall::isCSRFTokenValid(CRM_Utils_Request::retrieveValue('token', 'String'))) {
+        self::returnInvalid();
+      }
+    }
     $paymentMethodID = CRM_Utils_Request::retrieveValue('payment_method_id', 'String');
     $paymentIntentID = CRM_Utils_Request::retrieveValue('payment_intent_id', 'String');
     $amount = CRM_Utils_Request::retrieveValue('amount', 'String');
@@ -90,6 +95,11 @@ class CRM_Stripe_AJAX {
           'confirm' => $confirm,
         ]);
       } catch (Exception $e) {
+        if ($e instanceof \Stripe\Error\Card) {
+          if (($e->getDeclineCode() === 'fraudulent') && class_exists('\Civi\Firewall\Event\FraudEvent')) {
+            \Civi\Firewall\Event\FraudEvent::trigger(\CRM_Utils_System::ipAddress(), 'CRM_Stripe_AJAX::confirmPayment');
+          }
+        }
         CRM_Utils_JSON::output(['error' => ['message' => $e->getMessage()]]);
       }
     }
