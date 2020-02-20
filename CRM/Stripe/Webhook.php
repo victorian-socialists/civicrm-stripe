@@ -57,6 +57,24 @@ class CRM_Stripe_Webhook {
           // Check and update webhook
           try {
             $updates = self::checkWebhook($wh);
+
+            if (!empty($wh->api_version) && ($wh->api_version !== CRM_Core_Payment_Stripe::getApiVersion())) {
+              // Add message about API version.
+              $messages[] = new CRM_Utils_Check_Message(
+                'stripe_webhook',
+                E::ts('Webhook API version is set to %2 but CiviCRM requires %3. To correct this please delete the webhook at Stripe and then revisit this page which will recreate it correctly. <em>Webhook path is: <a href="%1" target="_blank">%1</a>.</em>',
+                  [
+                    1 => urldecode($webhook_path),
+                    2 => $wh->api_version,
+                    3 => CRM_Core_Payment_Stripe::getApiVersion(),
+                  ]
+                ),
+                self::getTitle($paymentProcessor),
+                \Psr\Log\LogLevel::WARNING,
+                'fa-money'
+              );
+            }
+
             if ($updates && $wh->status != 'disabled') {
               if ($attemptFix) {
                 // We should try to update the webhook.
@@ -189,10 +207,6 @@ class CRM_Stripe_Webhook {
    */
   public static function checkWebhook($webhook) {
     $params = [];
-
-    if (empty($webhook['api_version']) || ($webhook['api_version'] !== CRM_Core_Payment_Stripe::API_VERSION)) {
-      $params['api_version'] = CRM_Core_Payment_Stripe::API_VERSION;
-    }
 
     if (array_diff(self::getDefaultEnabledEvents(), $webhook['enabled_events'])) {
       $params['enabled_events'] = self::getDefaultEnabledEvents();
