@@ -43,7 +43,7 @@ class CRM_Stripe_AJAX {
     (CRM_Utils_Request::retrieveValue('reset', 'String') === NULL) ?: self::returnInvalid();
 
     if (class_exists('\Civi\Firewall\Firewall')) {
-      if (!\Civi\Firewall\Firewall::isCSRFTokenValid(CRM_Utils_Request::retrieveValue('token', 'String'))) {
+      if (!\Civi\Firewall\Firewall::isCSRFTokenValid(CRM_Utils_Request::retrieveValue('csrfToken', 'String'))) {
         self::returnInvalid();
       }
     }
