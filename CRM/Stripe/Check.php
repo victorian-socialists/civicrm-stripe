@@ -40,6 +40,21 @@ class CRM_Stripe_Check {
         'fa-money'
       );
     }
+
+    $extensions = civicrm_api3('Extension', 'get', [
+      'full_name' => 'firewall',
+    ]);
+
+    if (empty($extensions['id']) || ($extensions['values'][$extensions['id']]['status'] !== 'installed')) {
+      $messages[] = new CRM_Utils_Check_Message(
+        'stripe_recommended',
+        E::ts('If you are using Stripe to accept payments on public forms (eg. contribution/event registration forms) it is recommended that you install the <strong><a href="https://lab.civicrm.org/extensions/firewall">firewall</a></strong> extension.
+        Some sites have become targets for spammers who use the payment endpoint to try and test credit cards by submitting invalid payments to your Stripe account.'),
+        E::ts('Recommended Extension: firewall'),
+        \Psr\Log\LogLevel::NOTICE,
+        'fa-lightbulb-o'
+      );
+    }
   }
 
 }
