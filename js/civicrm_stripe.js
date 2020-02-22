@@ -679,6 +679,10 @@ CRM.$(function($) {
     var validator = $(form).validate();
     validator.settings.errorClass = 'error alert-danger';
     validator.settings.ignore = '.select2-offscreen, [readonly], :hidden:not(.crm-select2)';
+    // Default email validator accepts test@example but on test@example.org is valid (https://jqueryvalidation.org/jQuery.validator.methods/)
+    $.validator.methods.email = function( value, element ) {
+      return this.optional(element) || /[a-z]+@[a-z]+\.[a-z]+/.test(value);
+    };
   }
 
   /**
