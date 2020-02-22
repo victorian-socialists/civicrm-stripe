@@ -1,8 +1,21 @@
-## Release 6.3.2
+## Release 6.3.2 - Security Release
+If you are using Stripe on public forms (without authentication) it is **strongly** recommended that you upgrade and consider installing the new **firewall** extension.
 
-* Don't explicitly set webhook version when creating webhook. It will automatically track the dashboard API version.
-* Add action button to webhook check.
-* Improve workaround for [#147](https://lab.civicrm.org/extensions/stripe/issues/147) to also work with radio buttons and profiles.
+Increasingly spammers are finding CiviCRM sites and spamming the linked Stripe account with 1000s of attempted payments
+and potentially causing your Stripe account to be temporarily blocked.
+
+#### Changes
+* Add support for firewall extension
+* Add system check to recommend installing firewall extension
+* Add checks and restrictions to AJAX endpoint
+* Add cache code to js/css resources so they are reloaded immediately after cache clear.
+
+* [#168](https://lab.civicrm.org/extensions/stripe/issues/168) Improve handling of webhooks with mismatched API versions - now we track the dashboard API version and don't try to explicitly set a webhook API version.
+You may still need to delete and re-add your webhook but should not need to next time the API version changes.
+
+#### Features
+* [#126](https://lab.civicrm.org/extensions/stripe/issues/126) Stripe element now uses the CMS/CiviCRM locale so it will appear in the same language as the page instead of the browser language.
+
 
 ## Release 6.3.1
 
