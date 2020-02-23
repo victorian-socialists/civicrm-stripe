@@ -681,7 +681,8 @@ CRM.$(function($) {
     validator.settings.ignore = '.select2-offscreen, [readonly], :hidden:not(.crm-select2)';
     // Default email validator accepts test@example but on test@example.org is valid (https://jqueryvalidation.org/jQuery.validator.methods/)
     $.validator.methods.email = function( value, element ) {
-      return this.optional(element) || /[a-z]+@[a-z]+\.[a-z]+/.test(value);
+      // Regex from https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
+      return this.optional(element) || /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/.test(value);
     };
   }
 
