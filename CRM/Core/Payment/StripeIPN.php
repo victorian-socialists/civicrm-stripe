@@ -288,7 +288,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
       case 'charge.captured':
         // For a single contribution we have to use charge.captured because it has the customer_id.
         $this->setInfo();
-        if ($this->contribution['contribution_status_id'] == $pendingStatusId) {
+        if ($this->contribution['contribution_status_id'] == $pendingStatusId && empty($this->contribution['contribution_recur_id'])) {
           $params = [
             'id' => $this->contribution['id'],
             'trxn_date' => $this->receive_date,
@@ -376,6 +376,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
       'id',
       'trxn_id',
       'contribution_status_id',
+      'contribution_recur_id',
       'total_amount',
       'fee_amount',
       'net_amount',
