@@ -11,7 +11,7 @@ CRM.$(function($) {
   switch (CRM.vars.stripe.paymentIntentStatus) {
     case 'succeeded':
     case 'cancelled':
-      debugging('paymentIntent: ' . CRM.vars.stripe.paymentIntentStatus);
+      debugging('paymentIntent: ' + CRM.vars.stripe.paymentIntentStatus);
       return;
   }
 

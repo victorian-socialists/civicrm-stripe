@@ -187,18 +187,16 @@ function stripe_civicrm_buildForm($formName, &$form) {
       $paymentProcessor->setAPIParams();
       try {
         $intent = \Stripe\PaymentIntent::retrieve($paymentIntent['paymentintent_id']);
-        if (!in_array($intent->status, ['succeeded', 'cancelled'])) {
-          // We need the confirmation_method to decide whether to use handleCardAction (manual) or handleCardPayment (automatic) on the js side
-          $jsVars = [
-            'id' => $form->_paymentProcessor['id'],
-            'paymentIntentID' => $paymentIntent['paymentintent_id'],
-            'paymentIntentStatus' => $intent->status,
-            'paymentIntentMethod' => $intent->confirmation_method,
-            'publishableKey' => CRM_Core_Payment_Stripe::getPublicKeyById($form->_paymentProcessor['id']),
-            'jsDebug' => (boolean) \Civi::settings()->get('stripe_jsdebug'),
-          ];
-          \Civi::resources()->addVars(E::SHORT_NAME, $jsVars);
-        }
+        // We need the confirmation_method to decide whether to use handleCardAction (manual) or handleCardPayment (automatic) on the js side
+        $jsVars = [
+          'id' => $form->_paymentProcessor['id'],
+          'paymentIntentID' => $paymentIntent['paymentintent_id'],
+          'paymentIntentStatus' => $intent->status,
+          'paymentIntentMethod' => $intent->confirmation_method,
+          'publishableKey' => CRM_Core_Payment_Stripe::getPublicKeyById($form->_paymentProcessor['id']),
+          'jsDebug' => (boolean) \Civi::settings()->get('stripe_jsdebug'),
+        ];
+        \Civi::resources()->addVars(E::SHORT_NAME, $jsVars);
       }
       catch (Exception $e) {
         // Do nothing, we won't attempt further stripe processing
