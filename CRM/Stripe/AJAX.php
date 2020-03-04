@@ -50,13 +50,12 @@ class CRM_Stripe_AJAX {
     $paymentMethodID = CRM_Utils_Request::retrieveValue('payment_method_id', 'String');
     $paymentIntentID = CRM_Utils_Request::retrieveValue('payment_intent_id', 'String');
     $amount = CRM_Utils_Request::retrieveValue('amount', 'String');
+    if (empty($amount)) {
+      self::returnInvalid();
+    }
     $capture = CRM_Utils_Request::retrieveValue('capture', 'Boolean', FALSE);
     $title = CRM_Utils_Request::retrieveValue('description', 'String');
     $confirm = TRUE;
-    if (empty($amount)) {
-      $amount = 1;
-      $confirm = FALSE;
-    }
     $currency = CRM_Utils_Request::retrieveValue('currency', 'String', CRM_Core_Config::singleton()->defaultCurrency);
     $processorID = CRM_Utils_Request::retrieveValue('id', 'Positive');
     !empty($processorID) ?: self::returnInvalid();

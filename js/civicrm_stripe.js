@@ -102,7 +102,10 @@ CRM.$(function($) {
         displayError(result.error, true);
       }
       else {
-        if (getIsRecur() || isEventAdditionalParticipants()) {
+        // For recur, additional participants we do NOT know the final amount so must create a paymentMethod and only create the paymentIntent
+        //   once the form is finally submitted.
+        // We should never get here with amount=0 as we should be doing a "nonStripeSubmit()" instead. This may become needed when we save cards
+        if (getIsRecur() || isEventAdditionalParticipants() || (getTotalAmount() === 0.0)) {
           // Submit the form, if we need to do 3dsecure etc. we do it at the end (thankyou page) once subscription etc has been created
           successHandler('paymentMethodID', result.paymentMethod);
         }
