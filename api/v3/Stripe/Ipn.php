@@ -98,13 +98,13 @@ function civicrm_api3_stripe_Ipn($params) {
     $_GET['processor_id'] = $ppid;
     $ipnClass = new CRM_Core_Payment_StripeIPN($object);
     $ipnClass->setExceptionMode(FALSE);
+    if ($params['noreceipt'] == 1) {
+      $ipnClass->setSendEmailReceipt(0);
+    }
     try {
       $ipnClass->main();
     } catch(Throwable $e) {
       return civicrm_api3_create_error($e->getMessage());
-    }
-    if ($params['noreceipt'] == 1) {
-      $ipnClass->setSendEmailReceipt(0);
     }
   }
   else {
