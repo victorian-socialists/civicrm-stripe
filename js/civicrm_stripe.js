@@ -545,6 +545,9 @@ CRM.$(function($) {
     if (isEventAdditionalParticipants()) {
       totalFee = null;
     }
+    else if (CRM.payment && typeof CRM.payment.getTotalAmount == 'function') {
+      return CRM.payment.getTotalAmount(form.id);
+    }
     else if (document.getElementById('totalTaxAmount') !== null) {
       totalFee = parseFloat(calculateTaxAmount());
       debugging('Calculated amount using internal calculateTaxAmount()');
