@@ -58,7 +58,7 @@ class CRM_Stripe_Webhook {
           try {
             $updates = self::checkWebhook($wh);
 
-            if (!empty($wh->api_version) && ($wh->api_version !== CRM_Core_Payment_Stripe::getApiVersion())) {
+            if (!empty($wh->api_version) && (strtotime($wh->api_version) < strtotime(CRM_Stripe_Check::API_MIN_VERSION))) {
               // Add message about API version.
               $messages[] = new CRM_Utils_Check_Message(
                 'stripe_webhook',
@@ -66,7 +66,7 @@ class CRM_Stripe_Webhook {
                   [
                     1 => urldecode($webhook_path),
                     2 => $wh->api_version,
-                    3 => CRM_Core_Payment_Stripe::getApiVersion(),
+                    3 => CRM_Stripe_Check::API_VERSION,
                   ]
                 ),
                 self::getTitle($paymentProcessor),

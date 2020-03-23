@@ -9,19 +9,7 @@ use CRM_Stripe_ExtensionUtil as E;
  * Class CRM_Core_Payment_Stripe
  */
 class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
-
   use CRM_Core_Payment_MJWTrait;
-
-  /**
-   * @var string
-   */
-  const API_VERSION = '2019-12-03';
-
-  /**
-   * @var string
-   */
-  const MIN_VERSION_MJWSHARED = '0.7';
-
 
   /**
    * Mode of operation: live or test.
@@ -30,9 +18,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    */
   protected $_mode = NULL;
 
-  public static function getApiVersion() {
-    return self::API_VERSION;
-  }
   /**
    * Constructor
    *
@@ -192,7 +177,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     // Set plugin info and API credentials.
     \Stripe\Stripe::setAppInfo('CiviCRM', CRM_Utils_System::version(), CRM_Utils_System::baseURL());
     \Stripe\Stripe::setApiKey(self::getSecretKey($this->_paymentProcessor));
-    \Stripe\Stripe::setApiVersion(self::getApiVersion());
+    \Stripe\Stripe::setApiVersion(CRM_Stripe_Check::API_VERSION);
   }
 
   /**
@@ -367,6 +352,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'jsDebug' => (boolean) \Civi::settings()->get('stripe_jsdebug'),
       'paymentProcessorTypeID' => $form->_paymentProcessor['payment_processor_type_id'],
       'locale' => CRM_Core_I18n::getLocale(),
+      'apiVersion' => CRM_Stripe_Check::API_VERSION,
       'csrfToken' => class_exists('\Civi\Firewall\Firewall') ? \Civi\Firewall\Firewall::getCSRFToken() : NULL,
     ];
     \Civi::resources()->addVars(E::SHORT_NAME, $jsVars);
