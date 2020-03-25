@@ -5,7 +5,7 @@
   <description>Accept payments using https://stripe.com/</description>
   <urls>
     <url desc="Main Extension Page">https://lab.civicrm.org/extensions/stripe</url>
-    <url desc="Support">https://www.mjwconsult.co.uk/support</url>
+    <url desc="Support">https://mjw.pt/support/stripe</url>
     <url desc="Documentation">https://docs.civicrm.org/stripe/en/latest/</url>
   </urls>
   <license>AGPL-3.0</license>
@@ -13,8 +13,8 @@
     <author>Matthew Wire (MJW Consulting)</author>
     <email>mjw@mjwconsult.co.uk</email>
   </maintainer>
-  <releaseDate>2020-02-22</releaseDate>
-  <version>6.4alpha2</version>
+  <releaseDate>2020-02-25</releaseDate>
+  <version>6.4-alpha3</version>
   <develStage>alpha</develStage>
   <compatibility>
     <ver>5.19</ver>

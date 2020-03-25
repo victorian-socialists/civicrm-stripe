@@ -1,17 +1,52 @@
-## Release 6.4 (not yet released)
+## Information
 
-New Features:
+Releases use the following numbering system:
+**{major}.{minor}.{incremental}**
+
+Where:
+
+* major: Major refactoring or rewrite - make sure you read and test very carefully!
+* minor: Breaking change in some circumstances, or a new feature. Read carefully and make sure you understand the impact of the change.
+* incremental: A "safe" change / improvement. Should *always* be safe to upgrade.
+
+## Release 6.4 (not yet released) - currently 6.4-alpha3
+**This release REQUIRES that you upgrade mjwshared to 0.7-beta2 and your Stripe API version must be 2019-12-03 or newer.**
+
+#### New Features:
+
 * The Stripe "element" now follows the current CMS/CiviCRM locale.
-* Add jquery form event 'crmBillingFormReloadComplete' and document jquery events.
-* Add jquery form event 'crmBillingFormNotValid' so 3rd-party integrations can re-enable custom submit buttons etc.
-* Add support for sweetalert library on form validation errors so we popup nice messages when you are missing required fields and for card errors and you click submit.
-* Make sure we don't submit if we have a reCaptcha and it is not valid.
+* Add jquery form events:
+  * 'crmBillingFormReloadComplete' and document jquery events.
+  * 'crmBillingFormNotValid' so 3rd-party integrations can re-enable custom submit buttons etc.
+      Add custom property on billing form to allow for custom validations
 
-Behind the scenes:
+* Add support for sweetalert library on form validation errors so we popup nice messages when you are missing required fields and for card errors and you click submit.
+* Make sure we don't submit the form if we have a reCaptcha and it is not valid.
+* Add setting to disable billing address fields.
+* Major improvements to form validation before submission - this significantly reduces the number of payments that are authorised but not captured.
+* Add a minimum API version so we don't have problems every time Stripe release a new API version.
+* Change style of card element
+
+#### Bugfixes:
+
+* Make sure we generate backend contact links for customer metadata (previously they would sometimes get generated as frontend links).
+* If Stripe is not using the same currency as the payment was made we need to convert the fees/net amounts back to the CiviCRM currency.
+* Fix missing receipts for recurring subscription payment [#122](https://lab.civicrm.org/extensions/stripe/issues/122).
+
+#### Behind the scenes:
+
 * Further tweaks to get tests working
 * Initial steps to modernize the testing infrastructure.
-* Add some docblocks
-* Switch to event.code from deprecated event.keyCode
+* Add some docblocks to the code.
+* Switch to event.code from deprecated event.keyCode.
+
+##### Client side (javascript):
+
+* Add support for a function getTotalAmount that could be used to retrieve amount from form if defined.
+* Restrict use of amount when creating paymentIntents.
+* Fix issues with stripe js on thankyou pages.
+* Call IPN->main() from inside a try catch to allow loops [!94](https://lab.civicrm.org/extensions/stripe/-/merge_requests/94)
+* Use minifier extension to minify js/css assets (much easier for development as we don't ship minified files anymore).
 
 ## Release 6.3.2 - Security Release
 If you are using Stripe on public forms (without authentication) it is **strongly** recommended that you upgrade and consider installing the new **firewall** extension.
