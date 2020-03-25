@@ -85,21 +85,21 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
     if (!empty($this->_contactID)) {
       return;
     }
-    $results = civicrm_api3('Contact', 'create', array(
+    $results = civicrm_api3('Contact', 'create', [
       'contact_type' => 'Individual',
       'first_name' => 'Jose',
       'last_name' => 'Lopez'
-    ));;
+    ]);;
     $this->_contactID = $results['id'];
     $this->contact = (Object) array_pop($results['values']);
 
     // Now we have to add an email address.
     $email = 'susie@example.org';
-    civicrm_api3('email', 'create', array(
+    civicrm_api3('email', 'create', [
       'contact_id' => $this->_contactID,
       'email' => $email,
       'location_type_id' => 1
-    ));
+    ]);
     $this->contact->email = $email;
   }
 
@@ -107,7 +107,7 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
    * Create a stripe payment processor.
    *
    */
-  function createPaymentProcessor($params = array()) {
+  function createPaymentProcessor($params = []) {
     $result = civicrm_api3('Stripe', 'setuptest', $params);
     $processor = array_pop($result['values']);
     $this->_sk = $processor['user_name'];
@@ -120,8 +120,8 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
    * Create a stripe contribution page.
    *
    */
-  function createContributionPage($params = array()) {
-    $params = array_merge(array(
+  function createContributionPage($params = []) {
+    $params = array_merge([
       'title' => "Test Contribution Page",
       'financial_type_id' => $this->_financialTypeID,
       'currency' => 'USD',
@@ -130,7 +130,7 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
       'receipt_from_email' => 'gaia@the.cosmos',
       'receipt_from_name' => 'Pachamama',
       'is_email_receipt' => 0,
-      ), $params);
+    ], $params);
     $result = civicrm_api3('ContributionPage', 'create', $params);
     $this->assertEquals(0, $result['is_error']);
     $this->_contributionPageID = $result['id'];
@@ -139,29 +139,57 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
   /**
    * Submit to stripe
    */
-  public function doPayment($params = array()) {
+  public function doPayment($params = []) {
     $mode = 'test';
     $pp = $this->_paymentProcessor;
-    $stripe = new CRM_Core_Payment_Stripe($mode, $pp);
-    $params = array_merge(array(
-      'payment_processor_id' => $this->_paymentProcessorID,
-      'amount' => $this->_total,
-      'stripe_token' => array(
+
+    \Stripe\Stripe::setApiKey(CRM_Core_Payment_Stripe::getSecretKey($pp));
+
+    // Send in credit card to get payment method.
+    $paymentMethod = \Stripe\PaymentMethod::create([
+      'type' => 'card',
+      'card' => [
         'number' => $this->_cc,
-        'exp_month' => '12',
+        'exp_month' => 12,
         'exp_year' => date('Y') + 1,
         'cvc' => '123',
-        'name' => $this->contact->display_name,
-        'address_line1' => '123 4th Street',
-        'address_state' => 'NY',
-        'address_zip' => '12345',
-      ),
+      ],
+    ]);
+
+    $paymentIntentID = NULL;
+    $paymentMethodID = NULL;
+
+    if (!array_key_exists('is_recur', $params)) {
+      // Send in payment method to get payment intent.
+      $params = [
+        'payment_method_id' => $paymentMethod->id,
+        'amount' => $this->_total,
+        'payment_processor_id' => $pp['id'],
+      ];
+      $result = civicrm_api3('StripePaymentintent', 'process', $params);
+
+      $paymentIntentID = $result['values']['paymentIntent']['id'];
+    }
+    else {
+      $paymentMethodID = $paymentMethod->id;
+    }
+
+    $stripe = new CRM_Core_Payment_Stripe($mode, $pp);
+    $params = array_merge([
+      'payment_processor_id' => $this->_paymentProcessorID,
+      'amount' => $this->_total,
+      'paymentIntentID' => $paymentIntentID,
+      'paymentMethodID' => $paymentMethodID,
       'email' => $this->contact->email,
       'contactID' => $this->contact->id,
       'description' => 'Test from Stripe Test Code',
       'currencyID' => 'USD',
       'invoiceID' => $this->_invoiceID,
-    ), $params);
+      // Avoid missing key php errors by adding these un-needed parameters.
+      'qfKey' => NULL,
+      'entryURL' => 'http://civicrm.localhost/civicrm/test?foo',
+      'query' => NULL,
+    ], $params);
 
     $ret = $stripe->doPayment($params);
 
@@ -184,7 +212,7 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
     $processor->setAPIParams();
 
     try {
-      $results = \Stripe\Charge::retrieve(array( "id" => $this->_trxn_id));
+      $results = \Stripe\Charge::retrieve(["id" => $this->_trxn_id]);
       $found = TRUE;
     }
     catch (Stripe_Error $e) {
@@ -197,8 +225,8 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
   /**
    * Create contribition
    */
-  public function setupTransaction($params = array()) {
-     $contribution = civicrm_api3('contribution', 'create', array_merge(array(
+  public function setupTransaction($params = []) {
+     $contribution = civicrm_api3('contribution', 'create', array_merge([
       'contact_id' => $this->_contactID,
       'contribution_status_id' => 2,
       'payment_processor_id' => $this->_paymentProcessorID,
@@ -212,7 +240,7 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
       'contribution_page_id' => $this->_contributionPageID,
       'payment_processor_id' => $this->_paymentProcessorID,
       'is_test' => 1,
-    ), $params));
+     ], $params));
     $this->assertEquals(0, $contribution['is_error']);
     $this->_contributionID = $contribution['id'];
   }
@@ -221,10 +249,10 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
     if (!empty($this->_orgID)) {
       return;
     }
-    $results = civicrm_api3('Contact', 'create', array(
+    $results = civicrm_api3('Contact', 'create', [
       'contact_type' => 'Organization',
       'organization_name' => 'My Great Group'
-    ));;
+    ]);;
     $this->_orgID = $results['id'];
   }
 
@@ -232,7 +260,7 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
     CRM_Member_PseudoConstant::flush('membershipType');
     CRM_Core_Config::clearDBCache();
     $this->createOrganization();
-    $params = array(
+    $params = [
       'name' => 'General',
       'duration_unit' => 'year',
       'duration_interval' => 1,
@@ -243,7 +271,7 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
       'is_active' => 1,
       'sequential' => 1,
       'visibility' => 'Public',
-    );
+    ];
 
     $result = civicrm_api3('MembershipType', 'Create', $params);
 
