@@ -14,7 +14,7 @@ markdown_extensions:
   - pymdownx.betterem
   - pymdownx.mark
 
-pages:
+nav:
 - About: index.md
 - Examples / Screenshots: examples.md
 - Installation: install.md
