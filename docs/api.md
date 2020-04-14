@@ -1,4 +1,5 @@
 # API
+
 This extension comes with several APIs to help you troubleshoot problems. These can be run via /civicrm/api or via drush if you are using Drupal (drush cvapi Stripe.XXX).
 
 The api commands are:
@@ -27,6 +28,7 @@ The api commands are:
 * `StripeCustomer.updatestripemetadata` - Used to update stripe customers that were created using an older version of the extension (adds name to description and contact_id as a metadata field).
 
 ## StripeSubscription
+
 * `StripeSubscription.updatetransactionids` - Used to migrate civicrm_stripe_subscriptions to use recurring contributions directly.
 * `StripeSubscription.copytrxnidtoprocessorid` - Used to copy trxn_id to processor_id in civicrm_contribution_recur table so we can use cancelSubscription. Hopefully this won't be needed in future versions of CiviCRM if we can pass more sensible values to the cancelSubscription function.
 * `StripeSubscription.import` - Use to import subscriptions into CiviCRM that are in Stripe but not CiviCRM.
@@ -46,3 +48,27 @@ It's not advised that you use this API for anything else.
   Parameters:
   * delete_old: Delete old records from database. Specify 0 to disable. Default is "-3 month"
   * cancel_incomplete: Cancel incomplete paymentIntents in your stripe account. Specify 0 to disable. Default is "-1 hour"
+
+## Stripe Import
+
+This API import all customers and later the subcriptions from this method(and the contributions associated).
+
+* `Stripe.importsubscriptions`
+  * Parameters:
+    * `limit`: Numer of elements to import, customers/subscriptors.
+    * `ppid` : Use the given Payment Processor ID.
+    * `starting_after` : Not required, begin after the last subscriber.
+  * Example
+    * `drush cvapi Stripe.importsubscriptions ppid=6 limit=1 starting_after=sub_DDRzfRsxxxx`
+  * Doc
+    * [Stripe doc](https://stripe.com/docs/api/subscriptions/list)
+
+* `Stripe.importcustomers`
+  * Parameters:
+    * `limit`: Numer of elements to import, customers/subscriptors.
+    * `ppid` : Use the given Payment Processor ID.
+    * `starting_after` : Not required, begin after the last customer.
+  * Example
+    * `drush cvapi Stripe.importcustomers ppid=6 limit=1 starting_after=cus_GiMd3xxxx`
+  * Doc
+    * [Stripe doc](https://stripe.com/docs/api/customers/list)

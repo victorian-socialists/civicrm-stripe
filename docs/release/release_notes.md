@@ -50,6 +50,7 @@ Where:
 * Use minifier extension to minify js/css assets (much easier for development as we don't ship minified files anymore).
 
 ## Release 6.3.2 - Security Release
+
 If you are using Stripe on public forms (without authentication) it is **strongly** recommended that you upgrade and consider installing the new **firewall** extension.
 
 Increasingly spammers are finding CiviCRM sites and spamming the linked Stripe account with 1000s of attempted payments
@@ -268,17 +269,21 @@ There are no database changes in this release but you should update your Stripe 
 * Use the parameter on the recurring contribution to decide whether to send out email receipts.
 
 ## Release 5.2
+
 *This release introduces a number of new features, standardises the behaviour of recurring contributions/memberships to match standard CiviCRM functionality and does a major cleanup of the backend code to improve stability and allow for new features.*
 
 ### Highlights:
+
 * Support Cancel Subscription from CiviCRM and from Stripe.
 
 ### Breaking changes:
+
 * The extension now uses the standard CiviCRM Contribution.completetransaction and Contribution.repeattransaction API to handle creation/update of recurring contributions. This means that automatic membership renewal etc. is handled in the standard CiviCRM way instead of using custom code in the Stripe extension. The behaviour *should* be the same but some edge-cases may be fixed while others may appear. Any bugs in this area will now need to be fixed in CiviCRM core - if you want to help with that see https://github.com/civicrm/civicrm-core/pull/11556.
 * When recurring contributions were updated by Stripe, they were marked cancelled and a new one created in CiviCRM. This was non-standard behaviour and causes issues with CiviCRM core functionality for membership renewal etc. This has now been changed so only one recurring contribution per subscription will ever exist, which will be updated as necessary during it's lifecycle.
 * Different payment amounts are now supported for each contribution in a recurring contribution. Previously they were explicitly rejected by the extension.
 
 ### Changes:
+
 * Add http response codes for webhook (invalid parameters now returns 400 Bad Request).
 * Major refactor of webhook / events handling (fixes multiple issues, now tested and working on Joomla / Wordpress / Drupal 7).
 * Update to latest version of stripe-php library.

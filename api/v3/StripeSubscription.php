@@ -166,9 +166,6 @@ function civicrm_api3_stripe_subscription_import($params) {
   ];
 
   $customer = civicrm_api3('StripeCustomer', 'get', $customerParams);
-  if (empty($customer['count'])) {
-    civicrm_api3('StripeCustomer', 'create', $customerParams);
-  }
 
   // Create the recur record in CiviCRM
   $contributionRecurParams = [
@@ -198,7 +195,7 @@ function civicrm_api3_stripe_subscription_import($params) {
   // Get the invoices for the subscription
   $invoiceParams = [
     'customer' => CRM_Stripe_Api::getObjectParam('customer_id', $stripeSubscription),
-    'limit' => 10,
+    'limit' => 100,
   ];
   $stripeInvoices = \Stripe\Invoice::all($invoiceParams);
   foreach ($stripeInvoices->data as $stripeInvoice) {
@@ -238,9 +235,8 @@ function civicrm_api3_stripe_subscription_import($params) {
       elseif ($params['contribution_id']) {
         $contributionParams['id'] = $params['contribution_id'];
       }
-
       $contribution = civicrm_api3('Contribution', 'create', $contributionParams);
-      break;
+
     }
 
   }
