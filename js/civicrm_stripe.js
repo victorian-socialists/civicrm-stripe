@@ -628,11 +628,14 @@ CRM.$(function($) {
       if ($('input[name="auto_renew"]').prop('checked')) {
         isRecur = true;
       }
-      else if (document.getElementById('auto_renew').type == 'hidden') {
-        isRecur = (document.getElementById('auto_renew').value == 1);
+      else if ($('input[name="auto_renew"]').attr('type') == 'hidden') {
+        // If the auto_renew field exists as a hidden field, then we force a
+        // recurring contribution (the value isn't useful since it depends on
+        // the locale - e.g.  "Please renew my membership")
+        isRecur = true;;
       }
       else {
-        isRecur = Boolean(document.getElementById('auto_renew').checked);
+        isRecur = Boolean($('input[name="auto_renew"]').checked);
       }
     }
     debugging('isRecur is ' + isRecur);
