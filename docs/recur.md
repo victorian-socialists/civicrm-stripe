@@ -27,3 +27,15 @@ You can cancel a recurring contribution from the Stripe Dashboard or from within
 1. Stripe.com will cancel the subscription, send a webhook to your site and the recurring contribution will be marked as "Cancelled" in CiviCRM.
 
 ![Cancel Subscription in CiviCRM](/images/backend_cancelrecur.png)
+
+## Recurring statuses
+
+Recurring contributions start in the status "Pending".
+
+The Stripe subscription status is mapped to the recurring contribution status as follows:
+
+STATUS_INCOMPLETE => Pending
+STATUS_ACTIVE => In Progress
+STATUS_TRIALING => In Progress
+STATUS_PAST_DUE => Overdue
+STATUS_CANCELED / STATUS_UNPAID / STATUS_INCOMPLETE_EXPIRED => Cancelled

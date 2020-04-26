@@ -130,14 +130,22 @@ class CRM_Stripe_Api {
 
           case 'status_id':
             switch ($stripeObject->status) {
+              case \Stripe\Subscription::STATUS_INCOMPLETE:
+                return CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending');
+
               case \Stripe\Subscription::STATUS_ACTIVE:
+              case \Stripe\Subscription::STATUS_TRIALING:
                 return CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'In Progress');
-              case \Stripe\Subscription::STATUS_CANCELED:
-                return CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Cancelled');
+
               case \Stripe\Subscription::STATUS_PAST_DUE:
                 return CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Overdue');
+
+              case \Stripe\Subscription::STATUS_CANCELED:
+              case \Stripe\Subscription::STATUS_UNPAID:
+              case \Stripe\Subscription::STATUS_INCOMPLETE_EXPIRED:
               default:
-                return NULL;
+                return CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Cancelled');
+
             }
 
           case 'customer_id':
