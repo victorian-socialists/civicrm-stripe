@@ -606,7 +606,9 @@ CRM.$(function($) {
     var isRecur = false;
     // Auto-renew contributions for CiviCRM Webforms.
     if (getIsDrupalWebform()) {
-      if($('input[id$="contribution-installments"]').length !== 0 && $('input[id$="contribution-installments"]').val() > 1 ) {
+      if (($('input[data-civicrm-field-key$="contribution_installments"]').length !== 0 && $('input[data-civicrm-field-key$="contribution_installments"]').val() > 1) ||
+          ($('input[data-civicrm-field-key$="contribution_frequency_interval"]').length !== 0 && $('input[data-civicrm-field-key$="contribution_frequency_interval"]').val() > 0)
+      ) {
         isRecur = true;
       }
     }
