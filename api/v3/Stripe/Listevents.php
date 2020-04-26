@@ -1,6 +1,12 @@
 <?php
-/**
- * https://civicrm.org/licensing
+/*
+ +--------------------------------------------------------------------+
+ | Copyright CiviCRM LLC. All rights reserved.                        |
+ |                                                                    |
+ | This work is published under the GNU AGPLv3 license with some      |
+ | permitted exceptions and without any warranty. For full license    |
+ | and copyright information, see https://civicrm.org/licensing       |
+ +--------------------------------------------------------------------+
  */
 
 /**
@@ -14,8 +20,6 @@
  * Stripe.ListEvents API specification
  *
  * @param array $spec description of fields supported by this API call
- *
- * @return void
  */
 function _civicrm_api3_stripe_ListEvents_spec(&$spec) {
   $spec['ppid']['title'] = ts("Use the given Payment Processor ID");

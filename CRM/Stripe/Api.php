@@ -1,6 +1,12 @@
 <?php
-/**
- * https://civicrm.org/licensing
+/*
+ +--------------------------------------------------------------------+
+ | Copyright CiviCRM LLC. All rights reserved.                        |
+ |                                                                    |
+ | This work is published under the GNU AGPLv3 license with some      |
+ | permitted exceptions and without any warranty. For full license    |
+ | and copyright information, see https://civicrm.org/licensing       |
+ +--------------------------------------------------------------------+
  */
 
 class CRM_Stripe_Api {
@@ -152,6 +158,12 @@ class CRM_Stripe_Api {
     return $stripeTimestamp ? date('YmdHis', $stripeTimestamp) : NULL;
   }
 
+  /**
+   * @param string $name
+   * @param \Stripe\StripeObject $stripeObject
+   *
+   * @return string|null
+   */
   public static function getParam($name, $stripeObject) {
     // Common parameters
     switch ($name) {
@@ -172,5 +184,4 @@ class CRM_Stripe_Api {
     }
     return NULL;
   }
-
 }

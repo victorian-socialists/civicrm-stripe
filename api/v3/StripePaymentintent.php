@@ -1,17 +1,13 @@
 <?php
-use CRM_Stripe_ExtensionUtil as E;
-
-/**
- * StripePaymentintent.create API specification (optional)
- * This is used for documentation and validation.
- *
- * @param array $spec description of fields supported by this API call
- * @return void
- * @see http://wiki.civicrm.org/confluence/display/CRMDOC/API+Architecture+Standards
+/*
+ +--------------------------------------------------------------------+
+ | Copyright CiviCRM LLC. All rights reserved.                        |
+ |                                                                    |
+ | This work is published under the GNU AGPLv3 license with some      |
+ | permitted exceptions and without any warranty. For full license    |
+ | and copyright information, see https://civicrm.org/licensing       |
+ +--------------------------------------------------------------------+
  */
-function _civicrm_api3_stripe_paymentintent_create_spec(&$spec) {
-  // $spec['some_parameter']['api.required'] = 1;
-}
 
 /**
  * StripePaymentintent.create API
@@ -28,8 +24,11 @@ function civicrm_api3_stripe_paymentintent_create($params) {
  * StripePaymentintent.delete API
  *
  * @param array $params
+ *
  * @return array API result descriptor
- * @throws API_Exception
+ * @throws \API_Exception
+ * @throws \CiviCRM_API3_Exception
+ * @throws \Civi\API\Exception\UnauthorizedException
  */
 function civicrm_api3_stripe_paymentintent_delete($params) {
   return _civicrm_api3_basic_delete(_civicrm_api3_get_BAO(__FUNCTION__), $params);
@@ -39,8 +38,8 @@ function civicrm_api3_stripe_paymentintent_delete($params) {
  * StripePaymentintent.get API
  *
  * @param array $params
+ *
  * @return array API result descriptor
- * @throws API_Exception
  */
 function civicrm_api3_stripe_paymentintent_get($params) {
   return _civicrm_api3_basic_get(_civicrm_api3_get_BAO(__FUNCTION__), $params);

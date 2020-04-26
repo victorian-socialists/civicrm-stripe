@@ -1,4 +1,14 @@
 <?php
+/*
+ +--------------------------------------------------------------------+
+ | Copyright CiviCRM LLC. All rights reserved.                        |
+ |                                                                    |
+ | This work is published under the GNU AGPLv3 license with some      |
+ | permitted exceptions and without any warranty. For full license    |
+ | and copyright information, see https://civicrm.org/licensing       |
+ +--------------------------------------------------------------------+
+ */
+
 /**
  * This job performs various housekeeping actions related to the Stripe payment processor
  *
@@ -54,8 +64,6 @@ function civicrm_api3_job_process_stripe($params) {
  * Action Payment.
  *
  * @param array $params
- *
- * @return array
  */
 function _civicrm_api3_job_process_stripe_spec(&$params) {
   $params['delete_old']['api.default'] = '-3 month';

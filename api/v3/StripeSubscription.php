@@ -1,6 +1,12 @@
 <?php
-/**
- * https://civicrm.org/licensing
+/*
+ +--------------------------------------------------------------------+
+ | Copyright CiviCRM LLC. All rights reserved.                        |
+ |                                                                    |
+ | This work is published under the GNU AGPLv3 license with some      |
+ | permitted exceptions and without any warranty. For full license    |
+ | and copyright information, see https://civicrm.org/licensing       |
+ +--------------------------------------------------------------------+
  */
 
 /**
@@ -12,8 +18,6 @@
  * StripeSubscription.Get API specification
  *
  * @param array $spec description of fields supported by this API call
- * @return void
- * @see http://wiki.civicrm.org/confluence/display/CRMDOC/API+Architecture+Standards
  */
 function _civicrm_api3_stripe_subscription_get_spec(&$spec) {
   $spec['subscription_id']['title'] = ts("Stripe Subscription ID");
@@ -35,9 +39,9 @@ function _civicrm_api3_stripe_subscription_get_spec(&$spec) {
  *  This api will get entries from the civicrm_stripe_subscriptions table
  *
  * @param array $params
- * @see civicrm_api3_create_success
  *
  * @return array
+ * @throws \CiviCRM_API3_Exception
  */
 function civicrm_api3_stripe_subscription_get($params) {
   foreach ($params as $key => $value) {
@@ -61,7 +65,6 @@ function civicrm_api3_stripe_subscription_get($params) {
     }
   }
 
-
   $query = "SELECT * FROM civicrm_stripe_subscriptions ";
   if (count($where)) {
     $whereClause = implode(' AND ', $where);
@@ -82,6 +85,10 @@ function civicrm_api3_stripe_subscription_get($params) {
   return civicrm_api3_create_success($results);
 }
 
+/**
+ * @return array
+ * @throws \CiviCRM_API3_Exception
+ */
 function civicrm_api3_stripe_subscription_updatetransactionids() {
   if (!CRM_Core_DAO::checkTableExists('civicrm_stripe_subscriptions')) {
     throw new CiviCRM_API3_Exception('Table civicrm_stripe_subscriptions is not used in Stripe >=5.2 and does not exist on your install. This API will be removed in a future release.');
@@ -114,6 +121,7 @@ function civicrm_api3_stripe_subscription_updatetransactionids() {
  * It is not ideal as processor_id is not guaranteed to be unique in the CiviCRM database (trxn_id is unique).
  *
  * @return array
+ * @throws \CiviCRM_API3_Exception
  */
 function civicrm_api3_stripe_subscription_copytrxnidtoprocessorid() {
   $sql = "SELECT cr.trxn_id, cr.processor_id, cr.payment_processor_id, cpp.class_name FROM civicrm_contribution_recur cr
@@ -236,9 +244,7 @@ function civicrm_api3_stripe_subscription_import($params) {
         $contributionParams['id'] = $params['contribution_id'];
       }
       $contribution = civicrm_api3('Contribution', 'create', $contributionParams);
-
     }
-
   }
 
   // Link to membership record
@@ -279,6 +285,9 @@ function civicrm_api3_stripe_subscription_import($params) {
   return civicrm_api3_create_success($results, $params, 'StripeSubscription', 'import');
 }
 
+/**
+ * @param array $spec
+ */
 function _civicrm_api3_stripe_subscription_import_spec(&$spec) {
   $spec['subscription_id']['title'] = ts("Stripe Subscription ID");
   $spec['subscription_id']['type'] = CRM_Utils_Type::T_STRING;
@@ -315,4 +324,3 @@ function _civicrm_api3_stripe_subscription_import_spec(&$spec) {
     'type' => CRM_Utils_Type::T_STRING,
   ];
 }
-

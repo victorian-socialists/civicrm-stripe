@@ -1,6 +1,12 @@
 <?php
-/**
- * https://civicrm.org/licensing
+/*
+ +--------------------------------------------------------------------+
+ | Copyright CiviCRM LLC. All rights reserved.                        |
+ |                                                                    |
+ | This work is published under the GNU AGPLv3 license with some      |
+ | permitted exceptions and without any warranty. For full license    |
+ | and copyright information, see https://civicrm.org/licensing       |
+ +--------------------------------------------------------------------+
  */
 
 use CRM_Stripe_ExtensionUtil as E;
@@ -205,8 +211,8 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
     }
     else {
       $this->ctx->log->info('Applying civicrm_stripe update 5005.  Adding contribution_recur_id to civicrm_stripe_subscriptions table.');
-      CRM_Core_DAO::executeQuery('ALTER TABLE civicrm_stripe_subscriptions 
-       ADD COLUMN `contribution_recur_id` int(10) UNSIGNED DEFAULT NULL 
+      CRM_Core_DAO::executeQuery('ALTER TABLE civicrm_stripe_subscriptions
+       ADD COLUMN `contribution_recur_id` int(10) UNSIGNED DEFAULT NULL
        COMMENT "FK ID from civicrm_contribution_recur" AFTER `customer_id`');
       CRM_Core_DAO::executeQuery('ALTER TABLE `civicrm_stripe_subscriptions` ADD INDEX(`contribution_recur_id`);');
       CRM_Core_DAO::executeQuery('ALTER TABLE `civicrm_stripe_subscriptions` ADD CONSTRAINT `FK_civicrm_stripe_contribution_recur_id` FOREIGN KEY (`contribution_recur_id`) REFERENCES `civicrm_contribution_recur`(`id`) ON DELETE SET NULL ON UPDATE RESTRICT;');
@@ -369,9 +375,9 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
   public function upgrade_5010() {
     $this->ctx->log->info('Applying Stripe update 5010.  Adding contact_id to civicrm_stripe_customers.');
     if (!CRM_Core_BAO_SchemaHandler::checkIfFieldExists('civicrm_stripe_customers', 'contact_id', FALSE)) {
-      CRM_Core_DAO::executeQuery('ALTER TABLE `civicrm_stripe_customers` 
+      CRM_Core_DAO::executeQuery('ALTER TABLE `civicrm_stripe_customers`
        ADD COLUMN `contact_id` int(10) UNSIGNED DEFAULT NULL COMMENT "FK ID from civicrm_contact"');
-      CRM_Core_DAO::executeQuery('ALTER TABLE `civicrm_stripe_customers` 
+      CRM_Core_DAO::executeQuery('ALTER TABLE `civicrm_stripe_customers`
        ADD CONSTRAINT `FK_civicrm_stripe_customers_contact_id` FOREIGN KEY (`contact_id`) REFERENCES `civicrm_contact` (`id`) ON DELETE CASCADE;');
     }
 

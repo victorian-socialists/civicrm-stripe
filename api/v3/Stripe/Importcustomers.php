@@ -1,4 +1,13 @@
 <?php
+/*
+ +--------------------------------------------------------------------+
+ | Copyright CiviCRM LLC. All rights reserved.                        |
+ |                                                                    |
+ | This work is published under the GNU AGPLv3 license with some      |
+ | permitted exceptions and without any warranty. For full license    |
+ | and copyright information, see https://civicrm.org/licensing       |
+ +--------------------------------------------------------------------+
+ */
 
 use CRM_Stripe_ExtensionUtil as E;
 
@@ -6,8 +15,6 @@ use CRM_Stripe_ExtensionUtil as E;
  * Stripe.Importcustomers
  *
  * @param array $spec description of fields supported by this API call
- *
- * @return void
  */
 function _civicrm_api3_stripe_importcustomers_spec(&$spec) {
   $spec['ppid']['title'] = ts("Use the given Payment Processor ID");
@@ -28,7 +35,10 @@ function _civicrm_api3_stripe_importcustomers_spec(&$spec) {
  * Stripe.Importcustomers API
  *
  * @param array $params
- * @return void
+ *
+ * @return array
+ * @throws \CiviCRM_API3_Exception
+ * @throws \Stripe\Error\Api
  */
 function civicrm_api3_stripe_importcustomers($params) {
   $ppid = $params['ppid'];
