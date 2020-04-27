@@ -57,7 +57,7 @@ The following metadata is created for a Stripe Customer:
 
 ![Stripe Customer](images/stripedashboard_customerdetail.png)
 
-In addition, if you have enabled receipts (see [Setup](setup)) the email address will be sent to Stripe and used to send a receipt to the contact.
+In addition, if you have enabled receipts (see [Setup](setup.md)) the email address will be sent to Stripe and used to send a receipt to the contact.
 
 ## Postcode and Billing Address
 

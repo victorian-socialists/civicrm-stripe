@@ -1,5 +1,5 @@
 # Setup and configuration
-Please make sure you have read and followed the instructions under [Install](install) first.
+Please make sure you have read and followed the instructions under [Install](install.md) first.
 
 ## Receipts
 
