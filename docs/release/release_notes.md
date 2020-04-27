@@ -9,8 +9,8 @@ Where:
 * minor: Breaking change in some circumstances, or a new feature. Read carefully and make sure you understand the impact of the change.
 * incremental: A "safe" change / improvement. Should *always* be safe to upgrade.
 
-## Release 6.4 (not yet released) - currently 6.4-alpha3
-**This release REQUIRES that you upgrade mjwshared to 0.7-beta2 and your Stripe API version must be 2019-12-03 or newer.**
+## Release 6.4 (not yet released) - currently 6.4-beta1
+**This release REQUIRES that you upgrade mjwshared to 0.7-beta3 and your Stripe API version must be 2019-12-03 or newer.**
 
 #### New Features:
 
