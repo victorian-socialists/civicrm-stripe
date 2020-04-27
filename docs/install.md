@@ -22,7 +22,7 @@ Otherwise, download and install as you would for any other CiviCRM extension.
 More info on how to change: [Stripe: Upgrading your API version](https://stripe.com/docs/upgrades#how-can-i-upgrade-my-api).
 
 Go to **Stripe Dashboard > Developers** to view and upgrade your API version:
-![Stripe Dashboard API Version](/images/stripedashboard_apiversion.png)
+![Stripe Dashboard API Version](images/stripedashboard_apiversion.png)
 
 The Webhook API versions will be configured / updated automatically by this Stripe extension but if you didn't create them using the automated method you may need to delete them and allow the extension to re-create them.
 
@@ -47,6 +47,6 @@ Application Fees: *Write*
 SKUs: *Write*
 **Webhook resources**
 Webhook Endpoints: *Write* (required for the webhook system check/auto-create webhooks)
-![Example Stripe API Permissions](/images/example_api_perms.png)
+![Example Stripe API Permissions](images/example_api_perms.png)
 
 

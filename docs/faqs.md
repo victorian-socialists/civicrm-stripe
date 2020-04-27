@@ -39,7 +39,7 @@ When we create a contribution in CiviCRM (Stripe Invoice/Charge) we add some met
 * The statement descriptor contains a parsable `contactID-contributionID` and then part of the description.
 * The description contains the description, a parsable `contactID-contributionID` and then the CiviCRM (unique) invoice ID.
 
-![Stripe Payment](/images/stripedashboard_paymentdetail.png)
+![Stripe Payment](images/stripedashboard_paymentdetail.png)
 
 ## Customer Metadata
 
@@ -55,9 +55,9 @@ The following metadata is created for a Stripe Customer:
 * Link to CiviCRM contact record.
 * CiviCRM version info (eg. `5.18.3 6.2`).
 
-![Stripe Customer](/images/stripedashboard_customerdetail.png)
+![Stripe Customer](images/stripedashboard_customerdetail.png)
 
-In addition, if you have enabled receipts (see [Setup](/setup)) the email address will be sent to Stripe and used to send a receipt to the contact.
+In addition, if you have enabled receipts (see [Setup](setup)) the email address will be sent to Stripe and used to send a receipt to the contact.
 
 ## Postcode and Billing Address
 

@@ -33,7 +33,7 @@ The api commands are:
 * `StripeSubscription.copytrxnidtoprocessorid` - Used to copy trxn_id to processor_id in civicrm_contribution_recur table so we can use cancelSubscription. Hopefully this won't be needed in future versions of CiviCRM if we can pass more sensible values to the cancelSubscription function.
 * `StripeSubscription.import` - Use to import subscriptions into CiviCRM that are in Stripe but not CiviCRM.
 Accepts various parameters but requires: Payment Processor ID, Stripe subscription ID and CiviCRM contact ID.
-![StripeSubscription.import](/images/StripeSubscription.import.png)
+![StripeSubscription.import](images/StripeSubscription.import.png)
 
 ## StripePaymentintents
 
