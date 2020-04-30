@@ -192,4 +192,20 @@ class CRM_Stripe_Api {
     }
     return NULL;
   }
+   
+  /**
+   * Convert amount to a new currency
+   * 
+   * @param type $amount
+   * @param type $exchangeRate
+   * @param type $currency
+   * @return type
+   */
+  public static function currencyConversion($amount, $exchangeRate, $currency) {
+    $amount = ($amount / $exchangeRate) / 100;
+    // We must round to currency precision otherwise payments may fail because Contribute BAO saves but then
+    // can't retrieve because it tries to use the full unrounded number when it only got saved with 2dp.
+    $amount = round($amount, CRM_Utils_Money::getCurrencyPrecision($currency));
+    return $amount;
+  }
 }

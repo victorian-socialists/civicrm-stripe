@@ -725,14 +725,11 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
           }
           if (($stripeCharge['currency'] !== $stripeBalanceTransaction['currency'])
               && (!empty($stripeBalanceTransaction['exchange_rate']))) {
-            $newParams['fee_amount'] = ($stripeBalanceTransaction->fee / $stripeBalanceTransaction['exchange_rate']) / 100;
+            $newParams['fee_amount'] = CRM_Stripe_Api::currencyConversion($stripeBalanceTransaction->fee, $stripeBalanceTransaction['exchange_rate'], $stripeCharge['currency']);
           }
           else {
             $newParams['fee_amount'] = $stripeBalanceTransaction->fee / 100;
           }
-          // We must round to currency precision otherwise payments may fail because Contribute BAO saves but then
-          // can't retrieve because it tries to use the full unrounded number when it only got saved with 2dp.
-          $newParams['fee_amount'] = round($newParams['fee_amount'], CRM_Utils_Money::getCurrencyPrecision($stripeCharge['currency']));
           // Success!
           // Set the desired contribution status which will be set later (do not set on the contribution here!)
           $params['contribution_status_id'] = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Completed');

@@ -442,9 +442,15 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
     $this->fee = 0.0;
     if ($balanceTransactionID) {
       try {
+        $currency = $this->retrieve('currency', 'String', FALSE);
         $balanceTransaction = \Stripe\BalanceTransaction::retrieve($balanceTransactionID);
-        $this->amount = $balanceTransaction->amount / 100;
-        $this->fee = $balanceTransaction->fee / 100;
+        if ($currency !== $balanceTransaction->currency && !empty($balanceTransaction->exchange_rate)) {
+          $this->amount = CRM_Stripe_Api::currencyConversion($balanceTransaction->amount, $balanceTransaction->exchange_rate, $currency);
+          $this->fee = CRM_Stripe_Api::currencyConversion($balanceTransaction->fee, $balanceTransaction->exchange_rate, $currency);
+        } else {
+          $this->amount = $balanceTransaction->amount / 100;
+          $this->fee = $balanceTransaction->fee / 100;
+        }
       }
       catch(Exception $e) {
         $this->exception('Error retrieving balance transaction. ' . $e->getMessage());
