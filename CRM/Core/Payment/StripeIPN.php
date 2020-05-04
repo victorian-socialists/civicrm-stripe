@@ -448,8 +448,10 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           $this->amount = CRM_Stripe_Api::currencyConversion($balanceTransaction->amount, $balanceTransaction->exchange_rate, $currency);
           $this->fee = CRM_Stripe_Api::currencyConversion($balanceTransaction->fee, $balanceTransaction->exchange_rate, $currency);
         } else {
-          $this->amount = $balanceTransaction->amount / 100;
-          $this->fee = $balanceTransaction->fee / 100;
+          // We must round to currency precision otherwise payments may fail because Contribute BAO saves but then
+          // can't retrieve because it tries to use the full unrounded number when it only got saved with 2dp.
+          $this->amount = round($balanceTransaction->amount / 100, CRM_Utils_Money::getCurrencyPrecision($currency));
+          $this->fee = round($balanceTransaction->fee / 100, CRM_Utils_Money::getCurrencyPrecision($currency));
         }
       }
       catch(Exception $e) {

@@ -46,6 +46,9 @@ class CRM_Stripe_Api {
           case 'captured':
             return (bool) $stripeObject->captured;
 
+          case 'currency':
+            return (string) mb_strtoupper($stripeObject->currency);
+
         }
         break;
 
@@ -192,14 +195,15 @@ class CRM_Stripe_Api {
     }
     return NULL;
   }
-   
+
   /**
    * Convert amount to a new currency
-   * 
-   * @param type $amount
-   * @param type $exchangeRate
-   * @param type $currency
-   * @return type
+   *
+   * @param float $amount
+   * @param float $exchangeRate
+   * @param string $currency
+   *
+   * @return float
    */
   public static function currencyConversion($amount, $exchangeRate, $currency) {
     $amount = ($amount / $exchangeRate) / 100;

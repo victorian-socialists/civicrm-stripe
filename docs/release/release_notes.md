@@ -30,9 +30,10 @@ Where:
 #### Bugfixes:
 
 * Make sure we generate backend contact links for customer metadata (previously they would sometimes get generated as frontend links).
-* If Stripe is not using the same currency as the payment was made we need to convert the fees/net amounts back to the CiviCRM currency.
 * Fix missing receipts for recurring subscription payment [#122](https://lab.civicrm.org/extensions/stripe/issues/122).
-* Fix [#178](https://lab.civicrm.org/extensions/stripe/issues/122) recurring payments for webform_civicrm when "Interval of installments" is selected.
+* Fix [#178](https://lab.civicrm.org/extensions/stripe/issues/178) recurring payments for webform_civicrm when "Interval of installments" is selected.
+* If Stripe is not using the same currency as the payment was made we need to convert the fees/net amounts back to the CiviCRM currency.
+* Fix [#196](https://lab.civicrm.org/extensions/stripe/issues/196) Recurring contributions with incorrect amount per default currency in stripe - if Stripe uses a different currency to CiviCRM the amounts for recurring contributions were not being recorded correctly in CiviCRM.
 
 #### Behind the scenes:
 
