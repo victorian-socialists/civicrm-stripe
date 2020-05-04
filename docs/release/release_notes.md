@@ -9,7 +9,7 @@ Where:
 * minor: Breaking change in some circumstances, or a new feature. Read carefully and make sure you understand the impact of the change.
 * incremental: A "safe" change / improvement. Should *always* be safe to upgrade.
 
-## Release 6.4 (not yet released) - currently 6.4-beta1
+## Release 6.4 (not yet released) - currently 6.4-beta2
 **This release REQUIRES that you upgrade mjwshared to 0.7-beta3 and your Stripe API version must be 2019-12-03 or newer.**
 
 #### New Features:
@@ -34,6 +34,7 @@ Where:
 * Fix [#178](https://lab.civicrm.org/extensions/stripe/issues/178) recurring payments for webform_civicrm when "Interval of installments" is selected.
 * If Stripe is not using the same currency as the payment was made we need to convert the fees/net amounts back to the CiviCRM currency.
 * Fix [#196](https://lab.civicrm.org/extensions/stripe/issues/196) Recurring contributions with incorrect amount per default currency in stripe - if Stripe uses a different currency to CiviCRM the amounts for recurring contributions were not being recorded correctly in CiviCRM.
+* Fix [#189](https://lab.civicrm.org/extensions/stripe/issues/189) Error on membership contribution page with autorenew set to automatic.
 
 #### Behind the scenes:
 
