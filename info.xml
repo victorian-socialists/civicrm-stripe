@@ -6,6 +6,7 @@
   <urls>
     <url desc="Main Extension Page">https://lab.civicrm.org/extensions/stripe</url>
     <url desc="Support">https://mjw.pt/support/stripe</url>
+    <url desc="Release Notes">https://docs.civicrm.org/stripe/en/latest/releasenotes/</url>
     <url desc="Documentation">https://docs.civicrm.org/stripe/en/latest/</url>
   </urls>
   <license>AGPL-3.0</license>
@@ -13,9 +14,9 @@
     <author>Matthew Wire (MJW Consulting)</author>
     <email>mjw@mjwconsult.co.uk</email>
   </maintainer>
-  <releaseDate>2020-05-04</releaseDate>
-  <version>6.4-beta2</version>
-  <develStage>beta</develStage>
+  <releaseDate>2020-05-10</releaseDate>
+  <version>6.4</version>
+  <develStage>stable</develStage>
   <compatibility>
     <ver>5.24</ver>
   </compatibility>
