@@ -173,6 +173,8 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
       case 'invoice.payment_succeeded':
         // Successful recurring payment. Either we are completing an existing contribution or it's the next one in a subscription
         $this->setInfo();
+        // This gives us the actual amount
+        $this->amount = CRM_Stripe_Api::getObjectParam('amount', $this->_inputParameters->data->object);
         if ($this->contribution['contribution_status_id'] == $pendingStatusId) {
           $params = [
             'id' => $this->contribution['id'],
@@ -294,6 +296,8 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
       case 'charge.captured':
         // For a single contribution we have to use charge.captured because it has the customer_id.
         $this->setInfo();
+        // This gives us the actual amount
+        $this->amount = CRM_Stripe_Api::getObjectParam('amount', $this->_inputParameters->data->object);
         if ($this->contribution['contribution_status_id'] == $pendingStatusId && empty($this->contribution['contribution_recur_id'])) {
           $params = [
             'id' => $this->contribution['id'],
@@ -438,19 +442,16 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
     // Gather info about the amount and fee.
     // Get the Stripe charge object if one exists. Null charge still needs processing.
     // If the transaction is declined, there won't be a balance_transaction_id.
-    $this->amount = 0.0;
     $this->fee = 0.0;
     if ($balanceTransactionID) {
       try {
         $currency = $this->retrieve('currency', 'String', FALSE);
         $balanceTransaction = \Stripe\BalanceTransaction::retrieve($balanceTransactionID);
         if ($currency !== $balanceTransaction->currency && !empty($balanceTransaction->exchange_rate)) {
-          $this->amount = CRM_Stripe_Api::currencyConversion($balanceTransaction->amount, $balanceTransaction->exchange_rate, $currency);
           $this->fee = CRM_Stripe_Api::currencyConversion($balanceTransaction->fee, $balanceTransaction->exchange_rate, $currency);
         } else {
           // We must round to currency precision otherwise payments may fail because Contribute BAO saves but then
           // can't retrieve because it tries to use the full unrounded number when it only got saved with 2dp.
-          $this->amount = round($balanceTransaction->amount / 100, CRM_Utils_Money::getCurrencyPrecision($currency));
           $this->fee = round($balanceTransaction->fee / 100, CRM_Utils_Money::getCurrencyPrecision($currency));
         }
       }
