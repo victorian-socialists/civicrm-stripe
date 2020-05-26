@@ -422,7 +422,6 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
       try {
         // Same approach as api repeattransaction.
         $this->contribution = civicrm_api3('contribution', 'getsingle', [
-          'return' => ['id', 'contribution_status_id', 'total_amount', 'trxn_id'],
           'contribution_recur_id' => $this->contribution_recur_id,
           'contribution_test' => $this->_paymentProcessor->getIsTestMode(),
           'return' => $contributionParamsToReturn,
