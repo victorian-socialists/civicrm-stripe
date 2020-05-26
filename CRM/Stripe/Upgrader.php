@@ -260,66 +260,6 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
     return TRUE;
   }
 
-
-  /**
-   *  Method 2 for populating the contribution_recur_id column in the  civicrm_stripe_subscriptions table. Uncomment this and comment 5006.
-   *  ( A more convoluted approach that works if there HAVE been susbcription edits in the Stripe UI. )
-   * @return TRUE on success.  Please let users uncomment this as needed and increment past 5007 for the next upgrade.
-   * @throws Exception
-   */
-  /*
-    public function upgrade_5007() {
-      $config = CRM_Core_Config::singleton();
-      $dbName = DB::connect($config->dsn)->_db;
-
-      $subscriptions  = CRM_Core_DAO::executeQuery("SELECT customer_id,is_live,processor_id
-        FROM `civicrm_stripe_subscriptions`;");
-        while ( $subscriptions->fetch() ) {
-          $test_mode = (int)!$subscriptions->is_live;
-          $p = array(
-            1 => array($subscriptions->customer_id, 'String'),
-            2 => array($subscriptions->is_live, 'Integer'),
-          );
-          $customer = CRM_Core_DAO::executeQuery("SELECT email
-            FROM `civicrm_stripe_customers` WHERE id = %1 AND is_live = %2;", $p);
-          $customer->fetch();
-          //  Try the billing email first, since that's what we send to Stripe.
-          try {
-            $contact = civicrm_api3('Email', 'get', array(
-             'sequential' => 1,
-             'return' => "contact_id",
-             'is_billing' => 1,
-             'email' => $customer->email,
-             'api.ContributionRecur.get' => array('return' => "id", 'contact_id' => "\$value.contact_id", 'contribution_status_id' => "In Progress"),
-            ));
-           }
-          catch (CiviCRM_API3_Exception $e) {
-          // Uh oh, that didn't work.  Try to retrieve the recurring id using the primary email.
-            $contact = civicrm_api3('Contact', 'get', array(
-             'sequential' => 1,
-             'return' => "id",
-             'email' => $customer->email,
-             'api.ContributionRecur.get' => array('sequential' => 1, 'return' => "id", 'contact_id' => "\$values.id", 'contribution_status_id' => "In Progress"),
-             ));
-          }
-
-          if (!empty($contact['values'][0]['api.ContributionRecur.get']['values'][0]['id'])) {
-           $recur_id = $contact['values'][0]['api.ContributionRecur.get']['values'][0]['id'];
-               $p = array(
-                1 => array($recur_id, 'Integer'),
-                2 => array($subscriptions->customer_id, 'String'),
-              );
-              CRM_Core_DAO::executeQuery('UPDATE civicrm_stripe_subscriptions SET contribution_recur_id = %1 WHERE customer_id = %2;', $p);
-           } else {
-              // Crap.
-              $this->ctx->log->info('Update 5007 failed.  Consider adding recurring IDs manuallly to civicrm_stripe_subscriptions. ');
-              return;
-          }
-        }
-         return TRUE;
-    }
-  */
-
   /**
    * Add change default NOT NULL to NULL in vestigial invoice_id column in civicrm_stripe_subscriptions table if needed. (issue #192)
    *

@@ -38,6 +38,13 @@ function stripe_civicrm_install() {
 }
 
 /**
+ * Implementation of hook_civicrm_postInstall
+ */
+function stripe_civicrm_postInstall() {
+  _stripe_civix_civicrm_postInstall();
+}
+
+/**
  * Implementation of hook_civicrm_uninstall().
  */
 function stripe_civicrm_uninstall() {
