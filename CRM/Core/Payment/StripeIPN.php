@@ -34,6 +34,11 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   protected $verify_event = TRUE;
 
   /**
+   * @var \Stripe\StripeObject
+   */
+  protected $_inputParameters;
+
+  /**
    * Do we send an email receipt for each contribution?
    *
    * @var int
@@ -106,7 +111,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    * Store input array on the class.
    * We override base because our input parameter is an object
    *
-   * @param array $parameters
+   * @param \Stripe\StripeObject $parameters
    */
   public function setInputParameters($parameters) {
     // Determine the proper Stripe Processor ID so we can get the secret key
