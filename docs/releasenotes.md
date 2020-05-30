@@ -9,6 +9,13 @@ Where:
 * minor: Breaking change in some circumstances, or a new feature. Read carefully and make sure you understand the impact of the change.
 * incremental: A "safe" change / improvement. Should *always* be safe to upgrade.
 
+## Release 6.4.1 - Not yet released
+**This release REQUIRES that you upgrade mjwshared to 0.8.**
+
+* Fix [#196](https://lab.civicrm.org/extensions/stripe/issues/196): Recurring contributions with incorrect amount per default currency in stripe.
+* Fix [#198](https://lab.civicrm.org/extensions/stripe/issues/198): Trigger postInstall hook so we set the revision and don't trigger the upgrader on install.
+* Fix [#182](https://lab.civicrm.org/extensions/stripe/issues/182): Failed subscription payment, receipt sent, but contribution not updated when retried.
+
 ## Release 6.4
 **This release REQUIRES that you upgrade mjwshared to 0.7 and your Stripe API version must be 2019-12-03 or newer.**
 

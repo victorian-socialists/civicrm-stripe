@@ -25,7 +25,7 @@ class CRM_Stripe_Check {
   /**
    * @var string
    */
-  const MIN_VERSION_MJWSHARED = '0.7';
+  const MIN_VERSION_MJWSHARED = '0.8';
 
   public static function checkRequirements(&$messages) {
     $extensions = civicrm_api3('Extension', 'get', [

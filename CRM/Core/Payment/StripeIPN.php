@@ -184,8 +184,8 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           $params = [
             'id' => $this->contribution['id'],
             'trxn_date' => $this->receive_date,
-            'contribution_trxn_id' => $this->invoice_id,
-            'payment_trxn_id' => $this->charge_id,
+            'order_reference' => $this->invoice_id,
+            'trxn_id' => $this->charge_id,
             'total_amount' => $this->amount,
             'fee_amount' => $this->fee,
           ];
@@ -199,8 +199,8 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
             'contribution_recur_id' => $this->contribution_recur_id,
             'contribution_status_id' => 'Completed',
             'receive_date' => $this->receive_date,
-            'contribution_trxn_id' => $this->invoice_id,
-            'payment_trxn_id' => $this->charge_id,
+            'order_reference' => $this->invoice_id,
+            'trxn_id' => $this->charge_id,
             'total_amount' => $this->amount,
             'fee_amount' => $this->fee,
             'original_contribution_id' => $this->contribution['id'],
@@ -221,7 +221,8 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
             'id' => $this->contribution['id'],
             'receive_date' => $this->receive_date,
             'cancel_reason' => $this->retrieve('failure_message', 'String'),
-            'payment_trxn_id' => $this->charge_id,
+            'trxn_id' => $this->charge_id,
+            'order_reference' => $this->invoice_id,
           ];
           $this->updateContributionFailed($params);
         }
@@ -230,8 +231,8 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
             'contribution_recur_id' => $this->contribution_recur_id,
             'contribution_status_id' => 'Failed',
             'receive_date' => $this->receive_date,
-            'contribution_trxn_id' => $this->invoice_id,
-            'payment_trxn_id' => $this->charge_id,
+            'order_reference' => $this->invoice_id,
+            'trxn_id' => $this->charge_id,
             'total_amount' => $this->amount,
             'fee_amount' => $this->fee,
             'original_contribution_id' => $this->contribution['id'],
@@ -261,7 +262,8 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           'id' => $this->contribution['id'],
           'receive_date' => $this->receive_date,
           'cancel_reason' => $this->retrieve('failure_message', 'String'),
-          'payment_trxn_id' => $this->charge_id,
+          'trxn_id' => $this->charge_id,
+          'order_reference' => $this->invoice_id ?? $this->charge_id,
         ];
         $this->updateContributionFailed($params);
         return TRUE;
@@ -307,8 +309,8 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           $params = [
             'id' => $this->contribution['id'],
             'trxn_date' => $this->receive_date,
-            'contribution_trxn_id' => $this->invoice_id ?: $this->charge_id,
-            'payment_trxn_id' => $this->charge_id,
+            'order_reference' => $this->invoice_id ?? $this->charge_id,
+            'trxn_id' => $this->charge_id,
             'total_amount' => $this->amount,
             'fee_amount' => $this->fee,
           ];
