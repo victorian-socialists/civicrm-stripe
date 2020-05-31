@@ -688,7 +688,7 @@ CRM.$(function($) {
       $(this).attr('name', $(this).attr('name').split('[').shift());
     });
     var validator = $(form).validate();
-    validator.settings.errorClass = 'error alert-danger';
+    validator.settings.errorClass = 'crm-inline-error alert-danger';
     validator.settings.ignore = '.select2-offscreen, [readonly], :hidden:not(.crm-select2)';
     // Default email validator accepts test@example but on test@example.org is valid (https://jqueryvalidation.org/jQuery.validator.methods/)
     $.validator.methods.email = function( value, element ) {
