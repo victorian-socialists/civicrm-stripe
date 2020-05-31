@@ -210,7 +210,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   public static function parseStripeException($op, $e, $log = FALSE) {
     $body = $e->getJsonBody();
     if ($log) {
-      Civi::log()->debug("Stripe_Error {$op}: " . print_r($body, TRUE));
+      Civi::log()->error("Stripe_Error {$op}: " . print_r($body, TRUE));
     }
     $err = $body['error'];
     if (!isset($err['code'])) {
@@ -988,7 +988,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     catch (Exception $e) {
       $errorMessage = 'Could not delete Stripe subscription: ' . $e->getMessage();
       CRM_Core_Session::setStatus($errorMessage, 'Stripe', 'error');
-      Civi::log()->debug($errorMessage);
+      Civi::log()->error($errorMessage);
       return FALSE;
     }
 
