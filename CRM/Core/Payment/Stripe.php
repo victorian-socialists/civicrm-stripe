@@ -162,6 +162,19 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   }
 
   /**
+   * Does the processor support the user having a choice as to whether to cancel the recurring with the processor?
+   *
+   * If this returns TRUE then there will be an option to send a cancellation request in the cancellation form.
+   *
+   * This would normally be false for processors where CiviCRM maintains the schedule.
+   *
+   * @return bool
+   */
+  protected function supportsCancelRecurringNotifyOptional() {
+    return FALSE;
+  }
+
+  /**
    * Get the currency for the transaction.
    *
    * Handle any inconsistency about how it is passed in here.
@@ -958,6 +971,25 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   }
 
   /**
+   * @param \Civi\Payment\PropertyBag $propertyBag
+   *
+   * @return array|null[]
+   * @throws \Civi\Payment\Exception\PaymentProcessorException
+   */
+  public function doCancelRecurring(PropertyBag $propertyBag) {
+    // By default we always notify Stripe and we don't give the user the option
+    // because supportsCancelRecurringNotifyOptional() = FALSE
+    if (!$propertyBag->has('isNotifyProcessorOnCancelRecur')) {
+      // @fixme setIsNotifyProcessorOnCancelRecur was added in 5.27 - remove method_exists once minVer is 5.27
+      // If isNotifyProcessorOnCancelRecur is NOT set then we set our default
+      if (method_exists($propertyBag, 'setIsNotifyProcessorOnCancelRecur')) {
+        $propertyBag->setIsNotifyProcessorOnCancelRecur(TRUE);
+      }
+    }
+    return parent::doCancelRecurring($propertyBag);
+  }
+
+  /**
    * @param string $message
    * @param array $params
    *
@@ -1009,6 +1041,16 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     if ($ipnClass->main()) {
       http_response_code(200);
     }
+  }
+
+  public function getText($context, $params) {
+    $text = parent::getText($context, $params);
+
+    switch ($context) {
+      case 'cancelRecurDetailText':
+        $text .= ' ' . E::ts('Stripe will be automatically notified and the subscription will be cancelled.');
+    }
+    return $text;
   }
 
 }
