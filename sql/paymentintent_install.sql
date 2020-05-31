@@ -15,4 +15,4 @@ CREATE TABLE IF NOT EXISTS `civicrm_stripe_paymentintent` (
     ),
     CONSTRAINT FK_civicrm_stripe_paymentintent_payment_processor_id FOREIGN KEY (`payment_processor_id`) REFERENCES `civicrm_payment_processor`(`id`) ON DELETE SET NULL,
     CONSTRAINT FK_civicrm_stripe_paymentintent_contact_id FOREIGN KEY (`contact_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB;
