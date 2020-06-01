@@ -187,7 +187,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         $this->amount = CRM_Stripe_Api::getObjectParam('amount', $this->_inputParameters->data->object);
         if ($this->contribution['contribution_status_id'] == $pendingStatusId) {
           $params = [
-            'id' => $this->contribution['id'],
+            'contribution_id' => $this->contribution['id'],
             'trxn_date' => $this->receive_date,
             'order_reference' => $this->invoice_id,
             'trxn_id' => $this->charge_id,
@@ -202,7 +202,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           //   create a new contribution in CiviCRM
           $params = [
             'contribution_recur_id' => $this->contribution_recur_id,
-            'contribution_status_id' => 'Completed',
+            'contribution_status_id' => CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Completed'),
             'receive_date' => $this->receive_date,
             'order_reference' => $this->invoice_id,
             'trxn_id' => $this->charge_id,
@@ -234,7 +234,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         elseif ($this->contribution['trxn_id'] != $this->invoice_id) {
           $params = [
             'contribution_recur_id' => $this->contribution_recur_id,
-            'contribution_status_id' => 'Failed',
+            'contribution_status_id' => CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Failed'),
             'receive_date' => $this->receive_date,
             'order_reference' => $this->invoice_id,
             'trxn_id' => $this->charge_id,
@@ -312,7 +312,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         $this->amount = CRM_Stripe_Api::getObjectParam('amount', $this->_inputParameters->data->object);
         if ($this->contribution['contribution_status_id'] == $pendingStatusId && empty($this->contribution['contribution_recur_id'])) {
           $params = [
-            'id' => $this->contribution['id'],
+            'contribution_id' => $this->contribution['id'],
             'trxn_date' => $this->receive_date,
             'order_reference' => $this->invoice_id ?? $this->charge_id,
             'trxn_id' => $this->charge_id,

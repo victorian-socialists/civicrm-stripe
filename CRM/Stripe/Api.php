@@ -24,7 +24,7 @@ class CRM_Stripe_Api {
 
           case 'failure_message':
             return (string) $stripeObject->failure_message;
-            
+
           case 'amount':
             return (float) $stripeObject->amount / 100;
 

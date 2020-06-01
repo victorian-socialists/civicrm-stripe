@@ -80,7 +80,7 @@ class CRM_Stripe_BAO_StripePaymentintent extends CRM_Stripe_DAO_StripePaymentint
     $instance->flags = serialize($flags);
 
     $hook = empty($instance->id) ? 'create' : 'edit';
-    CRM_Utils_Hook::pre($hook, self::getEntityName(), CRM_Utils_Array::value('id', $params), $params);
+    CRM_Utils_Hook::pre($hook, self::getEntityName(), $params['id'] ?? NULL, $params);
     $instance->copyValues($params);
     $instance->save();
 
