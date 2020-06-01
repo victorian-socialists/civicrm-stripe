@@ -173,6 +173,11 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
     $this->event_type = CRM_Stripe_Api::getParam('event_type', $this->_inputParameters);
     $pendingStatusId = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending');
 
+    // Return 200 OK for any events that we don't handle
+    if (!in_array($this->event_type, CRM_Stripe_Webhook::getDefaultEnabledEvents())) {
+      return TRUE;
+    }
+
     // NOTE: If you add an event here make sure you add it to the webhook or it will never be received!
     switch($this->event_type) {
       case 'invoice.payment_succeeded':
