@@ -15,6 +15,11 @@ Where:
 * Fix [#196](https://lab.civicrm.org/extensions/stripe/issues/196): Recurring contributions with incorrect amount per default currency in stripe.
 * Fix [#198](https://lab.civicrm.org/extensions/stripe/issues/198): Trigger postInstall hook so we set the revision and don't trigger the upgrader on install.
 * Fix [#182](https://lab.civicrm.org/extensions/stripe/issues/182): Failed subscription payment, receipt sent, but contribution not updated when retried.
+* Change validator error class to match CiviCRM (use crm-inline-error instead of error css class - see https://github.com/civicrm/civicrm-core/pull/16495)
+* Don't specify charset/collation when creating tables on new installs (use the database default).
+* Return 200 OK for webhook events we don't handle (normally they won't be sent as the extension specifies what it requires but if configured manually it may receive events that we don't handle).
+* Switch to new "recommended" contribution.repeattransaction and payment.create for new IPN payments.
+* Implement new doCancelRecur functionality and hide optional notify processor on 5.27+ (this has no impact on older versions of CiviCRM).
 
 ## Release 6.4
 **This release REQUIRES that you upgrade mjwshared to 0.7 and your Stripe API version must be 2019-12-03 or newer.**
