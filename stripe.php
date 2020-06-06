@@ -162,7 +162,7 @@ function stripe_civicrm_buildForm($formName, &$form) {
           'path' => \Civi::resources()->getPath(E::LONG_NAME, 'js/civicrmStripeConfirm.js'),
           'mimetype' => 'application/javascript',
         ]
-      ));
+      ), -1000);
 
       // This is a fairly nasty way of matching and retrieving our paymentIntent as it is no longer available.
       $qfKey = CRM_Utils_Request::retrieve('qfKey', 'String');
