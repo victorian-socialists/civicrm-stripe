@@ -17,7 +17,7 @@
  * @throws API_Exception
  */
 function civicrm_api3_stripe_paymentintent_create($params) {
-  return _civicrm_api3_basic_create(_civicrm_api3_get_BAO(__FUNCTION__), $params);
+  return _civicrm_api3_basic_create('CRM_Stripe_BAO_StripePaymentintent', $params, 'StripePaymentintent');
 }
 
 /**
@@ -31,7 +31,7 @@ function civicrm_api3_stripe_paymentintent_create($params) {
  * @throws \Civi\API\Exception\UnauthorizedException
  */
 function civicrm_api3_stripe_paymentintent_delete($params) {
-  return _civicrm_api3_basic_delete(_civicrm_api3_get_BAO(__FUNCTION__), $params);
+  return _civicrm_api3_basic_delete('CRM_Stripe_BAO_StripePaymentintent', $params);
 }
 
 /**
@@ -42,5 +42,5 @@ function civicrm_api3_stripe_paymentintent_delete($params) {
  * @return array API result descriptor
  */
 function civicrm_api3_stripe_paymentintent_get($params) {
-  return _civicrm_api3_basic_get(_civicrm_api3_get_BAO(__FUNCTION__), $params);
+  return _civicrm_api3_basic_get('CRM_Stripe_BAO_StripePaymentintent', $params, TRUE, 'StripePaymentintent');
 }

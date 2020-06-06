@@ -145,7 +145,7 @@ class CRM_Stripe_Customer {
     }
     catch (Exception $e) {
       $err = CRM_Core_Payment_Stripe::parseStripeException('create_customer', $e, FALSE);
-      $errorMessage = $stripe->handleErrorNotification($err, $params['stripe_error_url']);
+      $errorMessage = $stripe->handleErrorNotification($err, $params['error_url']);
       throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to create Stripe Customer: ' . $errorMessage);
     }
 
@@ -184,7 +184,7 @@ class CRM_Stripe_Customer {
     }
     catch (Exception $e) {
       $err = CRM_Core_Payment_Stripe::parseStripeException('create_customer', $e, FALSE);
-      $errorMessage = $stripe->handleErrorNotification($err, $params['stripe_error_url']);
+      $errorMessage = $stripe->handleErrorNotification($err, $params['error_url']);
       throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to update Stripe Customer: ' . $errorMessage);
     }
     return $stripeCustomer;

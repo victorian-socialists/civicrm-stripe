@@ -223,8 +223,8 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         if ($this->contribution['contribution_status_id'] == $pendingStatusId) {
           // If this contribution is Pending, set it to Failed.
           $params = [
-            'id' => $this->contribution['id'],
-            'receive_date' => $this->receive_date,
+            'contribution_id' => $this->contribution['id'],
+            'trxn_date' => $this->receive_date,
             'cancel_reason' => $this->retrieve('failure_message', 'String'),
             'trxn_id' => $this->charge_id,
             'order_reference' => $this->invoice_id,
@@ -264,8 +264,8 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
 
         $this->setInfo();
         $params = [
-          'id' => $this->contribution['id'],
-          'receive_date' => $this->receive_date,
+          'contribution_id' => $this->contribution['id'],
+          'trxn_date' => $this->receive_date,
           'cancel_reason' => $this->retrieve('failure_message', 'String'),
           'trxn_id' => $this->charge_id,
           'order_reference' => $this->invoice_id ?? $this->charge_id,

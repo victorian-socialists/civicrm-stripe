@@ -16,7 +16,7 @@ use CRM_Stripe_ExtensionUtil as E;
  */
 class CRM_Stripe_Webhook {
 
-  use CRM_Stripe_WebhookTrait;
+  use CRM_Mjwshared_WebhookTrait;
 
   /**
    * Checks whether the payment processors have a correctly configured webhook
