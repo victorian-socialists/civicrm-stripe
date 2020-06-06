@@ -378,7 +378,9 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'locale' => CRM_Core_I18n::getLocale(),
       'apiVersion' => CRM_Stripe_Check::API_VERSION,
       'csrfToken' => class_exists('\Civi\Firewall\Firewall') ? \Civi\Firewall\Firewall::getCSRFToken() : NULL,
+      'country' => CRM_Core_BAO_Country::defaultContactCountry(),
     ];
+
     \Civi::resources()->addVars(E::SHORT_NAME, $jsVars);
     // Assign to smarty so we can add via Card.tpl for drupal webform because addVars doesn't work in that context
     $form->assign('stripeJSVars', $jsVars);

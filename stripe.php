@@ -207,7 +207,11 @@ function stripe_civicrm_buildForm($formName, &$form) {
           'paymentIntentStatus' => $intent->status,
           'paymentIntentMethod' => $intent->confirmation_method,
           'publishableKey' => CRM_Core_Payment_Stripe::getPublicKeyById($form->_paymentProcessor['id']),
+          'locale' => CRM_Core_I18n::getLocale(),
+          'apiVersion' => CRM_Stripe_Check::API_VERSION,
           'jsDebug' => (boolean) \Civi::settings()->get('stripe_jsdebug'),
+          'csrfToken' => class_exists('\Civi\Firewall\Firewall') ? \Civi\Firewall\Firewall::getCSRFToken() : NULL,
+          'country' => CRM_Core_BAO_Country::defaultContactCountry(),
         ];
         \Civi::resources()->addVars(E::SHORT_NAME, $jsVars);
       }

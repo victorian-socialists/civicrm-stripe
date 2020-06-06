@@ -47,17 +47,21 @@ class CRM_Stripe_AJAX {
     (CRM_Utils_Request::retrieveValue('reset', 'String') === NULL) ?: self::returnInvalid();
 
     if (class_exists('\Civi\Firewall\Firewall')) {
-      if (!\Civi\Firewall\Firewall::isCSRFTokenValid(CRM_Utils_Request::retrieveValue('csrfToken', 'String'))) {
+      if (!\Civi\Firewall\Firewall::isCSRFTokenValid(CRM_Utils_Request::retrieveValue('csrfToken', 'String') ?? '')) {
         self::returnInvalid();
       }
     }
     $paymentMethodID = CRM_Utils_Request::retrieveValue('payment_method_id', 'String');
     $paymentIntentID = CRM_Utils_Request::retrieveValue('payment_intent_id', 'String');
+    $capture = CRM_Utils_Request::retrieveValue('capture', 'Boolean', FALSE);
     $amount = CRM_Utils_Request::retrieveValue('amount', 'String');
-    if (empty($amount)) {
+    // $capture is normally true if we have already created the intent and just need to get extra
+    //   authentication from the user (eg. on the confirmation page). So we don't need the amount
+    //   in this case.
+    if (empty($amount) && !$capture) {
       self::returnInvalid();
     }
-    $capture = CRM_Utils_Request::retrieveValue('capture', 'Boolean', FALSE);
+
     $title = CRM_Utils_Request::retrieveValue('description', 'String');
     $confirm = TRUE;
     $currency = CRM_Utils_Request::retrieveValue('currency', 'String', CRM_Core_Config::singleton()->defaultCurrency);
@@ -150,7 +154,7 @@ class CRM_Stripe_AJAX {
     }
     else {
       // Invalid status
-      CRM_Utils_JSON::output(['error' => ['message' => 'Invalid PaymentIntent status']]);
+      CRM_Utils_JSON::output(['error' => ['message' => 'Invalid PaymentIntent status: ' . $intent->status]]);
     }
   }
 
