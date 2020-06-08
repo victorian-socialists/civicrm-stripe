@@ -24,6 +24,8 @@ Where:
 * civicrmStripeConfirm.js is now a library available at CRM.payment.confirm and builds on CRM.payment.
 * Initial support for \Civi\Payment\PropertyBag.
 * Improve handling of network errors when loading Stripe elements and add a new jquery event: *crmBillingFormReloadFailed*.
+* Improve user notifications during pre-authentication and confirmation.
+* Add check for recommended SweetAlert extension.
 
 ## Release 6.4
 **This release REQUIRES that you upgrade mjwshared to 0.7 and your Stripe API version must be 2019-12-03 or newer.**

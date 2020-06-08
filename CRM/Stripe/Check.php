@@ -26,10 +26,14 @@ class CRM_Stripe_Check {
    * @var string
    */
   const MIN_VERSION_MJWSHARED = '0.8';
+  const MIN_VERSION_SWEETALERT = '1.2';
 
   public static function checkRequirements(&$messages) {
+    // mjwshared: required. Requires min version
+    $extensionName = 'mjwshared';
+
     $extensions = civicrm_api3('Extension', 'get', [
-      'full_name' => "mjwshared",
+      'full_name' => $extensionName,
     ]);
 
     if (empty($extensions['id']) || ($extensions['values'][$extensions['id']]['status'] !== 'installed')) {
@@ -41,23 +45,13 @@ class CRM_Stripe_Check {
         'fa-money'
       );
     }
+    self::requireExtensionMinVersion($messages, $extensionName, CRM_Stripe_Check::MIN_VERSION_MJWSHARED, $extensions['values'][$extensions['id']]['version']);
 
-    if (version_compare($extensions['values'][$extensions['id']]['version'], CRM_Stripe_Check::MIN_VERSION_MJWSHARED) === -1) {
-      $messages[] = new CRM_Utils_Check_Message(
-        'stripe_requirements',
-        E::ts('The Stripe extension requires the mjwshared extension version %1 or greater but your system has version %2.',
-          [
-            1 => CRM_Stripe_Check::MIN_VERSION_MJWSHARED,
-            2 => $extensions['values'][$extensions['id']]['version']
-          ]),
-        E::ts('Stripe: Missing Requirements'),
-        \Psr\Log\LogLevel::ERROR,
-        'fa-money'
-      );
-    }
+    // mjwshared: Recommended
+    $extensionName = 'firewall';
 
     $extensions = civicrm_api3('Extension', 'get', [
-      'full_name' => 'firewall',
+      'full_name' => $extensionName,
     ]);
 
     if (empty($extensions['id']) || ($extensions['values'][$extensions['id']]['status'] !== 'installed')) {
@@ -68,6 +62,48 @@ class CRM_Stripe_Check {
         E::ts('Recommended Extension: firewall'),
         \Psr\Log\LogLevel::NOTICE,
         'fa-lightbulb-o'
+      );
+    }
+
+    // sweetalert: recommended. If installed requires min version
+    $extensionName = 'sweetalert';
+    $extensions = civicrm_api3('Extension', 'get', [
+      'full_name' => $extensionName,
+    ]);
+
+    if (empty($extensions['id']) || ($extensions['values'][$extensions['id']]['status'] !== 'installed')) {
+      $messages[] = new CRM_Utils_Check_Message(
+        'stripe_recommended',
+        E::ts('If you are using Stripe to accept payments on public forms (eg. contribution/event registration forms) it is recommended that you install the <strong><a href="https://lab.civicrm.org/extensions/firewall">firewall</a></strong> extension.
+        Some sites have become targets for spammers who use the payment endpoint to try and test credit cards by submitting invalid payments to your Stripe account.'),
+        E::ts('Recommended Extension: firewall'),
+        \Psr\Log\LogLevel::NOTICE,
+        'fa-lightbulb-o'
+      );
+    }
+
+    self::requireExtensionMinVersion($messages, $extensionName, CRM_Stripe_Check::MIN_VERSION_SWEETALERT, $extensions['values'][$extensions['id']]['version']);
+  }
+
+  /**
+   * @param array $messages
+   * @param string $extensionName
+   * @param string $minVersion
+   * @param string $actualVersion
+   */
+  private static function requireExtensionMinVersion(&$messages, $extensionName, $minVersion, $actualVersion) {
+    if (version_compare($actualVersion, $minVersion) === -1) {
+      $messages[] = new CRM_Utils_Check_Message(
+        'stripe_requirements',
+        E::ts('The Stripe extension requires the %1 extension version %2 or greater but your system has version %3.',
+          [
+            1 => $extensionName,
+            2 => $minVersion,
+            3 => $actualVersion
+          ]),
+        E::ts('Stripe: Missing Requirements'),
+        \Psr\Log\LogLevel::ERROR,
+        'fa-money'
       );
     }
   }
