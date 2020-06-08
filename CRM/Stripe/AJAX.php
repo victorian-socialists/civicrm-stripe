@@ -9,6 +9,8 @@
  +--------------------------------------------------------------------+
  */
 
+use CRM_Stripe_ExtensionUtil as E;
+
 /**
  * Class CRM_Stripe_AJAX
  */
@@ -154,7 +156,13 @@ class CRM_Stripe_AJAX {
     }
     else {
       // Invalid status
-      CRM_Utils_JSON::output(['error' => ['message' => 'Invalid PaymentIntent status: ' . $intent->status]]);
+      if (isset($intent->last_payment_error->message)) {
+        $message = E::ts('Payment failed: %1', [1 => $intent->last_payment_error->message]);
+      }
+      else {
+        $message = E::ts('Payment failed.');
+      }
+      CRM_Utils_JSON::output(['error' => ['message' => $message]]);
     }
   }
 

@@ -14,6 +14,10 @@
       if (result.error) {
         // Show error from server on payment form
         CRM.payment.debugging(confirm.scriptName, result.error.message);
+        confirm.swalFire({
+          title: result.error.message,
+          icon: 'error',
+        });
       }
       else
         if (result.requires_action) {
@@ -23,6 +27,10 @@
         else {
           // All good, nothing more to do
           CRM.payment.debugging(confirm.scriptName, 'success - payment captured');
+          confirm.swalFire({
+            title: 'Payment successful',
+            icon: 'success',
+          });
         }
     },
 
@@ -62,6 +70,13 @@
 
     handleCardConfirm: function() {
       CRM.payment.debugging(confirm.scriptName, 'handle card confirm');
+      confirm.swalFire({
+        title: 'Please wait...',
+        allowOutsideClick: false,
+        onBeforeOpen: () => {
+          Swal.showLoading();
+        },
+      });
       // Send paymentMethod.id to server
       var url = CRM.url('civicrm/stripe/confirm-payment');
       $.post(url, {
@@ -70,10 +85,15 @@
         id: CRM.vars.stripe.id,
         description: document.title,
         csrfToken: CRM.vars.stripe.csrfToken,
-      }).then(function (result) {
-        // Handle server response (see Step 3)
-        confirm.handleServerResponse(result);
-      });
+      })
+        .done(function (result) {
+          confirm.swalClose();
+          // Handle server response (see Step 3)
+          confirm.handleServerResponse(result);
+        })
+        .fail(function() {
+          confirm.swalClose();
+        });
     },
 
     checkAndLoad: function () {
@@ -103,6 +123,18 @@
           });
       }
     },
+
+    swalFire: function(parameters) {
+      if (typeof Swal === 'function') {
+        Swal.fire(parameters);
+      }
+    },
+
+    swalClose: function() {
+      if (typeof Swal === 'function') {
+        Swal.close();
+      }
+    }
   };
 
   if (typeof CRM.payment === 'undefined') {
