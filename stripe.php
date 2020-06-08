@@ -147,12 +147,6 @@ function stripe_civicrm_buildForm($formName, &$form) {
     return;
   }
 
-  // Load stripe.js on all civi forms per stripe requirements
-  if (!isset(\Civi::$statics[E::LONG_NAME]['stripeJSLoaded'])) {
-    \Civi::resources()->addScriptUrl('https://js.stripe.com/v3');
-    \Civi::$statics[E::LONG_NAME]['stripeJSLoaded'] = TRUE;
-  }
-
   switch ($formName) {
     case 'CRM_Contribute_Form_Contribution_ThankYou':
     case 'CRM_Event_Form_Registration_ThankYou':

@@ -35,7 +35,9 @@ CRM.$(function($) {
         checkAndLoad();
       }
     }
-    triggerEvent('crmBillingFormReloadComplete');
+    else {
+      triggerEvent('crmBillingFormReloadComplete');
+    }
   };
   // On initial run we need to call this now.
   window.civicrmStripeHandleReload();
@@ -77,21 +79,60 @@ CRM.$(function($) {
    * @param error - the stripe error object
    * @param {boolean} notify - whether to popup a notification as well as display on the form.
    */
-  function displayError(error, notify) {
+  function displayError(errorMessage, notify) {
     // Display error.message in your UI.
-    debugging('error: ' + error.message);
+    debugging('error: ' + errorMessage);
     // Inform the user if there was an error
     var errorElement = document.getElementById('card-errors');
     errorElement.style.display = 'block';
-    errorElement.textContent = error.message;
+    errorElement.textContent = errorMessage;
     form.dataset.submitted = false;
-    for (i = 0; i < submitButtons.length; ++i) {
-      submitButtons[i].removeAttribute('disabled');
+    if (typeof submitButtons !== 'undefined') {
+      for (i = 0; i < submitButtons.length; ++i) {
+        submitButtons[i].removeAttribute('disabled');
+      }
     }
     triggerEvent('crmBillingFormNotValid');
     if (notify) {
-      notifyUser('error', '', error.message, '#card-element');
+      notifyUser('error', '', errorMessage, '#card-element');
     }
+  }
+
+  function getPaymentElements() {
+    return {
+      card: $('div#card-element'),
+    };
+  }
+
+  /**
+   * Hide any visible payment elements
+   */
+  function hidePaymentElements() {
+    getPaymentElements().card.hide();
+  }
+
+  /**
+   * Destroy any payment elements we have already created
+   */
+  function destroyPaymentElements() {
+    if ((typeof card !== 'undefined') && (card)) {
+      debugging("destroying card element");
+      card.destroy();
+      card = undefined;
+    }
+  }
+
+  /**
+   * Check that payment elements are valid
+   * @returns {boolean}
+   */
+  function checkPaymentElementsAreValid() {
+    var elements = getPaymentElements();
+    if ((elements.card.length !== 0) && (elements.card.children().length === 0)) {
+      debugging('card element is empty');
+      return false;
+    }
+    return true;
   }
 
   function handleCardPayment() {
@@ -99,7 +140,7 @@ CRM.$(function($) {
     stripe.createPaymentMethod('card', card).then(function (result) {
       if (result.error) {
         // Show error in payment form
-        displayError(result.error, true);
+        displayError(result.error.message, true);
       }
       else {
         // For recur, additional participants we do NOT know the final amount so must create a paymentMethod and only create the paymentIntent
@@ -132,7 +173,7 @@ CRM.$(function($) {
     debugging('handleServerResponse');
     if (result.error) {
       // Show error from server on payment form
-      displayError(result.error, true);
+      displayError(result.error.message, true);
     } else if (result.requires_action) {
       // Use Stripe.js to handle required card action
       handleAction(result);
@@ -147,7 +188,7 @@ CRM.$(function($) {
       .then(function(result) {
         if (result.error) {
           // Show error in payment form
-          displayError(result.error, true);
+          displayError(result.error.message, true);
         } else {
           // The card action has been handled
           // The PaymentIntent can be confirmed again on the server
@@ -207,11 +248,7 @@ CRM.$(function($) {
 
   function notStripe() {
     debugging("New payment processor is not Stripe, clearing CRM.vars.stripe");
-    if ((typeof card !== 'undefined') && (card)) {
-      debugging("destroying card element");
-      card.destroy();
-      card = undefined;
-    }
+    destroyPaymentElements();
     delete(CRM.vars.stripe);
   }
 
@@ -228,14 +265,33 @@ CRM.$(function($) {
       stripeLoading = true;
       debugging('Stripe.js is not loaded!');
 
-      $.getScript("https://js.stripe.com/v3", function () {
-        debugging("Script loaded and executed.");
-        stripeLoading = false;
-        loadStripeBillingBlock();
-      });
+      $.ajax({
+        url: 'https://js.stripe.com/v3',
+        dataType: 'script',
+        cache: true,
+        timeout: 5000,
+      })
+        .done(function(data) {
+          stripeLoading = false;
+          debugging("Script loaded and executed.");
+          loadStripeBillingBlock();
+          triggerEvent('crmBillingFormReloadComplete');
+        })
+        .fail(function() {
+          stripeLoading = false;
+          debugging('Failed to load Stripe.js');
+          triggerEventCrmBillingFormReloadFailed();
+        });
     }
     else {
       loadStripeBillingBlock();
+      if (checkPaymentElementsAreValid()) {
+        triggerEvent('crmBillingFormReloadComplete');
+      }
+      else {
+        debugging('Failed to load payment elements');
+        triggerEventCrmBillingFormReloadFailed();
+      }
     }
   }
 
@@ -262,6 +318,8 @@ CRM.$(function($) {
       elementsCreateParams.value.postalCode = postCode;
     }
 
+    // Cleanup any classes leftover from previous switching payment processors
+    getPaymentElements().card.removeClass();
     // Create an instance of the card Element.
     card = elements.create('card', elementsCreateParams);
     card.mount('#card-element');
@@ -647,7 +705,7 @@ CRM.$(function($) {
       $('div#card-errors').hide();
     }
     else if (event.error) {
-      displayError(event.error, false);
+      displayError(event.error.message, false);
     }
     else if (event.complete) {
       $('div#card-errors').hide();
@@ -760,6 +818,15 @@ CRM.$(function($) {
   function triggerEvent(event) {
     debugging('Firing Event: ' + event);
     $(form).trigger(event);
+  }
+
+  /**
+   * Trigger the crmBillingFormReloadFailed event and notify the user
+   */
+  function triggerEventCrmBillingFormReloadFailed() {
+    triggerEvent('crmBillingFormReloadFailed');
+    hidePaymentElements();
+    displayError('Could not load payment element - Is there a problem with your network connection?', true);
   }
 
   /**

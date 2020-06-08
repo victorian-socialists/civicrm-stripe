@@ -84,14 +84,23 @@
         confirm.stripeLoading = true;
         CRM.payment.debugging(confirm.scriptName, 'Stripe.js is not loaded!');
 
-        $.getScript("https://js.stripe.com/v3", function () {
-          CRM.payment.debugging(confirm.scriptName, 'Script loaded and executed.');
-          confirm.stripeLoading = false;
-
-          if (confirm.stripe === null) {
-            confirm.stripe = Stripe(CRM.vars.stripe.publishableKey);
-          }
-        });
+        $.ajax({
+          url: 'https://js.stripe.com/v3',
+          dataType: 'script',
+          cache: true,
+          timeout: 5000,
+        })
+          .done(function(data) {
+            confirm.stripeLoading = false;
+            CRM.payment.debugging(confirm.scriptName, 'Script loaded and executed.');
+            if (confirm.stripe === null) {
+              confirm.stripe = Stripe(CRM.vars.stripe.publishableKey);
+            }
+          })
+          .fail(function() {
+            confirm.stripeLoading = false;
+            debugging('Failed to load Stripe.js');
+          });
       }
     },
   };
