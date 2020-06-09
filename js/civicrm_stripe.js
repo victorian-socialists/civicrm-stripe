@@ -437,6 +437,7 @@ CRM.$(function($) {
       if (($(form).valid() === false) || $(form).data('crmBillingFormValid') === false) {
         debugging('Form not valid');
         $('div#card-errors').hide();
+        form.dataset.submitted = 'false';
         notifyUser('error', '', ts('Please check and fill in all required fields!'), '#crm-container');
         triggerEvent('crmBillingFormNotValid');
         return false;
