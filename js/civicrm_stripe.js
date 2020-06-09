@@ -270,6 +270,13 @@ CRM.$(function($) {
       return;
     }
 
+    // Get the form containing payment details
+    form = getBillingForm();
+    if (typeof form.length === 'undefined' || form.length === 0) {
+      debugging('No billing form!');
+      return;
+    }
+
     if (typeof Stripe === 'undefined') {
       if (stripeLoading) {
         return;
@@ -352,13 +359,6 @@ CRM.$(function($) {
     card.addEventListener('change', function (event) {
       cardElementChanged(event);
     });
-
-    // Get the form containing payment details
-    form = getBillingForm();
-    if (typeof form.length === 'undefined' || form.length === 0) {
-      debugging('No billing form!');
-      return;
-    }
 
     setBillingFieldsRequiredForJQueryValidate();
     submitButtons = getBillingSubmit();
