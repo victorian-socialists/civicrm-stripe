@@ -1049,7 +1049,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
 
     switch ($context) {
       case 'cancelRecurDetailText':
-        $text .= ' ' . E::ts('Stripe will be automatically notified and the subscription will be cancelled.');
+        $text .= ' <br/><strong>' . E::ts('Stripe will be automatically notified and the subscription will be cancelled.') . '</strong>';
     }
     return $text;
   }
