@@ -26,6 +26,8 @@ Where:
 * Improve handling of network errors when loading Stripe elements and add a new jquery event: *crmBillingFormReloadFailed*.
 * Improve user notifications during pre-authentication and confirmation.
 * Add check for recommended SweetAlert extension.
+* Fix [#208](https://lab.civicrm.org/extensions/stripe/issues/182) use window.alert if SweetAlert is not installed.
+* Make sure we reset submitted flag if we are not able to submit the form.
 
 ## Release 6.4
 **This release REQUIRES that you upgrade mjwshared to 0.7 and your Stripe API version must be 2019-12-03 or newer.**
