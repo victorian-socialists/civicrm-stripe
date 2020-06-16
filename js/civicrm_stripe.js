@@ -441,13 +441,13 @@ CRM.$(function($) {
       if (($(form).valid() === false) || $(form).data('crmBillingFormValid') === false) {
         debugging('Form not valid');
         $('div#card-errors').hide();
-        form.dataset.submitted = 'false';
         swalFire({
           icon: 'error',
           text: ts('Please check and fill in all required fields!'),
           title: '',
         }, '#crm-container', true);
         triggerEvent('crmBillingFormNotValid');
+        form.dataset.submitted = 'false';
         return false;
       }
 
@@ -463,6 +463,7 @@ CRM.$(function($) {
           title: cardError,
         }, '#card-element', true);
         triggerEvent('crmBillingFormNotValid');
+        form.dataset.submitted = 'false';
         return false;
       }
 
@@ -477,6 +478,7 @@ CRM.$(function($) {
           title: cardError,
         }, '#card-element', true);
         triggerEvent('crmBillingFormNotValid');
+        form.dataset.submitted = 'false';
         return false;
       }
 
@@ -489,6 +491,7 @@ CRM.$(function($) {
           title: ts('Please complete the reCaptcha'),
         }, '.recaptcha-section', true);
         triggerEvent('crmBillingFormNotValid');
+        form.dataset.submitted = 'false';
         return false;
       }
 
