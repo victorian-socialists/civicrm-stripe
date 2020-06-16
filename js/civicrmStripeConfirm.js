@@ -17,7 +17,7 @@
         confirm.swalFire({
           title: result.error.message,
           icon: 'error',
-        });
+        }, '', true);
       }
       else
         if (result.requires_action) {
@@ -30,7 +30,7 @@
           confirm.swalFire({
             title: 'Payment successful',
             icon: 'success',
-          });
+          }, '', true);
         }
     },
 
@@ -76,7 +76,7 @@
         onBeforeOpen: () => {
           Swal.showLoading();
         },
-      });
+      }, '', false);
       // Send paymentMethod.id to server
       var url = CRM.url('civicrm/stripe/confirm-payment');
       $.post(url, {
@@ -124,12 +124,27 @@
       }
     },
 
-    swalFire: function(parameters) {
+    /**
+     * Wrapper around Swal.fire()
+     * @param {array} parameters
+     * @param {string} scrollToElement
+     * @param {boolean} fallBackToAlert
+     */
+    swalFire: function(parameters, scrollToElement, fallBackToAlert) {
       if (typeof Swal === 'function') {
+        if (scrollToElement.length > 0) {
+          parameters.onAfterClose = function() { window.scrollTo($(scrollToElement).position()); };
+        }
         Swal.fire(parameters);
+      }
+      else if (fallBackToAlert) {
+        window.alert(parameters.title + ' ' + parameters.text);
       }
     },
 
+    /**
+     * Wrapper around Swal.close()
+     */
     swalClose: function() {
       if (typeof Swal === 'function') {
         Swal.close();

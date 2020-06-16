@@ -76,7 +76,7 @@ CRM.$(function($) {
   /**
    * Display a stripe element error
    *
-   * @param error - the stripe error object
+   * @param {string} errorMessage - the stripe error object
    * @param {boolean} notify - whether to popup a notification as well as display on the form.
    */
   function displayError(errorMessage, notify) {
@@ -94,7 +94,11 @@ CRM.$(function($) {
     }
     triggerEvent('crmBillingFormNotValid');
     if (notify) {
-      notifyUser('error', '', errorMessage, '#card-element');
+      swalFire({
+        icon: 'error',
+        text: errorMessage,
+        title: '',
+      }, '#card-element', true);
     }
   }
 
@@ -153,13 +157,13 @@ CRM.$(function($) {
         else {
           // Send paymentMethod.id to server
           debugging('Waiting for pre-auth');
-          Swal.fire({
+          swalFire({
             title: 'Please wait while we pre-authorize your card...',
             allowOutsideClick: false,
             onBeforeOpen: () => {
               Swal.showLoading();
             },
-          });
+          }, '', false);
           var url = CRM.url('civicrm/stripe/confirm-payment');
           $.post(url, {
             payment_method_id: result.paymentMethod.id,
@@ -174,7 +178,7 @@ CRM.$(function($) {
               handleServerResponse(result);
             })
             .always(function() {
-              Swal.close();
+              swalClose();
             });
         }
       }
@@ -438,7 +442,11 @@ CRM.$(function($) {
         debugging('Form not valid');
         $('div#card-errors').hide();
         form.dataset.submitted = 'false';
-        notifyUser('error', '', ts('Please check and fill in all required fields!'), '#crm-container');
+        swalFire({
+          icon: 'error',
+          text: ts('Please check and fill in all required fields!'),
+          title: '',
+        }, '#crm-container', true);
         triggerEvent('crmBillingFormNotValid');
         return false;
       }
@@ -447,9 +455,13 @@ CRM.$(function($) {
       if (CRM.$('#card-element.StripeElement--empty').length && (getTotalAmount() !== 0.0)) {
         debugging('card details not entered!');
         if (!cardError) {
-          cardError = ts('Please enter your card details!');
+          cardError = ts('Please enter your card details');
         }
-        notifyUser('error', '', cardError, '#card-element');
+        swalFire({
+          icon: 'warning',
+          text: '',
+          title: cardError,
+        }, '#card-element', true);
         triggerEvent('crmBillingFormNotValid');
         return false;
       }
@@ -459,7 +471,11 @@ CRM.$(function($) {
           cardError = ts('Please check your card details!');
         }
         debugging('card details not valid!');
-        notifyUser('error', '', cardError, '#card-element');
+        swalFire({
+          icon: 'error',
+          text: '',
+          title: cardError,
+        }, '#card-element', true);
         triggerEvent('crmBillingFormNotValid');
         return false;
       }
@@ -467,7 +483,11 @@ CRM.$(function($) {
       if (!(typeof grecaptcha === 'undefined' || (grecaptcha && grecaptcha.getResponse().length !== 0))) {
         debugging('recaptcha active and not valid');
         $('div#card-errors').hide();
-        notifyUser('error', '', ts('Please complete the reCaptcha'), '.recaptcha-section');
+        swalFire({
+          icon: 'warning',
+          text: '',
+          title: ts('Please complete the reCaptcha'),
+        }, '.recaptcha-section', true);
         triggerEvent('crmBillingFormNotValid');
         return false;
       }
@@ -830,26 +850,29 @@ CRM.$(function($) {
   }
 
   /**
-   * If we have the sweetalert2 library popup a nice message to the user.
-   *   Otherwise do nothing
-   * @param {string} icon
-   * @param {string} title
-   * @param {string} text
+   * Wrapper around Swal.fire()
+   * @param {array} parameters
    * @param {string} scrollToElement
+   * @param {boolean} fallBackToAlert
    */
-  function notifyUser(icon, title, text, scrollToElement) {
+  function swalFire(parameters, scrollToElement, fallBackToAlert) {
     if (typeof Swal === 'function') {
-      var swalParams = {
-        icon: icon,
-        text: text
-      };
-      if (title) {
-        swalParams.title = title;
+      if (scrollToElement.length > 0) {
+        parameters.onAfterClose = function() { window.scrollTo($(scrollToElement).position()); };
       }
-      if (scrollToElement) {
-        swalParams.onAfterClose = function() { window.scrollTo($(scrollToElement).position()); };
-      }
-      Swal.fire(swalParams);
+      Swal.fire(parameters);
+    }
+    else if (fallBackToAlert) {
+      window.alert(parameters.title + ' ' + parameters.text);
+    }
+  }
+
+  /**
+   * Wrapper around Swal.close()
+   */
+  function swalClose() {
+    if (typeof Swal === 'function') {
+      Swal.close();
     }
   }
 
