@@ -28,6 +28,7 @@ Where:
 * Add check for recommended SweetAlert extension.
 * Fix [#208](https://lab.civicrm.org/extensions/stripe/issues/182) use window.alert if SweetAlert is not installed.
 * Make sure we reset submitted flag if we are not able to submit the form.
+* Fix issues with form validation when you enable the "On behalf of Organisation" block on contribution pages - see https://lab.civicrm.org/extensions/stripe/-/issues/147#note_38994 and https://github.com/civicrm/civicrm-core/pull/17672.
 
 ## Release 6.4
 **This release REQUIRES that you upgrade mjwshared to 0.7 and your Stripe API version must be 2019-12-03 or newer.**

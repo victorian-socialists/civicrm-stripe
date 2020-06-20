@@ -768,9 +768,29 @@ CRM.$(function($) {
     $('div#priceset input[type="checkbox"]').each(function() {
       $(this).attr('name', $(this).attr('name').split('[').shift());
     });
+
+    // @todo remove once min version is 5.28 (https://github.com/civicrm/civicrm-core/pull/17672)
+    var is_for_organization = $('#is_for_organization');
+    if (is_for_organization.length) {
+      setValidateOnBehalfOfBlock();
+      is_for_organization.on('change', function() {
+        setValidateOnBehalfOfBlock();
+      });
+    }
+    function setValidateOnBehalfOfBlock() {
+      if (is_for_organization.is(':checked')) {
+        $('#onBehalfOfOrg select.crm-select2').removeClass('crm-no-validate');
+      }
+      else {
+        $('#onBehalfOfOrg select.crm-select2').addClass('crm-no-validate');
+      }
+    }
+
     var validator = $(form).validate();
     validator.settings.errorClass = 'crm-inline-error alert-danger';
-    validator.settings.ignore = '.select2-offscreen, [readonly], :hidden:not(.crm-select2)';
+    validator.settings.ignore = '.select2-offscreen, [readonly], :hidden:not(.crm-select2), .crm-no-validate';
+    validator.settings.ignoreTitle = true;
+
     // Default email validator accepts test@example but on test@example.org is valid (https://jqueryvalidation.org/jQuery.validator.methods/)
     $.validator.methods.email = function( value, element ) {
       // Regex from https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
