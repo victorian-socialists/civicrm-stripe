@@ -9,7 +9,7 @@ Where:
 * minor: Breaking change in some circumstances, or a new feature. Read carefully and make sure you understand the impact of the change.
 * incremental: A "safe" change / improvement. Should *always* be safe to upgrade.
 
-## Release 6.4.1 - Not yet released
+## Release 6.4.1
 **This release REQUIRES that you upgrade mjwshared to 0.8.**
 
 * Fix [#196](https://lab.civicrm.org/extensions/stripe/issues/196): Recurring contributions with incorrect amount per default currency in stripe.

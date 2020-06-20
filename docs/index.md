@@ -21,10 +21,9 @@ View/Download this extension in the [Extension Directory](https://civicrm.org/ex
 * Stripe API version: 2019-12-03+
 * Drupal webform_civicrm 7.x-5.0+ (if using webform integration) - see [Integration](integration.md) for more details.
 
-* [MJWShared extension](https://civicrm.org/extensions/mjwshared) version 0.7.
+* [MJWShared extension](https://civicrm.org/extensions/mjwshared) version 0.8.
 
 **Please ensure that you are running the ProcessStripe scheduled job every hour or you will have issues with failed/uncaptured payments appearing on customer credit cards and blocking their balance for up to a week!**
-
 
 ## Troubleshooting
 Under *Administer->CiviContribute->Stripe Settings* you can find a setting:
