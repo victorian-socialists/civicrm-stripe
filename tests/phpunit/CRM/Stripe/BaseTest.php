@@ -16,43 +16,25 @@ use Civi\Test\TransactionalInterface;
 define('STRIPE_PHPUNIT_TEST', 1);
 
 /**
- * FIXME - Add test description.
- *
- * Tips:
- *  - With HookInterface, you may implement CiviCRM hooks directly in the test class.
- *    Simply create corresponding functions (e.g. "hook_civicrm_post(...)" or similar).
- *  - With TransactionalInterface, any data changes made by setUp() or test****() functions will
- *    rollback automatically -- as long as you don't manipulate schema or truncate tables.
- *    If this test needs to manipulate schema or truncate tables, then either:
- *       a. Do all that using setupHeadless() and Civi\Test.
- *       b. Disable TransactionalInterface, and handle all setup/teardown yourself.
+ * This class provides helper functions for other Stripe Tests. There are no
+ * tests in this class.
  *
  * @group headless
  */
 class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements HeadlessInterface, HookInterface, TransactionalInterface {
 
-  protected $_contributionID;
-  protected $_invoiceID = 'in_19WvbKAwDouDdbFCkOnSwAN7';
-  protected $_financialTypeID = 1;
-  protected $org;
-  protected $_orgID;
+  protected $contributionID;
+  protected $financialTypeID = 1;
   protected $contact;
-  protected $_contactID;
-  protected $_contributionPageID;
-  protected $_paymentProcessorID;
-  protected $_paymentProcessor;
-  protected $_trxn_id;
-  protected $_created_ts;
-  protected $_subscriptionID;
-  protected $_membershipTypeID;
-  // Secret/public keys are PTP test keys.
-  protected $_sk = 'sk_test_TlGdeoi8e1EOPC3nvcJ4q5UZ';
-  protected $_pk = 'pk_test_k2hELLGpBLsOJr6jZ2z9RaYh';
-  protected $_cc = NULL;
+  protected $contactID;
+  protected $paymentProcessorID;
+  protected $paymentProcessor;
+  protected $trxn_id;
+  protected $processorID;
+  protected $cc = '4111111111111111';
+  protected $total = '400.00';
 
   public function setUpHeadless() {
-    // Civi\Test has many helpers, like install(), uninstall(), sql(), and sqlFile().
-    // See: https://github.com/civicrm/org.civicrm.testapalooza/blob/master/civi-test.md
     return \Civi\Test::headless()
       ->install('mjwshared')
       ->installMe(__DIR__)
@@ -64,23 +46,7 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
     require_once('vendor/stripe/stripe-php/init.php');
     $this->createPaymentProcessor();
     $this->createContact();
-    $this->createContributionPage();
-    $this->_created_ts = time();
-    $this->set_cc();
-  }
-
-  /**
-   * Switch between test cc number that works and that fails
-   *
-   */
-  public function set_cc($type = 'works') {
-    // See https://stripe.com/docs/testing
-    if ($type == 'works') {
-      $this->_cc = '4111111111111111';
-    }
-    elseif ($type == 'fails') {
-      $this->_cc = '4000000000000002';
-    }
+    $this->created_ts = time();
   }
 
   public function tearDown() {
@@ -91,7 +57,7 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
    * Create contact.
    */
   function createContact() {
-    if (!empty($this->_contactID)) {
+    if (!empty($this->contactID)) {
       return;
     }
     $results = civicrm_api3('Contact', 'create', [
@@ -99,13 +65,13 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
       'first_name' => 'Jose',
       'last_name' => 'Lopez'
     ]);;
-    $this->_contactID = $results['id'];
+    $this->contactID = $results['id'];
     $this->contact = (Object) array_pop($results['values']);
 
     // Now we have to add an email address.
     $email = 'susie@example.org';
     civicrm_api3('email', 'create', [
-      'contact_id' => $this->_contactID,
+      'contact_id' => $this->contactID,
       'email' => $email,
       'location_type_id' => 1
     ]);
@@ -119,30 +85,8 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
   function createPaymentProcessor($params = []) {
     $result = civicrm_api3('Stripe', 'setuptest', $params);
     $processor = array_pop($result['values']);
-    $this->_sk = $processor['user_name'];
-    $this->_pk = $processor['password'];
-    $this->_paymentProcessor = $processor;
-    $this->_paymentProcessorID = $result['id'];
-  }
-
-  /**
-   * Create a stripe contribution page.
-   *
-   */
-  function createContributionPage($params = []) {
-    $params = array_merge([
-      'title' => "Test Contribution Page",
-      'financial_type_id' => $this->_financialTypeID,
-      'currency' => 'USD',
-      'payment_processor' => $this->_paymentProcessorID,
-      'max_amount' => 1000,
-      'receipt_from_email' => 'gaia@the.cosmos',
-      'receipt_from_name' => 'Pachamama',
-      'is_email_receipt' => 0,
-    ], $params);
-    $result = civicrm_api3('ContributionPage', 'create', $params);
-    $this->assertEquals(0, $result['is_error']);
-    $this->_contributionPageID = $result['id'];
+    $this->paymentProcessor = $processor;
+    $this->paymentProcessorID = $result['id'];
   }
 
   /**
@@ -150,15 +94,14 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
    */
   public function doPayment($params = []) {
     $mode = 'test';
-    $pp = $this->_paymentProcessor;
 
-    \Stripe\Stripe::setApiKey(CRM_Core_Payment_Stripe::getSecretKey($pp));
+    \Stripe\Stripe::setApiKey(CRM_Core_Payment_Stripe::getSecretKey($this->paymentProcessor));
 
     // Send in credit card to get payment method.
     $paymentMethod = \Stripe\PaymentMethod::create([
       'type' => 'card',
       'card' => [
-        'number' => $this->_cc,
+        'number' => $this->cc,
         'exp_month' => 12,
         'exp_year' => date('Y') + 1,
         'cvc' => '123',
@@ -170,12 +113,14 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
 
     if (!array_key_exists('is_recur', $params)) {
       // Send in payment method to get payment intent.
-      $params = [
+      $paymentIntentParams = [
         'payment_method_id' => $paymentMethod->id,
-        'amount' => $this->_total,
-        'payment_processor_id' => $pp['id'],
+        'amount' => $this->total,
+        'payment_processor_id' => $this->paymentProcessorID,
+        'payment_intent_id' => NULL,
+        'description' => NULL,
       ];
-      $result = civicrm_api3('StripePaymentintent', 'process', $params);
+      $result = civicrm_api3('StripePaymentintent', 'process', $paymentIntentParams);
 
       $paymentIntentID = $result['values']['paymentIntent']['id'];
     }
@@ -183,30 +128,37 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
       $paymentMethodID = $paymentMethod->id;
     }
 
-    $stripe = new CRM_Core_Payment_Stripe($mode, $pp);
+    $stripe = new CRM_Core_Payment_Stripe($mode, $this->paymentProcessor);
     $params = array_merge([
-      'payment_processor_id' => $this->_paymentProcessorID,
-      'amount' => $this->_total,
+      'payment_processor_id' => $this->paymentProcessorID,
+      'amount' => $this->total,
       'paymentIntentID' => $paymentIntentID,
       'paymentMethodID' => $paymentMethodID,
       'email' => $this->contact->email,
       'contactID' => $this->contact->id,
       'description' => 'Test from Stripe Test Code',
       'currencyID' => 'USD',
-      'invoiceID' => $this->_invoiceID,
       // Avoid missing key php errors by adding these un-needed parameters.
       'qfKey' => NULL,
       'entryURL' => 'http://civicrm.localhost/civicrm/test?foo',
       'query' => NULL,
+      'additional_participants' => [],
     ], $params);
 
     $ret = $stripe->doPayment($params);
 
     if (array_key_exists('trxn_id', $ret)) {
-      $this->_trxn_id = $ret['trxn_id'];
+      $this->trxn_id = $ret['trxn_id'];
     }
-    if (array_key_exists('subscription_id', $ret)) {
-      $this->_subscriptionID = $ret['subscription_id'];
+    if (array_key_exists('contributionRecurID', $ret)) {
+      // Get processor id.
+      $sql = "SELECT processor_id FROM civicrm_contribution_recur WHERE id = %0";
+      $params = [ 0 => [ $ret['contributionRecurID'], 'Integer' ] ];
+      $dao = CRM_Core_DAO::executeQuery($sql, $params);
+      if ($dao->N > 0) {
+        $dao->fetch();
+        $this->processorID = $dao->processor_id;
+      }
     }
   }
 
@@ -215,13 +167,13 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
    *
    */
   public function assertValidTrxn() {
-    $this->assertNotEmpty($this->_trxn_id, "A trxn id was assigned");
+    $this->assertNotEmpty($this->trxn_id, "A trxn id was assigned");
 
-    $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $this->_paymentProcessorID]));
+    $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $this->paymentProcessorID]));
     $processor->setAPIParams();
 
     try {
-      $results = \Stripe\Charge::retrieve(["id" => $this->_trxn_id]);
+      $results = \Stripe\Charge::retrieve(["id" => $this->trxn_id]);
       $found = TRUE;
     }
     catch (Stripe_Error $e) {
@@ -236,58 +188,20 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
    */
   public function setupTransaction($params = []) {
      $contribution = civicrm_api3('contribution', 'create', array_merge([
-      'contact_id' => $this->_contactID,
+      'contact_id' => $this->contactID,
       'contribution_status_id' => 2,
-      'payment_processor_id' => $this->_paymentProcessorID,
+      'payment_processor_id' => $this->paymentProcessorID,
       // processor provided ID - use contact ID as proxy.
-      'processor_id' => $this->_contactID,
-      'total_amount' => $this->_total,
-      'invoice_id' => $this->_invoiceID,
-      'financial_type_id' => $this->_financialTypeID,
+      'processor_id' => $this->contactID,
+      'total_amount' => $this->total,
+      'financial_type_id' => $this->financialTypeID,
       'contribution_status_id' => 'Pending',
-      'contact_id' => $this->_contactID,
-      'contribution_page_id' => $this->_contributionPageID,
-      'payment_processor_id' => $this->_paymentProcessorID,
+      'contact_id' => $this->contactID,
+      'payment_processor_id' => $this->paymentProcessorID,
       'is_test' => 1,
      ], $params));
     $this->assertEquals(0, $contribution['is_error']);
-    $this->_contributionID = $contribution['id'];
-  }
-
-  public function createOrganization() {
-    if (!empty($this->_orgID)) {
-      return;
-    }
-    $results = civicrm_api3('Contact', 'create', [
-      'contact_type' => 'Organization',
-      'organization_name' => 'My Great Group'
-    ]);;
-    $this->_orgID = $results['id'];
-  }
-
-  public function createMembershipType() {
-    CRM_Member_PseudoConstant::flush('membershipType');
-    CRM_Core_Config::clearDBCache();
-    $this->createOrganization();
-    $params = [
-      'name' => 'General',
-      'duration_unit' => 'year',
-      'duration_interval' => 1,
-      'period_type' => 'rolling',
-      'member_of_contact_id' => $this->_orgID,
-      'domain_id' => 1,
-      'financial_type_id' => 2,
-      'is_active' => 1,
-      'sequential' => 1,
-      'visibility' => 'Public',
-    ];
-
-    $result = civicrm_api3('MembershipType', 'Create', $params);
-
-    $this->_membershipTypeID = $result['id'];
-
-    CRM_Member_PseudoConstant::flush('membershipType');
-    CRM_Utils_Cache::singleton()->flush();
+    $this->contributionID = $contribution['id'];
   }
 
 }

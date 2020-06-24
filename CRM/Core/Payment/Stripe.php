@@ -817,9 +817,9 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'paymentintent_id' => $intent->id,
       'payment_processor_id' => $this->_paymentProcessor['id'],
       'status' => $intent->status,
-      'contribution_id' => $params['contributionID'],
+      'contribution_id' =>  $params['contributionID'] ?? NULL,
       'description' => $this->getDescription($params, 'description'),
-      'identifier' => $params['qfKey'],
+      'identifier' => $params['qfKey'] ?? NULL,
       'contact_id' => $params['contactID'],
     ];
     if (empty($intentParams['contribution_id'])) {
