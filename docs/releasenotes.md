@@ -13,6 +13,7 @@ Where:
 
 * Fix [#210](https://lab.civicrm.org/extensions/stripe/-/issues/210): If there are multiple reCaptcha on the page check and validate the one on the Stripe billing form only.
 * Update implementation for cancel subscription. Option to notify (default Yes) is now available on the backend cancel subscription form.
+* Fix [#218](https://lab.civicrm.org/extensions/stripe/-/issues/218): Ensure disallowed characters in description don't stop contributions from being processed.
 
 ## Release 6.4.1
 **This release REQUIRES that you upgrade mjwshared to 0.8.**

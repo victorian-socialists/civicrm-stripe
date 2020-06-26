@@ -844,19 +844,28 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return string
    */
   private function getDescription($params, $type = 'description') {
+    $description = NULL;
+    # See https://stripe.com/docs/statement-descriptors
+    $disallowed_characters = array('<', '>', '\\', "'", '"', '*');
+
     if (!isset(\Civi::$statics[__CLASS__]['description']['contact_contribution'])) {
       \Civi::$statics[__CLASS__]['description']['contact_contribution'] = $params['contactID'] . '-' . ($params['contributionID'] ?? 'XX');
     }
     switch ($type) {
       case 'statement_descriptor':
-        return substr(\Civi::$statics[__CLASS__]['description']['contact_contribution'] . " " . $params['description'], 0, 22);
+        $description = substr(\Civi::$statics[__CLASS__]['description']['contact_contribution'] . " " . $params['description'], 0, 22);
+        break;
 
       case 'statement_descriptor_suffix':
-        return \Civi::$statics[__CLASS__]['description']['contact_contribution'] . " " . substr($params['description'],0,7);
+        $description = \Civi::$statics[__CLASS__]['description']['contact_contribution'] . " " . substr($params['description'],0,7);
+        break;
 
       default:
+        // The (paymentIntent) full description has no restriction on characters that are allowed/disallowed.
         return "{$params['description']} " . \Civi::$statics[__CLASS__]['description']['contact_contribution'] . " #" . CRM_Utils_Array::value('invoiceID', $params);
     }
+
+    return str_replace($disallowed_characters, ' ', $description);
   }
 
   /**
