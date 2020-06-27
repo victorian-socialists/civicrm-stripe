@@ -108,7 +108,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   }
 
   /**
-   * We can use the smartdebit processor on the backend
+   * We can use the stripe processor on the backend
    * @return bool
    */
   public function supportsBackOffice() {
@@ -116,7 +116,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   }
 
   /**
-   * We can edit smartdebit recurring contributions
+   * We can edit stripe recurring contributions
    * @return bool
    */
   public function supportsEditRecurringContribution() {
@@ -175,7 +175,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return bool
    */
   protected function supportsCancelRecurringNotifyOptional() {
-    return FALSE;
+    return TRUE;
   }
 
   /**
@@ -967,64 +967,82 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   }
 
   /**
+   * Attempt to cancel the subscription at GoCardless.
+   *
    * @param \Civi\Payment\PropertyBag $propertyBag
    *
    * @return array|null[]
    * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
-  public function doCancelRecurring(PropertyBag $propertyBag) {
-    // By default we always notify Stripe and we don't give the user the option
+  public function doCancelRecurring(\Civi\Payment\PropertyBag $propertyBag) {
+    // By default we always notify the processor and we don't give the user the option
     // because supportsCancelRecurringNotifyOptional() = FALSE
-    if (!$propertyBag->has('isNotifyProcessorOnCancelRecur')) {
-      // @fixme setIsNotifyProcessorOnCancelRecur was added in 5.27 - remove method_exists once minVer is 5.27
-      // If isNotifyProcessorOnCancelRecur is NOT set then we set our default
-      if (method_exists($propertyBag, 'setIsNotifyProcessorOnCancelRecur')) {
+    // @fixme setIsNotifyProcessorOnCancelRecur was added in 5.27 - remove method_exists once minVer is 5.27
+    if (method_exists($propertyBag, 'setIsNotifyProcessorOnCancelRecur')) {
+      if (!$propertyBag->has('isNotifyProcessorOnCancelRecur')) {
+        // If isNotifyProcessorOnCancelRecur is NOT set then we set our default
         $propertyBag->setIsNotifyProcessorOnCancelRecur(TRUE);
       }
+      $notifyProcessor = $propertyBag->getIsNotifyProcessorOnCancelRecur();
     }
-    return parent::doCancelRecurring($propertyBag);
-  }
+    else {
+      // CiviCRM < 5.27
+      $notifyProcessor = (boolean) CRM_Utils_Request::retrieveValue('send_cancel_request', 'Boolean', TRUE, FALSE, 'POST');
+    }
 
-  /**
-   * @param string $message
-   * @param array $params
-   *
-   * @return bool|object
-   */
-  public function cancelSubscription(&$message = '', $params = []) {
-    /* @var \Civi\Payment\PropertyBag $paramsPb */
-    $paramsPb = \Civi\Payment\PropertyBag::cast($params);
-    // @todo From here on we are using the array instead of propertyBag. To be converted later...
-    $params = $this->getPropertyBagAsArray($paramsPb);
+    if (!$notifyProcessor) {
+      return ['message' => E::ts('Successfully cancelled the subscription in CiviCRM ONLY.')];
+    }
 
     $this->setAPIParams();
 
-    try {
-      $contributionRecur = civicrm_api3('ContributionRecur', 'getsingle', [
-        'id' => $this->getRecurringContributionId($params),
-      ]);
-    }
-    catch (Exception $e) {
-      return FALSE;
-    }
-    if (empty($contributionRecur['trxn_id'])) {
-      CRM_Core_Session::setStatus(E::ts('The recurring contribution cannot be cancelled (No reference (trxn_id) found).'), 'Smart Debit', 'error');
-      return FALSE;
+    if (!$propertyBag->has('recurProcessorID')) {
+      $errorMessage = E::ts('The recurring contribution cannot be cancelled (No reference (trxn_id) found).');
+      \Civi::log()->error($errorMessage);
+      throw new \Civi\Payment\Exception\PaymentProcessorException($errorMessage);
     }
 
     try {
-      $subscription = \Stripe\Subscription::retrieve($contributionRecur['trxn_id']);
+      $subscription = \Stripe\Subscription::retrieve($propertyBag->getRecurProcessorID());
       if (!$subscription->isDeleted()) {
         $subscription->cancel();
       }
     }
     catch (Exception $e) {
-      $errorMessage = 'Could not delete Stripe subscription: ' . $e->getMessage();
-      CRM_Core_Session::setStatus($errorMessage, 'Stripe', 'error');
-      Civi::log()->error($errorMessage);
-      return FALSE;
+      $errorMessage = E::ts('Could not delete Stripe subscription: %1', [1 => $e->getMessage()]);
+      \Civi::log()->error($errorMessage);
+      throw new \Civi\Payment\Exception\PaymentProcessorException($errorMessage);
     }
 
+    return ['message' => E::ts('Successfully cancelled the subscription at Stripe.')];
+  }
+
+  /**
+   * Attempt to cancel the subscription at GoCardless.
+   * @deprecated Remove when min CiviCRM version is 5.25
+   *
+   * @see supportsCancelRecurring()
+   *
+   * @param string $message
+   * @param array|\Civi\Payment\PropertyBag $params
+   *
+   * @return bool
+   * @throws \CiviCRM_API3_Exception
+   * @throws \Civi\Payment\Exception\PaymentProcessorException
+   */
+  public function cancelSubscription(&$message = '', $params = []) {
+    $propertyBag = \Civi\Payment\PropertyBag::cast($params);
+    if (!$propertyBag->has('recurProcessorID')) {
+      throw new PaymentProcessorException("cancelSubscription requires the recurProcessorID");
+    }
+
+    // contributionRecurID is set when doCancelRecurring is called directly (from 5.25)
+    if (!$propertyBag->has('contributionRecurID')) {
+      $contrib_recur = civicrm_api3('ContributionRecur', 'getsingle', ['processor_id' => $propertyBag->getRecurProcessorID()]);
+      $propertyBag->setContributionRecurID($contrib_recur['id']);
+    }
+
+    $message = $this->doCancelRecurring($propertyBag)['message'];
     return TRUE;
   }
 
@@ -1049,7 +1067,14 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
 
     switch ($context) {
       case 'cancelRecurDetailText':
-        $text .= ' <br/><strong>' . E::ts('Stripe will be automatically notified and the subscription will be cancelled.') . '</strong>';
+        // $params['selfService'] added via https://github.com/civicrm/civicrm-core/pull/17687
+        $params['selfService'] = $params['selfService'] ?? TRUE;
+        if ($params['selfService']) {
+          $text .= ' <br/><strong>' . E::ts('Stripe will be automatically notified and the subscription will be cancelled.') . '</strong>';
+        }
+        else {
+          $text .= ' <br/><strong>' . E::ts("If you select 'Send cancellation request..' then Stripe will be automatically notified and the subscription will be cancelled.") . '</strong>';
+        }
     }
     return $text;
   }
