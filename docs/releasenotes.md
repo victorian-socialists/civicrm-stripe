@@ -9,6 +9,10 @@ Where:
 * minor: Breaking change in some circumstances, or a new feature. Read carefully and make sure you understand the impact of the change.
 * incremental: A "safe" change / improvement. Should *always* be safe to upgrade.
 
+## Release 6.4.2 - not yet released
+
+* Fix [#210](https://lab.civicrm.org/extensions/stripe/-/issues/210): If there are multiple reCaptcha on the page check and validate the one on the Stripe billing form only.
+
 ## Release 6.4.1
 **This release REQUIRES that you upgrade mjwshared to 0.8.**
 

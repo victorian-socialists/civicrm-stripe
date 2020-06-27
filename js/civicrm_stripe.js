@@ -482,16 +482,7 @@ CRM.$(function($) {
         return false;
       }
 
-      if (!(typeof grecaptcha === 'undefined' || (grecaptcha && grecaptcha.getResponse().length !== 0))) {
-        debugging('recaptcha active and not valid');
-        $('div#card-errors').hide();
-        swalFire({
-          icon: 'warning',
-          text: '',
-          title: ts('Please complete the reCaptcha'),
-        }, '.recaptcha-section', true);
-        triggerEvent('crmBillingFormNotValid');
-        form.dataset.submitted = 'false';
+      if (!validateReCaptcha()) {
         return false;
       }
 
@@ -581,6 +572,41 @@ CRM.$(function($) {
 
       return true;
     }
+  }
+
+  /**
+   * Validate a reCaptcha if it exists on the form.
+   * Ideally we would use grecaptcha.getResponse() but the reCaptcha is already render()ed by CiviCRM
+   *   so we don't have clientID and can't be sure we are checking the reCaptcha that is on our form.
+   *
+   * @returns {boolean}
+   */
+  function validateReCaptcha() {
+    if (typeof grecaptcha === 'undefined') {
+      // No reCaptcha library loaded
+      debugging('reCaptcha library not loaded');
+      return true;
+    }
+    if ($(form).find('[name=g-recaptcha-response]').length === 0) {
+      // no reCaptcha on form - we check this first because there could be reCaptcha on another form on the same page that we don't want to validate
+      debugging('no reCaptcha on form');
+      return true;
+    }
+    if ($(form).find('[name=g-recaptcha-response]').val().length > 0) {
+      // We can't use grecaptcha.getResponse because there might be multiple reCaptchas on the page and we might not be the first one.
+      debugging('recaptcha is valid');
+      return true;
+    }
+    debugging('recaptcha active and not valid');
+    $('div#card-errors').hide();
+    swalFire({
+      icon: 'warning',
+      text: '',
+      title: ts('Please complete the reCaptcha'),
+    }, '.recaptcha-section', true);
+    triggerEvent('crmBillingFormNotValid');
+    form.dataset.submitted = 'false';
+    return false;
   }
 
   function getIsDrupalWebform() {
@@ -713,7 +739,7 @@ CRM.$(function($) {
         // If the auto_renew field exists as a hidden field, then we force a
         // recurring contribution (the value isn't useful since it depends on
         // the locale - e.g.  "Please renew my membership")
-        isRecur = true;;
+        isRecur = true;
       }
       else {
         isRecur = Boolean($('input[name="auto_renew"]').checked);
