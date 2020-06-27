@@ -29,6 +29,17 @@ class CRM_Stripe_Check {
   const MIN_VERSION_SWEETALERT = '1.2';
 
   public static function checkRequirements(&$messages) {
+    self::checkExtensionMjwshared($messages);
+    self::checkExtensionFirewall($messages);
+    self::checkExtensionSweetalert($messages);
+  }
+
+  /**
+   * @param array $messages
+   *
+   * @throws \CiviCRM_API3_Exception
+   */
+  private static function checkExtensionMjwshared(&$messages) {
     // mjwshared: required. Requires min version
     $extensionName = 'mjwshared';
 
@@ -37,17 +48,32 @@ class CRM_Stripe_Check {
     ]);
 
     if (empty($extensions['id']) || ($extensions['values'][$extensions['id']]['status'] !== 'installed')) {
-      $messages[] = new CRM_Utils_Check_Message(
+      $message = new CRM_Utils_Check_Message(
         'stripe_requirements',
         E::ts('The Stripe extension requires the mjwshared extension which is not installed (https://lab.civicrm.org/extensions/mjwshared).'),
         E::ts('Stripe: Missing Requirements'),
         \Psr\Log\LogLevel::ERROR,
         'fa-money'
       );
+      $message->addAction(
+        E::ts('Install now'),
+        NULL,
+        'href',
+        ['path' => 'civicrm/admin/extensions', 'query' => ['action' => 'update', 'id' => $extensionName, 'key' => $extensionName]]
+      );
+      $messages[] = $message;
     }
-    self::requireExtensionMinVersion($messages, $extensionName, CRM_Stripe_Check::MIN_VERSION_MJWSHARED, $extensions['values'][$extensions['id']]['version']);
+    if ($extensions['values'][$extensions['id']]['status'] === 'installed') {
+      self::requireExtensionMinVersion($messages, $extensionName, CRM_Stripe_Check::MIN_VERSION_MJWSHARED, $extensions['values'][$extensions['id']]['version']);
+    }
+  }
 
-    // mjwshared: Recommended
+  /**
+   * @param array $messages
+   *
+   * @throws \CiviCRM_API3_Exception
+   */
+  private static function checkExtensionFirewall(&$messages) {
     $extensionName = 'firewall';
 
     $extensions = civicrm_api3('Extension', 'get', [
@@ -55,7 +81,7 @@ class CRM_Stripe_Check {
     ]);
 
     if (empty($extensions['id']) || ($extensions['values'][$extensions['id']]['status'] !== 'installed')) {
-      $messages[] = new CRM_Utils_Check_Message(
+      $message = new CRM_Utils_Check_Message(
         'stripe_recommended',
         E::ts('If you are using Stripe to accept payments on public forms (eg. contribution/event registration forms) it is recommended that you install the <strong><a href="https://lab.civicrm.org/extensions/firewall">firewall</a></strong> extension.
         Some sites have become targets for spammers who use the payment endpoint to try and test credit cards by submitting invalid payments to your Stripe account.'),
@@ -63,8 +89,22 @@ class CRM_Stripe_Check {
         \Psr\Log\LogLevel::NOTICE,
         'fa-lightbulb-o'
       );
+      $message->addAction(
+        E::ts('Install now'),
+        NULL,
+        'href',
+        ['path' => 'civicrm/admin/extensions', 'query' => ['action' => 'update', 'id' => $extensionName, 'key' => $extensionName]]
+      );
+      $messages[] = $message;
     }
+  }
 
+  /**
+   * @param array $messages
+   *
+   * @throws \CiviCRM_API3_Exception
+   */
+  private static function checkExtensionSweetalert(&$messages) {
     // sweetalert: recommended. If installed requires min version
     $extensionName = 'sweetalert';
     $extensions = civicrm_api3('Extension', 'get', [
@@ -72,17 +112,27 @@ class CRM_Stripe_Check {
     ]);
 
     if (empty($extensions['id']) || ($extensions['values'][$extensions['id']]['status'] !== 'installed')) {
-      $messages[] = new CRM_Utils_Check_Message(
+      $message = new CRM_Utils_Check_Message(
         'stripe_recommended',
-        E::ts('If you are using Stripe to accept payments on public forms (eg. contribution/event registration forms) it is recommended that you install the <strong><a href="https://lab.civicrm.org/extensions/firewall">firewall</a></strong> extension.
-        Some sites have become targets for spammers who use the payment endpoint to try and test credit cards by submitting invalid payments to your Stripe account.'),
-        E::ts('Recommended Extension: firewall'),
+        E::ts('It is recommended that you install the <strong><a href="https://civicrm.org/extensions/sweetalert">sweetalert</a></strong> extension.
+        This allows the stripe extension to show useful messages to the user when processing payment.
+        If this is not installed it will fallback to the browser "alert" message but you will
+        not see some messages (such as <em>we are pre-authorizing your card</em> and <em>please wait</em>) and the feedback to the user will not be as helpful.'),
+        E::ts('Recommended Extension: sweetalert'),
         \Psr\Log\LogLevel::NOTICE,
         'fa-lightbulb-o'
       );
+      $message->addAction(
+        E::ts('Install now'),
+        NULL,
+        'href',
+        ['path' => 'civicrm/admin/extensions', 'query' => ['action' => 'update', 'id' => $extensionName, 'key' => $extensionName]]
+      );
+      $messages[] = $message;
     }
-
-    self::requireExtensionMinVersion($messages, $extensionName, CRM_Stripe_Check::MIN_VERSION_SWEETALERT, $extensions['values'][$extensions['id']]['version']);
+    if ($extensions['values'][$extensions['id']]['status'] === 'installed') {
+      self::requireExtensionMinVersion($messages, $extensionName, CRM_Stripe_Check::MIN_VERSION_SWEETALERT, $extensions['values'][$extensions['id']]['version']);
+    }
   }
 
   /**
@@ -93,7 +143,7 @@ class CRM_Stripe_Check {
    */
   private static function requireExtensionMinVersion(&$messages, $extensionName, $minVersion, $actualVersion) {
     if (version_compare($actualVersion, $minVersion) === -1) {
-      $messages[] = new CRM_Utils_Check_Message(
+      $message = new CRM_Utils_Check_Message(
         'stripe_requirements',
         E::ts('The Stripe extension requires the %1 extension version %2 or greater but your system has version %3.',
           [
@@ -105,6 +155,13 @@ class CRM_Stripe_Check {
         \Psr\Log\LogLevel::ERROR,
         'fa-money'
       );
+      $message->addAction(
+        E::ts('Upgrade now'),
+        NULL,
+        'href',
+        ['path' => 'civicrm/admin/extensions', 'query' => ['action' => 'update', 'id' => $extensionName, 'key' => $extensionName]]
+      );
+      $messages[] = $message;
     }
   }
 
