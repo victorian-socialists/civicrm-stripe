@@ -611,7 +611,10 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return bool
    */
   private function isPaymentForEventAdditionalParticipants($params) {
-    return !empty($params->getCustomProperty('additional_participants'));
+    if ($params->getter('additional_participants', TRUE)) {
+      return TRUE;
+    }
+    return FALSE;
   }
 
   /**
