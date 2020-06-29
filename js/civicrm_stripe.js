@@ -13,11 +13,12 @@ CRM.$(function($) {
   }
 
   // On initial load...
-  var stripe;
-  var card;
+  var stripe = null;
+  var card = null;
   var form;
   var submitButtons;
   var stripeLoading = false;
+  var paymentProcessorID = null;
 
   // Disable the browser "Leave Page Alert" which is triggered because we mess with the form submit function.
   window.onbeforeunload = null;
@@ -119,10 +120,10 @@ CRM.$(function($) {
    * Destroy any payment elements we have already created
    */
   function destroyPaymentElements() {
-    if ((typeof card !== 'undefined') && (card)) {
+    if (card !== null) {
       debugging("destroying card element");
       card.destroy();
-      card = undefined;
+      card = null;
     }
   }
 
@@ -158,7 +159,8 @@ CRM.$(function($) {
           // Send paymentMethod.id to server
           debugging('Waiting for pre-auth');
           swalFire({
-            title: 'Please wait while we pre-authorize your card...',
+            title: 'Please wait',
+            text: ' while we pre-authorize your card...',
             allowOutsideClick: false,
             onBeforeOpen: () => {
               Swal.showLoading();
@@ -212,55 +214,6 @@ CRM.$(function($) {
         }
       });
   }
-
-  // Re-prep form when we've loaded a new payproc
-  $(document).ajaxComplete(function(event, xhr, settings) {
-    // /civicrm/payment/form? occurs when a payproc is selected on page
-    // /civicrm/contact/view/participant occurs when payproc is first loaded on event credit card payment
-    // On wordpress these are urlencoded
-    if ((settings.url.match("civicrm(\/|%2F)payment(\/|%2F)form") !== null) ||
-      (settings.url.match("civicrm(\/|\%2F)contact(\/|\%2F)view(\/|\%2F)participant") !== null)) {
-
-      // See if there is a payment processor selector on this form
-      // (e.g. an offline credit card contribution page).
-      if (typeof CRM.vars.stripe === 'undefined') {
-        return;
-      }
-      var paymentProcessorID = getPaymentProcessorSelectorValue();
-      if (paymentProcessorID !== null) {
-        // There is. Check if the selected payment processor is different
-        // from the one we think we should be using.
-        if (paymentProcessorID !== parseInt(CRM.vars.stripe.id)) {
-          debugging('payment processor changed to id: ' + paymentProcessorID);
-          if (paymentProcessorID === 0) {
-            // Don't bother executing anything below - this is a manual / paylater
-            return notStripe();
-          }
-          // It is! See if the new payment processor is also a Stripe Payment processor.
-          // (we don't want to update the stripe pub key with a value from another payment processor).
-          // Now, see if the new payment processor id is a stripe payment processor.
-          CRM.api3('PaymentProcessor', 'getvalue', {
-            "return": "user_name",
-            "id": paymentProcessorID,
-            "payment_processor_type_id": CRM.vars.stripe.paymentProcessorTypeID,
-          }).done(function(result) {
-            var pub_key = result.result;
-            if (pub_key) {
-              // It is a stripe payment processor, so update the key.
-              debugging("Setting new stripe key to: " + pub_key);
-              CRM.vars.stripe.publishableKey = pub_key;
-            }
-            else {
-              return notStripe();
-            }
-            // Now reload the billing block.
-            debugging('checkAndLoad from ajaxComplete');
-            checkAndLoad();
-          });
-        }
-      }
-    }
-  });
 
   function notStripe() {
     debugging("New payment processor is not Stripe, clearing CRM.vars.stripe");
@@ -322,9 +275,17 @@ CRM.$(function($) {
   function loadStripeBillingBlock() {
     debugging('loadStripeBillingBlock');
 
-    if (typeof stripe === 'undefined') {
-      stripe = Stripe(CRM.vars.stripe.publishableKey);
+    var oldPaymentProcessorID = paymentProcessorID;
+    paymentProcessorID = getPaymentProcessorSelectorValue();
+    debugging('payment processor old: ' + oldPaymentProcessorID + ' new: ' + paymentProcessorID + ' id: ' + CRM.vars.stripe.id);
+    if ((paymentProcessorID !== null) && (paymentProcessorID !== parseInt(CRM.vars.stripe.id))) {
+      debugging('not stripe');
+      return notStripe();
     }
+
+    debugging('New Stripe ID: ' + CRM.vars.stripe.id + ' pubKey: ' + CRM.vars.stripe.publishableKey);
+    stripe = Stripe(CRM.vars.stripe.publishableKey);
+
     var elements = stripe.elements({ locale: CRM.vars.stripe.locale });
 
     var style = {
@@ -862,9 +823,17 @@ CRM.$(function($) {
         return null;
       }
     }
+    // Frontend radio selector
     var paymentProcessorSelected = form.querySelector('input[name="payment_processor_id"]:checked');
     if (paymentProcessorSelected !== null) {
       return parseInt(paymentProcessorSelected.value);
+    }
+    else {
+      // Backend select dropdown
+      paymentProcessorSelected = form.querySelector('select[name="payment_processor_id"]');
+      if (paymentProcessorSelected !== null) {
+        return parseInt(paymentProcessorSelected.value);
+      }
     }
     return null;
   }
