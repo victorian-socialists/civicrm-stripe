@@ -19,6 +19,7 @@ Where:
 * Map customer to contact ID in IPN
 * Handle invoice.paid, invoice.finalized IPN events - we now create the new contribution once we receive the invoice.finalized event. It will then be transitioned to Completed by invoice.paid/invoice.payment_succeeded
 * Record refund against the already recorded payment in CiviCRM so we update financial items correctly
+* API3 Stripe.Listevents [!117](https://lab.civicrm.org/extensions/stripe/-/merge_requests/117) Provide additional information about stripe events.
 
 ## Release 6.4.2
 

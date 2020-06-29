@@ -228,17 +228,49 @@ function civicrm_api3_stripe_Listevents($params) {
         $item['subscription'] = $data['data']['object']->subscription;
         $item['total'] = $data['data']['object']->total;
 
-        // Check if this is in the contributions table.
+        // We will populate several additional fields based on whether any
+        // of this data has been entered into CiviCRM.
+        $item['contact_id'] = NULL;
+        $item['contribution_recur_id'] = NULL;
+        $item['contribution_recur_status_id'] = NULL;
+        $item['contribution_id'] = NULL;
+        $item['contribution_status_id'] = NULL;
         $item['processed'] = 'no';
+
+        // Check if the customer is in the stripe customer table.
+        $results = civicrm_api3('StripeCustomer', 'get', [ 'id' => $data['data']['object']->customer]);
+        if ($results['count'] == 1) {
+          $value = array_pop($results['values']);
+          $item['contact_id'] = $value['contact_id'];
+        }
+        // Check if recurring contribution can be found.
+        $results = civicrm_api3('ContributionRecur', 'get', ['trxn_id' => $item['subscription']]);
+        if ($results['count'] > 0) {
+          $item['contribution_recur_id'] = $results['id'];
+          $contribution_recur = array_pop($results['values']);
+          $status_id = $contribution_recur['contribution_status_id'];
+          $item['contribution_recur_status_id'] = CRM_Core_PseudoConstant::getName('CRM_Contribute_BAO_Contribution', 'contribution_status_id', $status_id);
+        }
+
+        // Check if charge is in the contributions table.
+        $contribution = NULL;
         $results = civicrm_api3('Contribution', 'get', ['trxn_id' => $item['charge']]);
         if ($results['count'] > 0) {
-          $item['processed'] = 'yes';
+          $contribution = array_pop($results['values']);
         }
         else {
           // From 6.0 we store the Stripe Invoice ID in the Contribution.trxn_id if available (ie it's a recur).
           // Otherwise we continue to store the Stripe Charge ID.
           $results = civicrm_api3('Contribution', 'get', ['trxn_id' => $item['invoice']]);
           if ($results['count'] > 0) {
+            $contribution = array_pop($results['values']);
+          }
+        }
+        if ($contribution) {
+          $item['contribution_id'] = $contribution['id'];
+          $status_id = $contribution['contribution_status_id'];
+          $item['contribution_status_id'] = CRM_Core_PseudoConstant::getName('CRM_Contribute_BAO_Contribution', 'contribution_status_id', $status_id);
+          if ($contribution['contribution_status_id'] == 1) {
             $item['processed'] = 'yes';
           }
         }
