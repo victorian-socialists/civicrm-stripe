@@ -15,6 +15,8 @@ Where:
 * Update implementation for cancel subscription. Option to notify (default Yes) is now available on the backend cancel subscription form.
 * Fix [#218](https://lab.civicrm.org/extensions/stripe/-/issues/218): Ensure disallowed characters in description don't stop contributions from being processed.
 * Fixes to system checks (check for sweetalert was showing description for firewall extension).
+* Fix [#215](https://lab.civicrm.org/extensions/stripe/-/issues/218) Errors encountered when anonymous users switch payment processors.
+* Fix for 5.28 and propertybag.
 
 ## Release 6.4.1
 **This release REQUIRES that you upgrade mjwshared to 0.8.**
