@@ -37,6 +37,7 @@ CRM.$(function($) {
       }
     }
     else {
+      notStripe();
       triggerEvent('crmBillingFormReloadComplete');
     }
   };
