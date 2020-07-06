@@ -979,7 +979,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   }
 
   /**
-   * Attempt to cancel the subscription at GoCardless.
+   * Attempt to cancel the subscription at Stripe.
    *
    * @param \Civi\Payment\PropertyBag $propertyBag
    *
@@ -1030,7 +1030,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   }
 
   /**
-   * Attempt to cancel the subscription at GoCardless.
+   * Attempt to cancel the subscription.
    * @deprecated Remove when min CiviCRM version is 5.25
    *
    * @see supportsCancelRecurring()
