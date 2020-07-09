@@ -141,7 +141,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return bool
    */
   public function supportsFutureRecurStartDate() {
-    return FALSE;
+    return TRUE;
   }
 
   /**
@@ -661,6 +661,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'default_payment_method' => $stripePaymentMethod,
       'metadata' => ['Description' => $params['description']],
       'expand' => ['latest_invoice.payment_intent'],
+      'billing_cycle_anchor' => $this->getRecurBillingCycleDay($params),
     ];
 
     // Create the stripe subscription for the customer
@@ -703,6 +704,15 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     $this->setPaymentProcessorOrderID($stripeSubscription->latest_invoice['id']);
 
     return $this->endDoPayment($params, $newParams);
+  }
+
+  private function getRecurBillingCycleDay($params) {
+    if (empty($params['receive_date'])) {
+      return strtotime('now');
+    }
+    else {
+      return strtotime($params['receive_date']);
+    }
   }
 
   /**
