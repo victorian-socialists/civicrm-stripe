@@ -1,6 +1,12 @@
 <?php
-/**
- * https://civicrm.org/licensing
+/*
+ +--------------------------------------------------------------------+
+ | Copyright CiviCRM LLC. All rights reserved.                        |
+ |                                                                    |
+ | This work is published under the GNU AGPLv3 license with some      |
+ | permitted exceptions and without any warranty. For full license    |
+ | and copyright information, see https://civicrm.org/licensing       |
+ +--------------------------------------------------------------------+
  */
 
 use CRM_Stripe_ExtensionUtil as E;
@@ -11,7 +17,6 @@ return [
     'type' => 'Boolean',
     'html_type' => 'checkbox',
     'default' => 1,
-    'add' => '5.13',
     'is_domain' => 1,
     'is_contact' => 0,
     'title' => E::ts('Allow Stripe to send a receipt for one-off payments?'),
@@ -28,7 +33,6 @@ return [
     'type' => 'Boolean',
     'html_type' => 'checkbox',
     'default' => 0,
-    'add' => '5.13',
     'is_domain' => 1,
     'is_contact' => 0,
     'title' => E::ts('Enable Stripe Javascript debugging?'),
@@ -45,7 +49,6 @@ return [
     'type' => 'Boolean',
     'html_type' => 'checkbox',
     'default' => 0,
-    'add' => '5.19',
     'is_domain' => 1,
     'is_contact' => 0,
     'title' => E::ts('Disable billing address fields (Experimental)'),
@@ -55,6 +58,42 @@ return [
       'stripe' => [
         'weight' => 20,
       ]
+    ],
+  ],
+  'stripe_enable_public_future_recur_start' => [
+    'name' => 'stripe_enable_public_future_recur_start',
+    'type' => 'Boolean',
+    'html_type' => 'checkbox',
+    'default' => 0,
+    'is_domain' => 1,
+    'is_contact' => 0,
+    'title' => E::ts('Enable public selection of future recurring start dates'),
+    'description' => E::ts('Allow public selection of start date for a recurring contribution'),
+    'html_attributes' => [],
+    'settings_pages' => [
+      'stripe' => [
+        'weight' => 25,
+      ]
+    ],
+  ],
+  'stripe_future_recur_start_days' => [
+    'name' => 'stripe_future_recur_start_days',
+    'type' => 'Array',
+    'html_type' => 'select',
+    'html_attributes' => [
+      'size' => 29,
+      'multiple' => TRUE
+    ],
+    'pseudoconstant' => ['callback' => 'CRM_Stripe_Recur::getRecurStartDays'],
+    'default' => [0],
+    'title' => E::ts('Restrict allowable days of the month for Recurring Contributions'),
+    'is_domain' => 1,
+    'is_contact' => 0,
+    'description' => E::ts('Restrict allowable days of the month'),
+    'settings_pages' => [
+      'stripe' => [
+        'weight' => 30,
+      ],
     ],
   ],
 ];

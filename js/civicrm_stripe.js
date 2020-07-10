@@ -216,9 +216,13 @@ CRM.$(function($) {
       });
   }
 
+  /**
+   * Payment processor is not Stripe - cleanup
+   */
   function notStripe() {
     debugging("New payment processor is not Stripe, clearing CRM.vars.stripe");
     destroyPaymentElements();
+    $('.is_recur-section #stripe-recurring-start-date').remove();
     delete(CRM.vars.stripe);
   }
 

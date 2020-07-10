@@ -412,6 +412,29 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         ]
       )
     ]);
+
+    // Add form element and js to select future recurring start date
+    if (!$this->isBackOffice() && !empty(\Civi::settings()->get('stripe_enable_public_future_recur_start'))
+      && $this->supportsFutureRecurStartDate()
+    ) {
+      $startDates = CRM_Stripe_Recur::getFutureMonthlyStartDates();
+      if ($startDates) {
+        $form->addElement('select', 'receive_date', ts('Date of first contribution'), $startDates);
+        CRM_Core_Region::instance('billing-block')->add([
+          'template' => 'CRM/Core/Payment/Stripe/BillingBlockRecurringExtra.tpl',
+        ]);
+        CRM_Core_Region::instance('billing-block')->add([
+          'scriptUrl' => \Civi::service('asset_builder')->getUrl(
+            'recurStart.js',
+            [
+              'path' => \Civi::resources()
+                ->getPath(E::LONG_NAME, 'js/recur_start.js'),
+              'mimetype' => 'application/javascript',
+            ]
+          )
+        ]);
+      }
+    }
   }
 
   /**
@@ -661,8 +684,13 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'default_payment_method' => $stripePaymentMethod,
       'metadata' => ['Description' => $params['description']],
       'expand' => ['latest_invoice.payment_intent'],
-      'billing_cycle_anchor' => $this->getRecurBillingCycleDay($params),
     ];
+    // This is the parameter that specifies the start date for the subscription.
+    // If omitted the subscription will start immediately.
+    $billingCycleAnchor = $this->getRecurBillingCycleDay($params);
+    if ($billingCycleAnchor) {
+      $subscriptionParams['billing_cycle_anchor'] = $billingCycleAnchor;
+    }
 
     // Create the stripe subscription for the customer
     $stripeSubscription = $stripeCustomer->subscriptions->create($subscriptionParams);
@@ -694,25 +722,35 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     // Update the recurring payment
     civicrm_api3('ContributionRecur', 'create', $recurParams);
 
-    // Get the paymentIntent for the latest invoice
-    $intent = $stripeSubscription->latest_invoice['payment_intent'];
+    if ($stripeSubscription->latest_invoice) {
+      // Get the paymentIntent for the latest invoice
+      $intent = $stripeSubscription->latest_invoice['payment_intent'];
+      list($params, $newParams) = $this->processPaymentIntent($params, $intent);
 
-    list($params, $newParams) = $this->processPaymentIntent($params, $intent);
-
-    // Set the orderID (trxn_id) to the invoice ID
-    // The IPN will change it to the charge_id
-    $this->setPaymentProcessorOrderID($stripeSubscription->latest_invoice['id']);
-
-    return $this->endDoPayment($params, $newParams);
-  }
-
-  private function getRecurBillingCycleDay($params) {
-    if (empty($params['receive_date'])) {
-      return strtotime('now');
+      // Set the orderID (trxn_id) to the invoice ID
+      // The IPN will change it to the charge_id
+      $this->setPaymentProcessorOrderID($stripeSubscription->latest_invoice['id']);
     }
     else {
+      // Set the orderID (trxn_id) to the subscription ID because we don't yet have an invoice.
+      // The IPN will change it to the invoice_id and then the charge_id
+      $this->setPaymentProcessorOrderID($stripeSubscription->id);
+    }
+
+    return $this->endDoPayment($params, $newParams ?? []);
+  }
+
+  /**
+   * Get the billing cycle day (timestamp)
+   * @param array $params
+   *
+   * @return int|null
+   */
+  private function getRecurBillingCycleDay($params) {
+    if (isset($params['receive_date'])) {
       return strtotime($params['receive_date']);
     }
+    return NULL;
   }
 
   /**
