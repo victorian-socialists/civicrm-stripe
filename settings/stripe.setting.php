@@ -44,6 +44,22 @@ return [
       ]
     ],
   ],
+  'stripe_ipndebug' => [
+    'name' => 'stripe_ipndebug',
+    'type' => 'Boolean',
+    'html_type' => 'checkbox',
+    'default' => 0,
+    'is_domain' => 1,
+    'is_contact' => 0,
+    'title' => E::ts('Enable Stripe IPN (Webhook) debugging?'),
+    'description' => E::ts('Enables debugging to CiviCRM log for IPN / webhook issues.'),
+    'html_attributes' => [],
+    'settings_pages' => [
+      'stripe' => [
+        'weight' => 16,
+      ]
+    ],
+  ],
   'stripe_nobillingaddress' => [
     'name' => 'stripe_nobillingaddress',
     'type' => 'Boolean',

@@ -182,7 +182,9 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
     switch($this->event_type) {
       case 'invoice.payment_succeeded':
         // Successful recurring payment. Either we are completing an existing contribution or it's the next one in a subscription
-        $this->setInfo();
+        if (!$this->setInfo()) {
+          return TRUE;
+        }
         // This gives us the actual amount
         $this->amount = CRM_Stripe_Api::getObjectParam('amount', $this->_inputParameters->data->object);
         if ($this->contribution['contribution_status_id'] == $pendingStatusId) {
@@ -218,7 +220,9 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
 
       case 'invoice.payment_failed':
         // Failed recurring payment. Either we are failing an existing contribution or it's the next one in a subscription
-        $this->setInfo();
+        if (!$this->setInfo()) {
+          return TRUE;
+        }
 
         if ($this->contribution['contribution_status_id'] == $pendingStatusId) {
           // If this contribution is Pending, set it to Failed.
@@ -249,7 +253,9 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
 
       case 'customer.subscription.deleted':
         // Subscription is cancelled
-        $this->setInfo();
+        if (!$this->setInfo()) {
+          return TRUE;
+        }
         // Cancel the recurring contribution
         $this->updateRecurCancelled(['id' => $this->contribution_recur_id, 'cancel_date' => $this->retrieve('cancel_date', 'String', FALSE)]);
         return TRUE;
@@ -262,7 +268,9 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           return TRUE;
         }
 
-        $this->setInfo();
+        if (!$this->setInfo()) {
+          return TRUE;
+        }
         $params = [
           'contribution_id' => $this->contribution['id'],
           'trxn_date' => $this->receive_date,
@@ -279,7 +287,9 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           return TRUE;
         };
         // This charge was actually captured, so record the refund in CiviCRM
-        $this->setInfo();
+        if (!$this->setInfo()) {
+          return TRUE;
+        }
         // This gives us the actual amount refunded
         $amountRefunded = CRM_Stripe_Api::getObjectParam('amount_refunded', $this->_inputParameters->data->object);
         // This gives us the refund date + reason code
@@ -304,10 +314,12 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         // For a single contribution we can't process charge.succeeded because it only triggers BEFORE the charge is captured
         if (empty(CRM_Stripe_Api::getObjectParam('customer_id', $this->_inputParameters->data->object))) {
           return TRUE;
-        };
+        }
       case 'charge.captured':
         // For a single contribution we have to use charge.captured because it has the customer_id.
-        $this->setInfo();
+        if (!$this->setInfo()) {
+          return TRUE;
+        }
         // This gives us the actual amount
         $this->amount = CRM_Stripe_Api::getObjectParam('amount', $this->_inputParameters->data->object);
         if ($this->contribution['contribution_status_id'] == $pendingStatusId && empty($this->contribution['contribution_recur_id'])) {
@@ -324,7 +336,9 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         return TRUE;
 
       case 'customer.subscription.updated':
-        $this->setInfo();
+        if (!$this->setInfo()) {
+          return TRUE;
+        }
         if (empty($this->previous_plan_id)) {
           // Not a plan change...don't care.
           return TRUE;
@@ -351,6 +365,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    * as much as we can about this event and set that information as
    * properties to be used later.
    *
+   * @return bool
    * @throws \CRM_Core_Exception
    */
   public function setInfo() {
@@ -394,6 +409,24 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
       }
     }
 
+    // Get the CiviCRM contribution that matches the Stripe metadata we have from the event
+    return $this->getContribution();
+  }
+
+  /**
+   * A) A one-off contribution will have trxn_id == stripe.charge_id
+   * B) A contribution linked to a recur (stripe subscription):
+   *   1. May have the trxn_id == stripe.subscription_id if the invoice was not generated at the time the contribution was created
+   *     (Eg. the recur was setup with a future recurring start date).
+   *     This will be updated to trxn_id == stripe.invoice_id when a suitable IPN is received
+   *     @todo: Which IPN events will update this?
+   *   2. May have the trxn_id == stripe.invoice_id if the invoice was generated at the time the contribution was created
+   *     OR the contribution has been updated by the IPN when the invoice was generated.
+   *
+   * @return bool
+   * @throws \Civi\Payment\Exception\PaymentProcessorException
+   */
+  private function getContribution() {
     $contributionParamsToReturn = [
       'id',
       'trxn_id',
@@ -405,6 +438,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
       'tax_amount',
     ];
 
+    // A) One-off contribution
     if ($this->charge_id) {
       try {
         $this->contribution = civicrm_api3('Contribution', 'getsingle', [
@@ -412,11 +446,14 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           'contribution_test' => $this->_paymentProcessor->getIsTestMode(),
           'return' => $contributionParamsToReturn,
         ]);
+        return TRUE;
       }
       catch (Exception $e) {
         // Contribution not found - that's ok
       }
     }
+
+    // B2) Contribution linked to subscription and we have invoice_id
     if (!$this->contribution && $this->invoice_id) {
       try {
         $this->contribution = civicrm_api3('Contribution', 'getsingle', [
@@ -424,29 +461,50 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           'contribution_test' => $this->_paymentProcessor->getIsTestMode(),
           'return' => $contributionParamsToReturn,
         ]);
+        return TRUE;
       }
       catch (Exception $e) {
         // Contribution not found - that's ok
       }
     }
-    if (!$this->contribution && $this->contribution_recur_id) {
-      // If a recurring contribution has been found, get the most recent contribution belonging to it.
+
+    // B1) Contribution linked to subscription and we have subscription_id
+    if (!$this->contribution && $this->subscription_id) {
       try {
-        // Same approach as api repeattransaction.
+        $this->contribution = civicrm_api3('Contribution', 'getsingle', [
+          'trxn_id' => $this->subscription_id,
+          'contribution_test' => $this->_paymentProcessor->getIsTestMode(),
+          'return' => $contributionParamsToReturn,
+        ]);
+        return TRUE;
+      }
+      catch (Exception $e) {
+        // Contribution not found - that's ok
+      }
+    }
+
+    // If a recurring contribution has been found, get the most recent contribution belonging to it.
+    // @todo: In what scenario would this happen?
+    if (!$this->contribution && $this->contribution_recur_id) {
+      try {
         $this->contribution = civicrm_api3('contribution', 'getsingle', [
           'contribution_recur_id' => $this->contribution_recur_id,
           'contribution_test' => $this->_paymentProcessor->getIsTestMode(),
           'return' => $contributionParamsToReturn,
           'options' => ['limit' => 1, 'sort' => 'id DESC'],
         ]);
+        return TRUE;
       }
       catch (Exception $e) {
+        // A recurring contribution should always be setup with a pending contribution.
         $this->exception('Cannot find any contributions with recurring contribution ID: ' . $this->contribution_recur_id . '. ' . $e->getMessage());
       }
     }
-    if (!$this->contribution) {
-      $this->exception('No matching contributions for event ' . CRM_Stripe_Api::getParam('id', $this->_inputParameters));
+    if ((bool)\Civi::settings()->get('stripe_ipndebug') && !$this->contribution) {
+      $message = $this->_paymentProcessor->getPaymentProcessorLabel() . 'No matching contributions for event ' . CRM_Stripe_Api::getParam('id', $this->_inputParameters);
+      Civi::log()->debug($message);
     }
+    return FALSE;
   }
 
   private function setBalanceTransactionDetails($balanceTransactionID) {
