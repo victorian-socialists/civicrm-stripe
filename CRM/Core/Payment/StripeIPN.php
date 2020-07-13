@@ -322,6 +322,18 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           'trxn_id' => $this->charge_id,
           'order_reference' => $this->invoice_id ?? NULL,
         ];
+        if (isset($this->contribution['payments'])) {
+          $refundStatusID = (int) CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Refunded');
+          foreach ($this->contribution['payments'] as $payment) {
+            if (((int) $payment['status_id'] === $refundStatusID) && ((float) $payment['total_amount'] === $params['total_amount'])) {
+              // Already refunded
+              return TRUE;
+            }
+          }
+          // This triggers the financial transactions/items to be updated correctly.
+          $params['cancelled_payment_id'] = reset($this->contribution['payments'])['id'];
+        }
+
         $this->updateContributionRefund($params);
         return TRUE;
 
