@@ -897,7 +897,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   private function getDescription($params, $type = 'description') {
     $description = NULL;
     # See https://stripe.com/docs/statement-descriptors
-    $disallowed_characters = array('<', '>', '\\', "'", '"', '*');
+    $disallowed_characters = ['<', '>', '\\', "'", '"', '*'];
 
     if (!isset(\Civi::$statics[__CLASS__]['description']['contact_contribution'])) {
       \Civi::$statics[__CLASS__]['description']['contact_contribution'] = $params['contactID'] . '-' . ($params['contributionID'] ?? 'XX');

@@ -21,13 +21,6 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    */
   protected $_paymentProcessor;
 
-  /**
-   * Transaction ID is the contribution in the redirect flow and a random number in the on-site->POST flow
-   * Ideally the contribution id would always be created at this point in either flow for greater consistency
-   * @var
-   */
-  protected $transaction_id;
-
   // By default, always retrieve the event from stripe to ensure we are
   // not being fed garbage. However, allow an override so when we are
   // testing, we can properly test a failed recurring contribution.
@@ -57,8 +50,6 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   protected $frequency_unit = NULL;
   protected $plan_name = NULL;
   protected $plan_start = NULL;
-
-  // Derived properties.
 
   /**
    * @var int The recurring contribution ID (linked to Stripe Subscription) (if available)
@@ -369,7 +360,6 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    * @throws \CRM_Core_Exception
    */
   public function setInfo() {
-    $abort = FALSE;
     $stripeObjectName = get_class($this->_inputParameters->data->object);
     $this->customer_id = CRM_Stripe_Api::getObjectParam('customer_id', $this->_inputParameters->data->object);
     if (empty($this->customer_id)) {
@@ -377,16 +367,17 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
     }
 
     $this->previous_plan_id = CRM_Stripe_Api::getParam('previous_plan_id', $this->_inputParameters);
-    $this->subscription_id = $this->retrieve('subscription_id', 'String', $abort);
-    $this->invoice_id = $this->retrieve('invoice_id', 'String', $abort);
-    $this->receive_date = $this->retrieve('receive_date', 'String', $abort);
-    $this->charge_id = $this->retrieve('charge_id', 'String', $abort);
-    $this->plan_id = $this->retrieve('plan_id', 'String', $abort);
-    $this->plan_amount = $this->retrieve('plan_amount', 'String', $abort);
-    $this->frequency_interval = $this->retrieve('frequency_interval', 'String', $abort);
-    $this->frequency_unit = $this->retrieve('frequency_unit', 'String', $abort);
-    $this->plan_name = $this->retrieve('plan_name', 'String', $abort);
-    $this->plan_start = $this->retrieve('plan_start', 'String', $abort);
+    $this->subscription_id = $this->retrieve('subscription_id', 'String', FALSE);
+    $this->invoice_id = $this->retrieve('invoice_id', 'String', FALSE);
+    $this->receive_date = $this->retrieve('receive_date', 'String', FALSE);
+    $this->charge_id = $this->retrieve('charge_id', 'String', FALSE);
+    $this->plan_id = $this->retrieve('plan_id', 'String', FALSE);
+    $this->plan_amount = $this->retrieve('plan_amount', 'String', FALSE);
+    $this->frequency_interval = $this->retrieve('frequency_interval', 'String', FALSE);
+    $this->frequency_unit = $this->retrieve('frequency_unit', 'String', FALSE);
+    $this->plan_name = $this->retrieve('plan_name', 'String', FALSE);
+    $this->plan_start = $this->retrieve('plan_start', 'String', FALSE);
+    $this->amount = $this->retrieve('amount', 'String', FALSE);
 
     if (($stripeObjectName !== 'Stripe\Charge') && ($this->charge_id !== NULL)) {
       $charge = \Stripe\Charge::retrieve($this->charge_id);
