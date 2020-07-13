@@ -169,22 +169,69 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   public function main() {
     // Collect and determine all data about this event.
     $this->event_type = CRM_Stripe_Api::getParam('event_type', $this->_inputParameters);
-    $pendingStatusId = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending');
 
     // Return 200 OK for any events that we don't handle
     if (!in_array($this->event_type, CRM_Stripe_Webhook::getDefaultEnabledEvents())) {
       return TRUE;
     }
 
+    $pendingStatusId = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending');
+
     // NOTE: If you add an event here make sure you add it to the webhook or it will never be received!
     switch($this->event_type) {
+      case 'invoice.finalized':
+        // An invoice has been created and finalized (ready for payment)
+        // This usually happens automatically through a Stripe subscription
+        if (!$this->setInfo()) {
+          if (!$this->contribution_recur_id) {
+            // We don't have a matching contribution or a recurring contribution - this was probably created outside of CiviCRM
+            // @todo In the future we may want to match the customer->contactID and create a contribution to match.
+            return TRUE;
+          }
+          else {
+            // We have a recurring contribution but no contribution so we'll repeattransaction
+            // Stripe has generated a new invoice (next payment in a subscription) so we
+            //   create a new contribution in CiviCRM
+            $params = [
+              'contribution_recur_id' => $this->contribution_recur_id,
+              'contribution_status_id' => CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending'),
+              'receive_date' => $this->receive_date,
+              'order_reference' => $this->invoice_id,
+              'trxn_id' => $this->charge_id,
+              'total_amount' => $this->amount,
+              'fee_amount' => $this->fee,
+            ];
+            $this->repeatContribution($params);
+            // Don't touch the contributionRecur as it's updated automatically by Contribution.repeattransaction
+          }
+          return TRUE;
+        }
+        // For a future recur start date we setup the initial contribution with the
+        // Stripe subscriptionID because we didn't have an invoice.
+        // Now we do we can map subscription_id to invoice_id so payment can be recorded
+        // via subsequent IPN requests (eg. invoice.payment_succeeded)
+        if ($this->contribution['trxn_id'] === $this->subscription_id) {
+          $this->updateContribution([
+            'contribution_id' => $this->contribution['id'],
+            'trxn_id' => $this->invoice_id,
+          ]);
+        }
+        break;
+
+      case 'invoice.paid':
       case 'invoice.payment_succeeded':
         // Successful recurring payment. Either we are completing an existing contribution or it's the next one in a subscription
         if (!$this->setInfo()) {
           return TRUE;
         }
-        // This gives us the actual amount
-        $this->amount = CRM_Stripe_Api::getObjectParam('amount', $this->_inputParameters->data->object);
+        if (civicrm_api3('Mjwpayment', 'get_payment', [
+          'trxn_id' => $this->charge_id,
+          'status_id' => 'Completed'
+        ])['count'] > 0) {
+          // Payment already recorded
+          return TRUE;
+        }
+
         if ($this->contribution['contribution_status_id'] == $pendingStatusId) {
           $params = [
             'contribution_id' => $this->contribution['id'],
@@ -196,22 +243,6 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           ];
           $this->updateContributionCompleted($params);
           // Don't touch the contributionRecur as it's updated automatically by Contribution.completetransaction
-        }
-        elseif ($this->contribution['trxn_id'] != $this->invoice_id) {
-          // Stripe has generated a new invoice (next payment in a subscription) so we
-          //   create a new contribution in CiviCRM
-          $params = [
-            'contribution_recur_id' => $this->contribution_recur_id,
-            'contribution_status_id' => CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Completed'),
-            'receive_date' => $this->receive_date,
-            'order_reference' => $this->invoice_id,
-            'trxn_id' => $this->charge_id,
-            'total_amount' => $this->amount,
-            'fee_amount' => $this->fee,
-            'original_contribution_id' => $this->contribution['id'],
-          ];
-          $this->repeatContribution($params);
-          // Don't touch the contributionRecur as it's updated automatically by Contribution.repeattransaction
         }
         $this->handleInstallmentsForSubscription();
         return TRUE;
@@ -233,25 +264,12 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
           ];
           $this->updateContributionFailed($params);
         }
-        elseif ($this->contribution['trxn_id'] != $this->invoice_id) {
-          $params = [
-            'contribution_recur_id' => $this->contribution_recur_id,
-            'contribution_status_id' => CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Failed'),
-            'receive_date' => $this->receive_date,
-            'order_reference' => $this->invoice_id,
-            'trxn_id' => $this->charge_id,
-            'total_amount' => $this->amount,
-            'fee_amount' => $this->fee,
-            'original_contribution_id' => $this->contribution['id'],
-          ];
-          $this->repeatContribution($params);
-          // Don't touch the contributionRecur as it's updated automatically by Contribution.completetransaction
-        }
         return TRUE;
 
       case 'customer.subscription.deleted':
         // Subscription is cancelled
         if (!$this->setInfo()) {
+          // Subscription was not found in CiviCRM
           return TRUE;
         }
         // Cancel the recurring contribution
@@ -318,9 +336,19 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         if (!$this->setInfo()) {
           return TRUE;
         }
-        // This gives us the actual amount
-        $this->amount = CRM_Stripe_Api::getObjectParam('amount', $this->_inputParameters->data->object);
-        if ($this->contribution['contribution_status_id'] == $pendingStatusId && empty($this->contribution['contribution_recur_id'])) {
+
+        // We only process charge.captured for one-off contributions (see invoice.paid/invoice.payment_succeeded for recurring)
+        if (!empty($this->contribution['contribution_recur_id'])) {
+          return TRUE;
+        }
+
+        // If contribution is in Pending or Failed state record payment and transition to Completed
+        // @fixme: CiviCRM doesn't allow Failed => X but probably should do.
+        $statusesToUpdate = [
+          $pendingStatusId,
+          CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Failed'),
+        ];
+        if (in_array($this->contribution['contribution_status_id'], $statusesToUpdate)) {
           $params = [
             'contribution_id' => $this->contribution['id'],
             'trxn_date' => $this->receive_date,

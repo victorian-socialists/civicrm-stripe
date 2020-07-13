@@ -227,6 +227,8 @@ class CRM_Stripe_Webhook {
    */
   public static function getDefaultEnabledEvents() {
     return [
+      'invoice.finalized',
+      'invoice.paid',
       'invoice.payment_succeeded',
       'invoice.payment_failed',
       'charge.failed',
