@@ -447,7 +447,11 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
         $this->contribution_recur_id = $contributionRecur['id'];
       }
       catch (Exception $e) {
-        $this->exception('Cannot find recurring contribution for subscription ID: ' . $this->subscription_id . '. ' . $e->getMessage());
+        if ((bool)\Civi::settings()->get('stripe_ipndebug')) {
+          $message = $this->_paymentProcessor->getPaymentProcessorLabel() . ': ' . CRM_Stripe_Api::getParam('id', $this->_inputParameters) . ': Cannot find recurring contribution for subscription ID: ' . $this->subscription_id;
+          Civi::log()->debug($message);
+        }
+        return FALSE;
       }
     }
 
