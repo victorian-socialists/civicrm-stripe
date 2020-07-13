@@ -9,6 +9,16 @@ When you create a recurring contribution in CiviCRM using the Stripe payment pro
 !!! tip "If you are using recurring contributions make sure you have webhooks configured correctly"
     See [Webhooks](webhook.md)
 
+## Starting a Recurring contribution in the future
+If you would like your users to be able to specify a future recurring start date you can enable
+`Enable public selection of future recurring start dates` in *Administer->CiviContribute->Stripe Settings*.
+
+![future recur settings](images/settings_futurerecur.png)
+
+Then your users will see an option to select a start date for the contribution:
+
+![contribution page future recur start date](images/contribution_futurerecur.png)
+
 ## Cancelling Recurring Contributions
 You can cancel a recurring contribution from the Stripe Dashboard or from within CiviCRM.
 

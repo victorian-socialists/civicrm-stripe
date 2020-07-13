@@ -9,6 +9,17 @@ Where:
 * minor: Breaking change in some circumstances, or a new feature. Read carefully and make sure you understand the impact of the change.
 * incremental: A "safe" change / improvement. Should *always* be safe to upgrade.
 
+## Release 6.5 - not yet released
+**This release REQUIRES that you upgrade mjwshared to 0.9**
+
+* Implement [#199](https://lab.civicrm.org/extensions/stripe/-/issues/199):
+  * Support future recurring start date on backend forms
+  * Add support for selecting and creating subscriptions with future start date on frontend forms
+* Fix [#221](https://lab.civicrm.org/extensions/stripe/-/issues/199) Return 200 OK for webhooks that stripe can't match to CiviCRM. Look for contribution using subscription_id for future recurring start date
+* Map customer to contact ID in IPN
+* Handle invoice.paid, invoice.finalized IPN events - we now create the new contribution once we receive the invoice.finalized event. It will then be transitioned to Completed by invoice.paid/invoice.payment_succeeded
+* Record refund against the already recorded payment in CiviCRM so we update financial items correctly
+
 ## Release 6.4.2
 
 * Fix [#210](https://lab.civicrm.org/extensions/stripe/-/issues/210): If there are multiple reCaptcha on the page check and validate the one on the Stripe billing form only.
