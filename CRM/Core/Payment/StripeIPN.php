@@ -32,6 +32,13 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   protected $_inputParameters;
 
   /**
+   * The CiviCRM contact ID that maps to the Stripe customer
+   *
+   * @var int
+   */
+  protected $contactID = NULL;
+
+  /**
    * Do we send an email receipt for each contribution?
    *
    * @var int
@@ -361,9 +368,13 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    */
   public function setInfo() {
     $stripeObjectName = get_class($this->_inputParameters->data->object);
-    $this->customer_id = CRM_Stripe_Api::getObjectParam('customer_id', $this->_inputParameters->data->object);
-    if (empty($this->customer_id)) {
-      $this->exception('Missing customer_id!');
+
+    if (!$this->getCustomer()) {
+      if ((bool)\Civi::settings()->get('stripe_ipndebug')) {
+        $message = $this->_paymentProcessor->getPaymentProcessorLabel() . ': ' . CRM_Stripe_Api::getParam('id', $this->_inputParameters) . ': Missing customer_id';
+        Civi::log()->debug($message);
+      }
+      return FALSE;
     }
 
     $this->previous_plan_id = CRM_Stripe_Api::getParam('previous_plan_id', $this->_inputParameters);
@@ -418,84 +429,76 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
   private function getContribution() {
-    $contributionParamsToReturn = [
-      'id',
-      'trxn_id',
-      'contribution_status_id',
-      'contribution_recur_id',
-      'total_amount',
-      'fee_amount',
-      'net_amount',
-      'tax_amount',
+    $paymentParams = [
+      'contribution_test' => $this->_paymentProcessor->getIsTestMode(),
     ];
 
     // A) One-off contribution
     if ($this->charge_id) {
-      try {
-        $this->contribution = civicrm_api3('Contribution', 'getsingle', [
-          'trxn_id' => $this->charge_id,
-          'contribution_test' => $this->_paymentProcessor->getIsTestMode(),
-          'return' => $contributionParamsToReturn,
-        ]);
-        return TRUE;
-      }
-      catch (Exception $e) {
-        // Contribution not found - that's ok
-      }
+      $paymentParams['trxn_id'] = $this->charge_id;
     }
+    $contribution = civicrm_api3('Mjwpayment', 'get_contribution', $paymentParams);
 
     // B2) Contribution linked to subscription and we have invoice_id
-    if (!$this->contribution && $this->invoice_id) {
-      try {
-        $this->contribution = civicrm_api3('Contribution', 'getsingle', [
-          'trxn_id' => $this->invoice_id,
-          'contribution_test' => $this->_paymentProcessor->getIsTestMode(),
-          'return' => $contributionParamsToReturn,
-        ]);
-        return TRUE;
-      }
-      catch (Exception $e) {
-        // Contribution not found - that's ok
+    if (!$contribution['count']) {
+      unset($paymentParams['trxn_id']);
+      if ($this->invoice_id) {
+        $paymentParams['order_reference'] = $this->invoice_id;
+        $contribution = civicrm_api3('Mjwpayment', 'get_contribution', $paymentParams);
       }
     }
 
     // B1) Contribution linked to subscription and we have subscription_id
-    if (!$this->contribution && $this->subscription_id) {
-      try {
-        $this->contribution = civicrm_api3('Contribution', 'getsingle', [
-          'trxn_id' => $this->subscription_id,
-          'contribution_test' => $this->_paymentProcessor->getIsTestMode(),
-          'return' => $contributionParamsToReturn,
-        ]);
-        return TRUE;
-      }
-      catch (Exception $e) {
-        // Contribution not found - that's ok
+    if (!$contribution['count']) {
+      unset($paymentParams['trxn_id']);
+      if ($this->subscription_id) {
+        $paymentParams['order_reference'] = $this->subscription_id;
+        $contribution = civicrm_api3('Mjwpayment', 'get_contribution', $paymentParams);
       }
     }
 
-    // If a recurring contribution has been found, get the most recent contribution belonging to it.
-    // @todo: In what scenario would this happen?
-    if (!$this->contribution && $this->contribution_recur_id) {
-      try {
-        $this->contribution = civicrm_api3('contribution', 'getsingle', [
-          'contribution_recur_id' => $this->contribution_recur_id,
-          'contribution_test' => $this->_paymentProcessor->getIsTestMode(),
-          'return' => $contributionParamsToReturn,
-          'options' => ['limit' => 1, 'sort' => 'id DESC'],
-        ]);
-        return TRUE;
+    if (!$contribution['count']) {
+      if ((bool)\Civi::settings()->get('stripe_ipndebug')) {
+        $message = $this->_paymentProcessor->getPaymentProcessorLabel() . 'No matching contributions for event ' . CRM_Stripe_Api::getParam('id', $this->_inputParameters);
+        Civi::log()->debug($message);
       }
-      catch (Exception $e) {
-        // A recurring contribution should always be setup with a pending contribution.
-        $this->exception('Cannot find any contributions with recurring contribution ID: ' . $this->contribution_recur_id . '. ' . $e->getMessage());
+      return FALSE;
+    }
+
+    $this->contribution = $contribution['values'][$contribution['id']];
+    return TRUE;
+  }
+
+  /**
+   * Get the Stripe customer details and match to the StripeCustomer record in CiviCRM
+   * This gives us $this->contactID
+   *
+   * @return bool
+   * @throws \Civi\Payment\Exception\PaymentProcessorException
+   */
+  private function getCustomer() {
+    $this->customer_id = CRM_Stripe_Api::getObjectParam('customer_id', $this->_inputParameters->data->object);
+    if (empty($this->customer_id)) {
+      $this->exception('Missing customer_id!');
+    }
+    try {
+      $customer = civicrm_api3('StripeCustomer', 'getsingle', [
+        'id' => $this->customer_id,
+      ]);
+      $this->contactID = $customer['contact_id'];
+      if ($this->_paymentProcessor->getID() !== (int) $customer['processor_id']) {
+        $this->exception("Customer ({$this->customer_id}) and payment processor ID don't match (expected: {$customer['processor_id']}, actual: {$this->_paymentProcessor->getID()})");
       }
     }
-    if ((bool)\Civi::settings()->get('stripe_ipndebug') && !$this->contribution) {
-      $message = $this->_paymentProcessor->getPaymentProcessorLabel() . 'No matching contributions for event ' . CRM_Stripe_Api::getParam('id', $this->_inputParameters);
-      Civi::log()->debug($message);
+    catch (Exception $e) {
+      // Customer not found in CiviCRM
+      if ((bool)\Civi::settings()->get('stripe_ipndebug') && !$this->contribution) {
+        $message = $this->_paymentProcessor->getPaymentProcessorLabel() . 'Stripe Customer not found in CiviCRM for event ' . CRM_Stripe_Api::getParam('id', $this->_inputParameters);
+        Civi::log()->debug($message);
+      }
+      return FALSE;
     }
-    return FALSE;
+    return TRUE;
   }
 
   private function setBalanceTransactionDetails($balanceTransactionID) {
