@@ -1139,33 +1139,4 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     return $text;
   }
 
-  /**
-   * Get the error URL to "bounce" the user back to.
-   * @param \Civi\Payment\PropertyBag $params
-   *
-   * @return string|null
-   */
-  public function getErrorUrl($params) {
-    // Get proper entry URL for returning on error.
-    if (!$params->has('qfKey')) {
-      // Probably not called from a civicrm form (e.g. webform) -
-      // will return error object to original api caller.
-      $errorUrl = NULL;
-    }
-    else {
-      $qfKey = $params->getCustomProperty('qfKey');
-      $parsedUrl = parse_url($params->getCustomProperty('entryURL'));
-      $urlPath = substr($parsedUrl['path'], 1);
-      $query = $parsedUrl['query'];
-      if (strpos($query, '_qf_Main_display=1') === FALSE) {
-        $query .= '&_qf_Main_display=1';
-      }
-      if (strpos($query, 'qfKey=') === FALSE) {
-        $query .= "&qfKey={$qfKey}";
-      }
-      $errorUrl = CRM_Utils_System::url($urlPath, $query, FALSE, NULL, FALSE);
-    }
-    return $errorUrl;
-  }
-
 }

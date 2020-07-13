@@ -25,7 +25,7 @@ class CRM_Stripe_Check {
   /**
    * @var string
    */
-  const MIN_VERSION_MJWSHARED = '0.8';
+  const MIN_VERSION_MJWSHARED = '0.9';
   const MIN_VERSION_SWEETALERT = '1.2';
 
   public static function checkRequirements(&$messages) {
