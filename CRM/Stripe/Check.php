@@ -62,6 +62,7 @@ class CRM_Stripe_Check {
         ['path' => 'civicrm/admin/extensions', 'query' => ['action' => 'update', 'id' => $extensionName, 'key' => $extensionName]]
       );
       $messages[] = $message;
+      return;
     }
     if ($extensions['values'][$extensions['id']]['status'] === 'installed') {
       self::requireExtensionMinVersion($messages, $extensionName, CRM_Stripe_Check::MIN_VERSION_MJWSHARED, $extensions['values'][$extensions['id']]['version']);
@@ -129,6 +130,7 @@ class CRM_Stripe_Check {
         ['path' => 'civicrm/admin/extensions', 'query' => ['action' => 'update', 'id' => $extensionName, 'key' => $extensionName]]
       );
       $messages[] = $message;
+      return;
     }
     if ($extensions['values'][$extensions['id']]['status'] === 'installed') {
       self::requireExtensionMinVersion($messages, $extensionName, CRM_Stripe_Check::MIN_VERSION_SWEETALERT, $extensions['values'][$extensions['id']]['version']);
