@@ -78,14 +78,22 @@ return [
   ],
   'stripe_enable_public_future_recur_start' => [
     'name' => 'stripe_enable_public_future_recur_start',
-    'type' => 'Boolean',
-    'html_type' => 'checkbox',
-    'default' => 0,
+    'type' => 'Array',
+    'html_type' => 'select',
+    'default' => [],
     'is_domain' => 1,
     'is_contact' => 0,
-    'title' => E::ts('Enable public selection of future recurring start dates'),
-    'description' => E::ts('Allow public selection of start date for a recurring contribution'),
-    'html_attributes' => [],
+    'title' => E::ts('Enable public selection of future recurring start dates for intervals'),
+    'description' => E::ts('Allow public selection of start date for a recurring contribution for intervals'),
+    'html_attributes' => [
+      'multiple' => TRUE,
+      'class' => 'crm-select2',
+    ],
+    'pseudoconstant' => [
+      'optionGroupName' => 'recur_frequency_units',
+      'keyColumn' => 'name',
+      'optionEditPath' => 'civicrm/admin/options/recur_frequency_units',
+    ],
     'settings_pages' => [
       'stripe' => [
         'weight' => 25,

@@ -367,6 +367,8 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @param \CRM_Core_Form $form
    */
   public function buildForm(&$form) {
+    $startDateFrequencyIntervals = \Civi::settings()->get('stripe_enable_public_future_recur_start');
+
     // Don't use \Civi::resources()->addScriptFile etc as they often don't work on AJAX loaded forms (eg. participant backend registration)
     $jsVars = [
       'id' => $form->_paymentProcessor['id'],
@@ -379,6 +381,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'apiVersion' => CRM_Stripe_Check::API_VERSION,
       'csrfToken' => class_exists('\Civi\Firewall\Firewall') ? \Civi\Firewall\Firewall::getCSRFToken() : NULL,
       'country' => CRM_Core_BAO_Country::defaultContactCountry(),
+      'startDateFrequencyIntervals' => $startDateFrequencyIntervals,
     ];
 
     \Civi::resources()->addVars(E::SHORT_NAME, $jsVars);
@@ -413,10 +416,20 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       )
     ]);
 
+    // We can choose which frequency_intervals to enable future recurring start date for.
+    // If none are enabled (or the contribution page does not have any that are enabled in Stripe settings)
+    //   then don't load the futurerecur elements on the form.
+    $formFrequencyIntervals = explode(CRM_Core_DAO::VALUE_SEPARATOR, $form->_values['recur_frequency_unit']);
+    $startDateFrequencyIntervals = \Civi::settings()->get('stripe_enable_public_future_recur_start');
+    $enableFutureRecur = FALSE;
+    foreach ($formFrequencyIntervals as $interval) {
+      if (in_array($interval, $startDateFrequencyIntervals)) {
+        $enableFutureRecur = TRUE;
+        break;
+      }
+    }
     // Add form element and js to select future recurring start date
-    if (!$this->isBackOffice() && !empty(\Civi::settings()->get('stripe_enable_public_future_recur_start'))
-      && $this->supportsFutureRecurStartDate()
-    ) {
+    if (!$this->isBackOffice() && $enableFutureRecur && $this->supportsFutureRecurStartDate()) {
       $startDates = CRM_Stripe_Recur::getFutureMonthlyStartDates();
       if ($startDates) {
         $form->addElement('select', 'receive_date', ts('Date of first contribution'), $startDates);

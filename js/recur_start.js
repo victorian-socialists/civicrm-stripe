@@ -7,7 +7,10 @@ CRM.$(function($) {
    if ($('.is_recur-section').length) {
      $('.is_recur-section #stripe-recurring-start-date').remove();
      $('.is_recur-section').append($('#stripe-recurring-start-date'));
-     cj('input[id="is_recur"]').on('change', function() {
+     $('input[id="is_recur"]').on('change', function() {
+       toggleRecur();
+     });
+     $('select#frequency_unit').on('change', function() {
        toggleRecur();
      });
      toggleRecur();
@@ -20,6 +23,13 @@ CRM.$(function($) {
    function toggleRecur() {
      var isRecur = $('input[id="is_recur"]:checked');
      if (isRecur.val() > 0) {
+       if ($('select#frequency_unit').length > 0) {
+         var selectedFrequencyUnit = $('select#frequency_unit').val();
+         if (CRM.$.inArray(selectedFrequencyUnit, CRM.vars.stripe.startDateFrequencyIntervals) < 0) {
+           hideStartDate();
+           return;
+         }
+       }
        if ($('#receive_date option').length === 1) {
          // We only have one option. No need to offer selection - just show the date
          $('#receive_date').parent('div.content').prev('div.label').hide();
@@ -31,6 +41,10 @@ CRM.$(function($) {
        $('#stripe-recurring-start-date').show().val('');
      }
      else {
+       hideStartDate();
+     }
+
+     function hideStartDate() {
        $('#stripe-recurring-start-date').hide();
        $("#stripe-recurring-start-date option:selected").prop("selected", false);
        $("#stripe-recurring-start-date option:first").prop("selected", "selected");

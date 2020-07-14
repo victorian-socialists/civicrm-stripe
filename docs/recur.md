@@ -11,7 +11,7 @@ When you create a recurring contribution in CiviCRM using the Stripe payment pro
 
 ## Starting a Recurring contribution in the future
 If you would like your users to be able to specify a future recurring start date you can enable
-`Enable public selection of future recurring start dates` in *Administer->CiviContribute->Stripe Settings*.
+`Enable public selection of future recurring start dates for intervals` in *Administer->CiviContribute->Stripe Settings*.
 
 ![future recur settings](images/settings_futurerecur.png)
 
