@@ -15,11 +15,15 @@ Where:
 * Implement [#199](https://lab.civicrm.org/extensions/stripe/-/issues/199):
   * Support future recurring start date on backend forms
   * Add support for selecting and creating subscriptions with future start date on frontend forms
+  * Allow selection of which frequency intervals to enable public recurring start date
 * Fix [#221](https://lab.civicrm.org/extensions/stripe/-/issues/199) Return 200 OK for webhooks that stripe can't match to CiviCRM. Look for contribution using subscription_id for future recurring start date
 * Map customer to contact ID in IPN
 * Handle invoice.paid, invoice.finalized IPN events - we now create the new contribution once we receive the invoice.finalized event. It will then be transitioned to Completed by invoice.paid/invoice.payment_succeeded
 * Record refund against the already recorded payment in CiviCRM so we update financial items correctly
 * API3 Stripe.Listevents [!117](https://lab.civicrm.org/extensions/stripe/-/merge_requests/117) Provide additional information about stripe events.
+* Fix PHP notice when a checking for an extension dependency that is not yet downloaded or installed.
+* If a contribution status is `Failed` and it later receives a successful payment notification it is updated from `Failed` to `Completed`.
+* Add system check for 'Is separate membership payment' on contribution pages which is not supported by the Stripe extension
 
 ## Release 6.4.2
 
