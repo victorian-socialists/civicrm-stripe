@@ -46,7 +46,7 @@ class CRM_Stripe_Webhook {
       catch (Exception $e) {
         $error = $e->getMessage();
         $messages[] = new CRM_Utils_Check_Message(
-          'stripe_webhook',
+          __FUNCTION__ . $paymentProcessor['id'] . 'stripe_webhook',
           $error,
           self::getTitle($paymentProcessor),
           \Psr\Log\LogLevel::ERROR,
@@ -67,7 +67,7 @@ class CRM_Stripe_Webhook {
             if (!empty($wh->api_version) && (strtotime($wh->api_version) < strtotime(CRM_Stripe_Check::API_MIN_VERSION))) {
               // Add message about API version.
               $messages[] = new CRM_Utils_Check_Message(
-                'stripe_webhook',
+                __FUNCTION__ . $paymentProcessor['id'] . 'stripe_webhook',
                 E::ts('Webhook API version is set to %2 but CiviCRM requires %3. To correct this please delete the webhook at Stripe and then revisit this page which will recreate it correctly. <em>Webhook path is: <a href="%1" target="_blank">%1</a>.</em>',
                   [
                     1 => urldecode($webhook_path),
@@ -85,7 +85,7 @@ class CRM_Stripe_Webhook {
               if ($attemptFix) {
                 // We should try to update the webhook.
                 $messages[] = new CRM_Utils_Check_Message(
-                  'stripe_webhook',
+                  __FUNCTION__ . $paymentProcessor['id'] . 'stripe_webhook',
                   E::ts('Unable to update the webhook %1. To correct this please delete the webhook at Stripe and then revisit this page which will recreate it correctly.',
                     [1 => urldecode($webhook_path)]
                   ),
@@ -97,7 +97,7 @@ class CRM_Stripe_Webhook {
               }
               else {
                 $message = new CRM_Utils_Check_Message(
-                  'stripe_webhook',
+                  __FUNCTION__ . $paymentProcessor['id'] . 'stripe_webhook',
                   E::ts('Problems detected with Stripe webhook! <em>Webhook path is: <a href="%1" target="_blank">%1</a>.</em>',
                     [1 => urldecode($webhook_path)]
                   ),
@@ -117,7 +117,7 @@ class CRM_Stripe_Webhook {
           }
           catch (Exception $e) {
             $messages[] = new CRM_Utils_Check_Message(
-              'stripe_webhook',
+              __FUNCTION__ . $paymentProcessor['id'] . 'stripe_webhook',
               E::ts('Could not check/update existing webhooks, got error from stripe <em>%1</em>', [
                   1 => htmlspecialchars($e->getMessage())
                 ]
@@ -138,7 +138,7 @@ class CRM_Stripe_Webhook {
           }
           catch (Exception $e) {
             $messages[] = new CRM_Utils_Check_Message(
-              'stripe_webhook',
+              __FUNCTION__ . $paymentProcessor['id'] . 'stripe_webhook',
               E::ts('Could not create webhook, got error from stripe <em>%1</em>', [
                 1 => htmlspecialchars($e->getMessage())
               ]),
@@ -150,7 +150,7 @@ class CRM_Stripe_Webhook {
         }
         else {
           $message = new CRM_Utils_Check_Message(
-            'stripe_webhook',
+            __FUNCTION__ . $paymentProcessor['id'] . 'stripe_webhook',
             E::ts(
               'Stripe Webhook missing or needs update! <em>Expected webhook path is: <a href="%1" target="_blank">%1</a></em>',
               [1 => $webhook_path]

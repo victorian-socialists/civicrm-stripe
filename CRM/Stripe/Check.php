@@ -32,6 +32,7 @@ class CRM_Stripe_Check {
     self::checkExtensionMjwshared($messages);
     self::checkExtensionFirewall($messages);
     self::checkExtensionSweetalert($messages);
+    self::checkIfSeparateMembershipPaymentEnabled($messages);
   }
 
   /**
@@ -49,7 +50,7 @@ class CRM_Stripe_Check {
 
     if (empty($extensions['id']) || ($extensions['values'][$extensions['id']]['status'] !== 'installed')) {
       $message = new CRM_Utils_Check_Message(
-        'stripe_requirements',
+        __FUNCTION__ . 'stripe_requirements',
         E::ts('The Stripe extension requires the mjwshared extension which is not installed (https://lab.civicrm.org/extensions/mjwshared).'),
         E::ts('Stripe: Missing Requirements'),
         \Psr\Log\LogLevel::ERROR,
@@ -83,7 +84,7 @@ class CRM_Stripe_Check {
 
     if (empty($extensions['id']) || ($extensions['values'][$extensions['id']]['status'] !== 'installed')) {
       $message = new CRM_Utils_Check_Message(
-        'stripe_recommended',
+        __FUNCTION__ . 'stripe_recommended',
         E::ts('If you are using Stripe to accept payments on public forms (eg. contribution/event registration forms) it is recommended that you install the <strong><a href="https://lab.civicrm.org/extensions/firewall">firewall</a></strong> extension.
         Some sites have become targets for spammers who use the payment endpoint to try and test credit cards by submitting invalid payments to your Stripe account.'),
         E::ts('Recommended Extension: firewall'),
@@ -114,7 +115,7 @@ class CRM_Stripe_Check {
 
     if (empty($extensions['id']) || ($extensions['values'][$extensions['id']]['status'] !== 'installed')) {
       $message = new CRM_Utils_Check_Message(
-        'stripe_recommended',
+        __FUNCTION__ . 'stripe_recommended',
         E::ts('It is recommended that you install the <strong><a href="https://civicrm.org/extensions/sweetalert">sweetalert</a></strong> extension.
         This allows the stripe extension to show useful messages to the user when processing payment.
         If this is not installed it will fallback to the browser "alert" message but you will
@@ -146,7 +147,7 @@ class CRM_Stripe_Check {
   private static function requireExtensionMinVersion(&$messages, $extensionName, $minVersion, $actualVersion) {
     if (version_compare($actualVersion, $minVersion) === -1) {
       $message = new CRM_Utils_Check_Message(
-        'stripe_requirements',
+        __FUNCTION__ . $extensionName . 'stripe_requirements',
         E::ts('The Stripe extension requires the %1 extension version %2 or greater but your system has version %3.',
           [
             1 => $extensionName,
@@ -164,6 +165,58 @@ class CRM_Stripe_Check {
         ['path' => 'civicrm/admin/extensions', 'query' => ['action' => 'update', 'id' => $extensionName, 'key' => $extensionName]]
       );
       $messages[] = $message;
+    }
+  }
+
+  /**
+   * @throws \CiviCRM_API3_Exception
+   */
+  private static function checkIfSeparateMembershipPaymentEnabled(&$messages) {
+    $membershipBlocks = civicrm_api3('MembershipBlock', 'get', [
+      'is_separate_payment' => 1,
+    ]);
+    if ($membershipBlocks['count'] === 0) {
+      return;
+    }
+    else {
+      $contributionPagesToCheck = [];
+      foreach ($membershipBlocks['values'] as $blockID => $blockDetails) {
+        if ($blockDetails['entity_table'] !== 'civicrm_contribution_page') {
+          continue;
+        }
+        $contributionPagesToCheck[] = $blockDetails['entity_id'];
+      }
+      $stripePaymentProcessorIDs = civicrm_api3('PaymentProcessor', 'get', [
+        'return' => ['id'],
+        'payment_processor_type_id' => 'Stripe',
+      ]);
+      $stripePaymentProcessorIDs = CRM_Utils_Array::collect('id', $stripePaymentProcessorIDs['values']);
+      if (!empty($contributionPagesToCheck)) {
+        $contributionPages = civicrm_api3('ContributionPage', 'get', [
+          'return' => ['payment_processor'],
+          'id' => ['IN' => $contributionPagesToCheck],
+        ]);
+        foreach ($contributionPages['values'] as $contributionPage) {
+          $enabledPaymentProcessors = explode(CRM_Core_DAO::VALUE_SEPARATOR, $contributionPage['payment_processor']);
+          foreach ($enabledPaymentProcessors as $enabledID) {
+            if (in_array($enabledID, $stripePaymentProcessorIDs)) {
+              $message = new CRM_Utils_Check_Message(
+                __FUNCTION__ . 'stripe_requirements',
+                E::ts('Stripe does not support "Separate Membership Payment" on contribution pages but you have one or more contribution pages with
+                that setting enabled and Stripe as the payment processor (found on contribution page ID: %1).',
+                  [
+                    1 => $contributionPage['id'],
+                  ]),
+                E::ts('Stripe: Invalid configuration'),
+                \Psr\Log\LogLevel::ERROR,
+                'fa-money'
+              );
+              $messages[] = $message;
+              return;
+            }
+          }
+        }
+      }
     }
   }
 
