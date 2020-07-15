@@ -419,13 +419,17 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     // We can choose which frequency_intervals to enable future recurring start date for.
     // If none are enabled (or the contribution page does not have any that are enabled in Stripe settings)
     //   then don't load the futurerecur elements on the form.
-    $formFrequencyIntervals = explode(CRM_Core_DAO::VALUE_SEPARATOR, $form->_values['recur_frequency_unit']);
-    $startDateFrequencyIntervals = \Civi::settings()->get('stripe_enable_public_future_recur_start');
     $enableFutureRecur = FALSE;
-    foreach ($formFrequencyIntervals as $interval) {
-      if (in_array($interval, $startDateFrequencyIntervals)) {
-        $enableFutureRecur = TRUE;
-        break;
+    if (!empty($form->_values['recur_frequency_unit'])) {
+      $formFrequencyIntervals = explode(CRM_Core_DAO::VALUE_SEPARATOR, $form->_values['recur_frequency_unit']);
+      $startDateFrequencyIntervals = \Civi::settings()
+        ->get('stripe_enable_public_future_recur_start');
+      $enableFutureRecur = FALSE;
+      foreach ($formFrequencyIntervals as $interval) {
+        if (in_array($interval, $startDateFrequencyIntervals)) {
+          $enableFutureRecur = TRUE;
+          break;
+        }
       }
     }
     // Add form element and js to select future recurring start date
