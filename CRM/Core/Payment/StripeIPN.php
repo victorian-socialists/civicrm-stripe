@@ -96,12 +96,14 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   /**
    * CRM_Core_Payment_StripeIPN constructor.
    *
-   * @param \stdClass $ipnData
+   * @param string $ipnData
+   *   json encoded string
    * @param bool $verify
    */
   public function __construct($ipnData, $verify = TRUE) {
     $this->verify_event = $verify;
-    $this->setInputParameters($ipnData);
+    $data = json_decode($ipnData);
+    $this->setInputParameters($data);
     parent::__construct();
   }
 
