@@ -19,6 +19,11 @@ Then your users will see an option to select a start date for the contribution:
 
 ![contribution page future recur start date](images/contribution_futurerecur.png)
 
+Or if memberships are enabled on the form (example here for a single future start date on the 1st of the month):
+
+![membership future payment start date](images/membership_futurerecursingle.png)
+
+
 ## Cancelling Recurring Contributions
 You can cancel a recurring contribution from the Stripe Dashboard or from within CiviCRM.
 

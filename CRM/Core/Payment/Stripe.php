@@ -367,8 +367,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @param \CRM_Core_Form $form
    */
   public function buildForm(&$form) {
-    $startDateFrequencyIntervals = \Civi::settings()->get('stripe_enable_public_future_recur_start');
-
     // Don't use \Civi::resources()->addScriptFile etc as they often don't work on AJAX loaded forms (eg. participant backend registration)
     $jsVars = [
       'id' => $form->_paymentProcessor['id'],
@@ -381,15 +379,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'apiVersion' => CRM_Stripe_Check::API_VERSION,
       'csrfToken' => class_exists('\Civi\Firewall\Firewall') ? \Civi\Firewall\Firewall::getCSRFToken() : NULL,
       'country' => CRM_Core_BAO_Country::defaultContactCountry(),
-      'startDateFrequencyIntervals' => $startDateFrequencyIntervals,
     ];
-
-    \Civi::resources()->addVars(E::SHORT_NAME, $jsVars);
-    // Assign to smarty so we can add via Card.tpl for drupal webform because addVars doesn't work in that context
-    $form->assign('stripeJSVars', $jsVars);
-
-    // Enable JS validation for forms so we only (submit) create a paymentIntent when the form has all fields validated.
-    $form->assign('isJsValidate', TRUE);
 
     // Add help and javascript
     CRM_Core_Region::instance('billing-block')->add(
@@ -416,42 +406,15 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       )
     ]);
 
-    // We can choose which frequency_intervals to enable future recurring start date for.
-    // If none are enabled (or the contribution page does not have any that are enabled in Stripe settings)
-    //   then don't load the futurerecur elements on the form.
-    $enableFutureRecur = FALSE;
-    if (!empty($form->_values['recur_frequency_unit'])) {
-      $formFrequencyIntervals = explode(CRM_Core_DAO::VALUE_SEPARATOR, $form->_values['recur_frequency_unit']);
-      $startDateFrequencyIntervals = \Civi::settings()
-        ->get('stripe_enable_public_future_recur_start');
-      $enableFutureRecur = FALSE;
-      foreach ($formFrequencyIntervals as $interval) {
-        if (in_array($interval, $startDateFrequencyIntervals)) {
-          $enableFutureRecur = TRUE;
-          break;
-        }
-      }
-    }
-    // Add form element and js to select future recurring start date
-    if (!$this->isBackOffice() && $enableFutureRecur && $this->supportsFutureRecurStartDate()) {
-      $startDates = CRM_Stripe_Recur::getFutureMonthlyStartDates();
-      if ($startDates) {
-        $form->addElement('select', 'receive_date', ts('Date of first contribution'), $startDates);
-        CRM_Core_Region::instance('billing-block')->add([
-          'template' => 'CRM/Core/Payment/Stripe/BillingBlockRecurringExtra.tpl',
-        ]);
-        CRM_Core_Region::instance('billing-block')->add([
-          'scriptUrl' => \Civi::service('asset_builder')->getUrl(
-            'recurStart.js',
-            [
-              'path' => \Civi::resources()
-                ->getPath(E::LONG_NAME, 'js/recur_start.js'),
-              'mimetype' => 'application/javascript',
-            ]
-          )
-        ]);
-      }
-    }
+    // Add the future recur start date functionality
+    CRM_Stripe_Recur::buildFormFutureRecurStartDate($form, $this, $jsVars);
+
+    \Civi::resources()->addVars(E::SHORT_NAME, $jsVars);
+    // Assign to smarty so we can add via Card.tpl for drupal webform because addVars doesn't work in that context
+    $form->assign('stripeJSVars', $jsVars);
+
+    // Enable JS validation for forms so we only (submit) create a paymentIntent when the form has all fields validated.
+    $form->assign('isJsValidate', TRUE);
   }
 
   /**
@@ -720,13 +683,13 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       //  it is required by cancelSubscription (where it is called subscription_id)
       'processor_id' => $this->getPaymentProcessorSubscriptionID(),
       'auto_renew' => 1,
-      'cycle_day' => date('d'),
       'next_sched_contribution_date' => $this->calculateNextScheduledDate($params),
     ];
+    $recurParams['cycle_day'] = date('d', strtotime($recurParams['next_sched_contribution_date']));
     if (!empty($params['installments'])) {
       // We set an end date if installments > 0
-      if (empty($params['start_date'])) {
-        $params['start_date'] = date('YmdHis');
+      if (empty($params['receive_date'])) {
+        $params['receive_date'] = date('YmdHis');
       }
       if ($params['installments']) {
         $recurParams['end_date'] = $this->calculateEndDate($params);
@@ -944,7 +907,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @throws \CRM_Core_Exception
    */
   public function calculateEndDate($params) {
-    $requiredParams = ['start_date', 'installments', 'recurFrequencyInterval', 'recurFrequencyUnit'];
+    $requiredParams = ['receive_date', 'installments', 'recurFrequencyInterval', 'recurFrequencyUnit'];
     foreach ($requiredParams as $required) {
       if (!isset($params[$required])) {
         $message = 'Stripe calculateEndDate: Missing mandatory parameter: ' . $required;
@@ -972,7 +935,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     }
 
     $numberOfUnits = $params['installments'] * $params['recurFrequencyInterval'];
-    $endDate = new DateTime($params['start_date']);
+    $endDate = new DateTime($params['receive_date']);
     $endDate->add(new DateInterval("P{$numberOfUnits}{$frequencyUnit}"));
     return $endDate->format('Ymd') . '235959';
   }
@@ -993,7 +956,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         throw new CRM_Core_Exception($message);
       }
     }
-    if (empty($params['start_date']) && empty($params['next_sched_contribution_date'])) {
+    if (empty($params['receive_date']) && empty($params['next_sched_contribution_date'])) {
       $startDate = date('YmdHis');
     }
     elseif (!empty($params['next_sched_contribution_date'])) {
@@ -1002,7 +965,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       }
     }
     else {
-      $startDate = $params['start_date'];
+      $startDate = $params['receive_date'];
     }
 
     switch ($params['recurFrequencyUnit']) {
