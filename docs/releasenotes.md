@@ -24,6 +24,8 @@ Where:
 * API3 Stripe.Listevents [!117](https://lab.civicrm.org/extensions/stripe/-/merge_requests/117) Provide additional information about stripe events.
 * If a contribution status is `Failed` and it later receives a successful payment notification it is updated from `Failed` to `Completed`.
 * Add system check for 'Is separate membership payment' on contribution pages which is not supported by the Stripe extension
+* Fix [#225](https://lab.civicrm.org/extensions/stripe/-/issues/225) No credit card display in Internet Explorer 11 (Support ECMAScript 5.1 javascript syntax).
+* Support translating text strings in javascript.
 
 * Fix PHP notices:
   * When a checking for an extension dependency that is not yet downloaded or installed.

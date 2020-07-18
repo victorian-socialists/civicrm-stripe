@@ -2,7 +2,7 @@
  * This handles confirmation actions on the "Thankyou" pages for
  * contribution/event workflows.
  */
-(function($, CRM, _, undefined) {
+(function($, ts) {
 
   var confirm = {
     scriptName: 'stripeconfirm',
@@ -16,7 +16,7 @@
         CRM.payment.debugging(confirm.scriptName, result.error.message);
         confirm.swalFire({
           title: result.error.message,
-          icon: 'error',
+          icon: 'error'
         }, '', true);
       }
       else
@@ -28,8 +28,8 @@
           // All good, nothing more to do
           CRM.payment.debugging(confirm.scriptName, 'success - payment captured');
           confirm.swalFire({
-            title: 'Payment successful',
-            icon: 'success',
+            title: ts('Payment successful'),
+            icon: 'success'
           }, '', true);
         }
     },
@@ -71,11 +71,11 @@
     handleCardConfirm: function() {
       CRM.payment.debugging(confirm.scriptName, 'handle card confirm');
       confirm.swalFire({
-        title: 'Please wait...',
+        title: ts('Please wait...'),
         allowOutsideClick: false,
-        onBeforeOpen: () => {
+        onBeforeOpen: function() {
           Swal.showLoading();
-        },
+        }
       }, '', false);
       // Send paymentMethod.id to server
       var url = CRM.url('civicrm/stripe/confirm-payment');
@@ -84,7 +84,7 @@
         capture: true,
         id: CRM.vars.stripe.id,
         description: document.title,
-        csrfToken: CRM.vars.stripe.csrfToken,
+        csrfToken: CRM.vars.stripe.csrfToken
       })
         .done(function (result) {
           confirm.swalClose();
@@ -108,7 +108,7 @@
           url: 'https://js.stripe.com/v3',
           dataType: 'script',
           cache: true,
-          timeout: 5000,
+          timeout: 5000
         })
           .done(function(data) {
             confirm.stripeLoading = false;
@@ -177,4 +177,4 @@
   // Disable the browser "Leave Page Alert" which is triggered because we mess with the form submit function.
   window.onbeforeunload = null;
 
-}(jQuery, CRM, _));
+}(CRM.$, CRM.ts('com.drastikbydesign.stripe')));

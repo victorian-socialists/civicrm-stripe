@@ -1,7 +1,7 @@
 /**
  * JS Integration between CiviCRM & Stripe.
  */
-CRM.$(function($) {
+(function($, ts) {
   debugging("civicrm_stripe loaded, dom-ready function firing.");
 
   if (window.civicrmStripeHandleReload) {
@@ -99,14 +99,14 @@ CRM.$(function($) {
       swalFire({
         icon: 'error',
         text: errorMessage,
-        title: '',
+        title: ''
       }, '#card-element', true);
     }
   }
 
   function getPaymentElements() {
     return {
-      card: $('div#card-element'),
+      card: $('div#card-element')
     };
   }
 
@@ -160,12 +160,12 @@ CRM.$(function($) {
           // Send paymentMethod.id to server
           debugging('Waiting for pre-auth');
           swalFire({
-            title: 'Please wait',
-            text: ' while we pre-authorize your card...',
+            title: ts('Please wait'),
+            text: ts(' while we pre-authorize your card...'),
             allowOutsideClick: false,
-            onBeforeOpen: () => {
+            onBeforeOpen: function() {
               Swal.showLoading();
-            },
+            }
           }, '', false);
           var url = CRM.url('civicrm/stripe/confirm-payment');
           $.post(url, {
@@ -174,7 +174,7 @@ CRM.$(function($) {
             currency: CRM.vars.stripe.currency,
             id: CRM.vars.stripe.id,
             description: document.title,
-            csrfToken: CRM.vars.stripe.csrfToken,
+            csrfToken: CRM.vars.stripe.csrfToken
           })
             .done(function (result) {
               // Handle server response (see Step 3)
@@ -251,7 +251,7 @@ CRM.$(function($) {
         dataType: 'script',
         cache: true,
         timeout: 5000,
-        crossDomain: true,
+        crossDomain: true
       })
         .done(function(data) {
           stripeLoading = false;
@@ -295,8 +295,8 @@ CRM.$(function($) {
 
     var style = {
       base: {
-        fontSize: '1.1em', fontWeight: 'lighter',
-      },
+        fontSize: '1.1em', fontWeight: 'lighter'
+      }
     };
 
     var elementsCreateParams = {style: style, value: {}};
@@ -410,7 +410,7 @@ CRM.$(function($) {
         swalFire({
           icon: 'error',
           text: ts('Please check and fill in all required fields!'),
-          title: '',
+          title: ''
         }, '#crm-container', true);
         triggerEvent('crmBillingFormNotValid');
         form.dataset.submitted = 'false';
@@ -426,7 +426,7 @@ CRM.$(function($) {
         swalFire({
           icon: 'warning',
           text: '',
-          title: cardError,
+          title: cardError
         }, '#card-element', true);
         triggerEvent('crmBillingFormNotValid');
         form.dataset.submitted = 'false';
@@ -441,7 +441,7 @@ CRM.$(function($) {
         swalFire({
           icon: 'error',
           text: '',
-          title: cardError,
+          title: cardError
         }, '#card-element', true);
         triggerEvent('crmBillingFormNotValid');
         form.dataset.submitted = 'false';
@@ -568,7 +568,7 @@ CRM.$(function($) {
     swalFire({
       icon: 'warning',
       text: '',
-      title: ts('Please complete the reCaptcha'),
+      title: ts('Please complete the reCaptcha')
     }, '.recaptcha-section', true);
     triggerEvent('crmBillingFormNotValid');
     form.dataset.submitted = 'false';
@@ -869,7 +869,7 @@ CRM.$(function($) {
   function triggerEventCrmBillingFormReloadFailed() {
     triggerEvent('crmBillingFormReloadFailed');
     hidePaymentElements();
-    displayError('Could not load payment element - Is there a problem with your network connection?', true);
+    displayError(ts('Could not load payment element - Is there a problem with your network connection?'), true);
   }
 
   /**
@@ -899,4 +899,4 @@ CRM.$(function($) {
     }
   }
 
-});
+}(CRM.$, CRM.ts('com.drastikbydesign.stripe')));
