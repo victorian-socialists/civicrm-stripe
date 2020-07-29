@@ -11,8 +11,6 @@ future we hope that webform_civicrm switches to a supported API.
 
 Minimum version: 7.x-5.0.
 
-For test mode when you have multiple payment processors enabled you need this patch: https://github.com/colemanw/webform_civicrm/pull/298
-
 #### Recurring Payments
 
 For recurring payments make sure that:
