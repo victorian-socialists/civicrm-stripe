@@ -9,11 +9,11 @@ The Stripe extension works with Drupal Webform + Webform_civicrm.
 You must enable the [contributiontransactlegacy](https://github.com/mjwconsult/civicrm-contributiontransactlegacy) CiviCRM extension which replaces the Contribution.transact API with a working one. In the
 future we hope that webform_civicrm switches to a supported API.
 
-Minimum version: 7.x-5.1.
+Minimum version: 7.x-5.1 or 8.x-5.1
 
 #### Known issues
 
-If using multiple payment processors test mode will not work on webform.
+Test Mode will not work for drupal webform if there are multiple payment processors configured on the webform.
 
 #### Recurring Payments
 
