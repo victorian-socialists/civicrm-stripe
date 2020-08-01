@@ -728,8 +728,14 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    */
   private function getRecurBillingCycleDay($params) {
     if (isset($params['receive_date'])) {
-      return strtotime($params['receive_date']);
+      $receiveDateTimestamp = strtotime($params['receive_date']);
+      // If `receive_date` was set to "now" it will be in the past (by a few seconds) by the time we actually send it to Stripe.
+      if ($receiveDateTimestamp > strtotime('now')) {
+        // We've specified a receive_date in the future, use it!
+        return $receiveDateTimestamp;
+      }
     }
+    // Either we had no receive_date or receive_date was in the past (or "now" when form was submitted).
     return NULL;
   }
 
