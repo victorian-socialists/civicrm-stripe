@@ -606,6 +606,9 @@
     else {
       submit = form.querySelectorAll('[type="submit"].validate');
     }
+    if (submit.length === 0) {
+      debugging('No submit button found!');
+    }
     return submit;
   }
 
