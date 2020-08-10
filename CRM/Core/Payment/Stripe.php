@@ -468,21 +468,21 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @throws \CiviCRM_API3_Exception
    * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
-  public function doPayment(&$params, $component = 'contribute') {
-    /* @var \Civi\Payment\PropertyBag $paramsPb */
-    $paramsPb = \Civi\Payment\PropertyBag::cast($params);
-    $paramsPb = $this->beginDoPayment($paramsPb);
+  public function doPayment(&$propertyBag, $component = 'contribute') {
+    /* @var \Civi\Payment\PropertyBag $propertyBag */
+    $propertyBag = \Civi\Payment\PropertyBag::cast($propertyBag);
+    $propertyBag = $this->beginDoPayment($propertyBag);
 
-    if (($paramsPb->getIsRecur() && $this->getRecurringContributionId($params))
-        || $this->isPaymentForEventAdditionalParticipants($paramsPb)) {
-      $paramsPb = $this->getTokenParameter('paymentMethodID', $paramsPb, TRUE);
+    $isRecur = ($propertyBag->getIsRecur() && $this->getRecurringContributionId($propertyBag));
+    if ($isRecur || $this->isPaymentForEventAdditionalParticipants($propertyBag)) {
+      $propertyBag = $this->getTokenParameter('paymentMethodID', $propertyBag, TRUE);
     }
     else {
-      $paramsPb = $this->getTokenParameter('paymentIntentID', $paramsPb, TRUE);
+      $propertyBag = $this->getTokenParameter('paymentIntentID', $propertyBag, TRUE);
     }
 
-    // @todo From here on we are using the array instead of propertyBag. To be converted later...
-    $params = $this->getPropertyBagAsArray($paramsPb);
+    // @fixme DO NOT SET ANYTHING ON $propertyBag or $params BELOW THIS LINE (we are reading from both)
+    $params = $this->getPropertyBagAsArray($propertyBag);
 
     // We don't actually use this hook with Stripe, but useful to trigger so listeners can see raw params
     $newParams = [];
@@ -491,16 +491,16 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     // Set our Stripe API parameters
     $this->setAPIParams();
 
-    $amount = self::getAmount($params);
-    $email = $this->getBillingEmail($params, $paramsPb->getContactID());
+    $amountFormattedForStripe = self::getAmount($params);
+    $email = $this->getBillingEmail($params, $propertyBag->getContactID());
 
     // See if we already have a stripe customer
     $customerParams = [
-      'contact_id' => $paramsPb->getContactID(),
+      'contact_id' => $propertyBag->getContactID(),
       'processor_id' => $this->_paymentProcessor['id'],
       'email' => $email,
       // Include this to allow redirect within session on payment failure
-      'error_url' => $params['error_url'],
+      'error_url' => $propertyBag->getCustomProperty('error_url'),
     ];
 
     // Get the Stripe Customer:
@@ -518,7 +518,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         $stripeCustomer = \Stripe\Customer::retrieve($stripeCustomerId);
       } catch (Exception $e) {
         $err = self::parseStripeException('retrieve_customer', $e, FALSE);
-        $errorMessage = $this->handleErrorNotification($err, $params['error_url']);
+        $errorMessage = $this->handleErrorNotification($err, $propertyBag->getCustomProperty('error_url'));
         throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to retrieve Stripe Customer: ' . $errorMessage);
       }
 
@@ -529,7 +529,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
           $stripeCustomer = CRM_Stripe_Customer::create($customerParams, $this);
         } catch (Exception $e) {
           // We still failed to create a customer
-          $errorMessage = $this->handleErrorNotification($stripeCustomer, $params['error_url']);
+          $errorMessage = $this->handleErrorNotification($stripeCustomer, $propertyBag->getCustomProperty('error_url'));
           throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to create Stripe Customer: ' . $errorMessage);
         }
       }
@@ -538,27 +538,22 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       }
     }
 
-    // Prepare the charge array, minus Customer/Card details.
-    if (empty($params['description'])) {
-      $params['description'] = E::ts('Contribution: %1', [1 => $this->getPaymentProcessorLabel()]);
-    }
-
     // Handle recurring payments in doRecurPayment().
-    if ($paramsPb->getIsRecur() && $this->getRecurringContributionId($params)) {
+    if ($isRecur) {
       // We're processing a recurring payment - for recurring payments we first saved a paymentMethod via the browser js.
       // Now we use that paymentMethod to setup a stripe subscription and take the first payment.
       // This is where we save the customer card
       // @todo For a recurring payment we have to save the card. For a single payment we'd like to develop the
       //   save card functionality but should not save by default as the customer has not agreed.
-      $paymentMethod = \Stripe\PaymentMethod::retrieve($params['paymentMethodID']);
+      $paymentMethod = \Stripe\PaymentMethod::retrieve($propertyBag->getCustomProperty('paymentMethodID'));
       $paymentMethod->attach(['customer' => $stripeCustomer->id]);
       $stripeCustomer = \Stripe\Customer::retrieve($stripeCustomer->id);
 
-      // We set payment status as pending because the IPN will set it as completed / failed
-      $params['payment_status_id'] = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending');
-      return $this->doRecurPayment($params, $amount, $stripeCustomer, $paymentMethod);
+      return $this->doRecurPayment($propertyBag, $amountFormattedForStripe, $stripeCustomer, $paymentMethod);
     }
-    elseif ($this->isPaymentForEventAdditionalParticipants($paramsPb)) {
+    elseif ($this->isPaymentForEventAdditionalParticipants($propertyBag)) {
+      // @fixme FROM HERE we are using $params ONLY - SET things if required ($propertyBag is not used beyond here)
+
       // We're processing an event registration for multiple participants - because we did not know
       //   the amount until now we process via a saved paymentMethod.
       $paymentMethod = \Stripe\PaymentMethod::retrieve($params['paymentMethodID']);
@@ -567,7 +562,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       $intent = \Stripe\PaymentIntent::create([
         'payment_method' => $params['paymentMethodID'],
         'customer' => $stripeCustomer->id,
-        'amount' => $amount,
+        'amount' => $amountFormattedForStripe,
         'currency' => $this->getCurrency($params),
         'confirmation_method' => 'automatic',
         'capture_method' => 'manual',
@@ -578,6 +573,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       ]);
       $params['paymentIntentID'] = $intent->id;
     }
+    // @fixme FROM HERE we are using $params ONLY - SET things if required ($propertyBag is not used beyond here)
 
     $intentParams = [
       'customer' => $stripeCustomer->id,
@@ -626,10 +622,10 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * Submit a recurring payment using Stripe's PHP API:
    * https://stripe.com/docs/api?lang=php
    *
-   * @param array $params
-   *   Assoc array of input parameters for this transaction.
-   * @param int $amount
-   *   Transaction amount in USD cents.
+   * @param \Civi\Payment\PropertyBag $propertyBag
+   *   PropertyBag for this transaction.
+   * @param int $amountFormattedForStripe
+   *   Transaction amount in cents.
    * @param \Stripe\Customer $stripeCustomer
    *   Stripe customer object generated by Stripe API.
    * @param \Stripe\PaymentMethod $stripePaymentMethod
@@ -640,9 +636,16 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @throws \CiviCRM_API3_Exception
    * @throws \CRM_Core_Exception
    */
-  public function doRecurPayment($params, $amount, $stripeCustomer, $stripePaymentMethod) {
+  public function doRecurPayment($propertyBag, $amountFormattedForStripe, $stripeCustomer, $stripePaymentMethod) {
+    $params = $this->getPropertyBagAsArray($propertyBag);
+
+    // @fixme FROM HERE we are using $params array (but some things are READING from $propertyBag)
+
+    // We set payment status as pending because the IPN will set it as completed / failed
+    $params['payment_status_id'] = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending');
+
     $required = NULL;
-    if (empty($this->getRecurringContributionId($params))) {
+    if (empty($this->getRecurringContributionId($propertyBag))) {
       $required = 'contributionRecurID';
     }
     if (!isset($params['recurFrequencyUnit'])) {
@@ -657,7 +660,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     empty($params['recurFrequencyInterval']) ? $params['recurFrequencyInterval'] = 1 : NULL;
 
     // Create the stripe plan
-    $planId = self::createPlan($params, $amount);
+    $planId = self::createPlan($params, $amountFormattedForStripe);
 
     // Attach the Subscription to the Stripe Customer.
     $subscriptionParams = [
@@ -679,7 +682,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     $this->setPaymentProcessorSubscriptionID($stripeSubscription->id);
 
     $recurParams = [
-      'id' =>     $this->getRecurringContributionId($params),
+      'id' =>     $this->getRecurringContributionId($propertyBag),
       'trxn_id' => $this->getPaymentProcessorSubscriptionID(),
       // FIXME processor_id is deprecated as it is not guaranteed to be unique, but currently (CiviCRM 5.9)
       //  it is required by cancelSubscription (where it is called subscription_id)
