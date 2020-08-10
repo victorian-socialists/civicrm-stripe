@@ -403,7 +403,9 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
           'path' => \Civi::resources()->getPath(E::LONG_NAME, 'js/civicrm_stripe.js'),
           'mimetype' => 'application/javascript',
         ]
-      )
+      ),
+      // Load after other scripts on form (default = 1)
+      'weight' => 100,
     ]);
 
     // Add the future recur start date functionality

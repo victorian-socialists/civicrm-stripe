@@ -127,7 +127,9 @@ class CRM_Stripe_Recur {
                 ->getPath(E::LONG_NAME, 'js/recur_start.js'),
               'mimetype' => 'application/javascript',
             ]
-          )
+          ),
+          // Load after civicrm_stripe.js (weight 100)
+          'weight' => 120,
         ]);
       }
     }

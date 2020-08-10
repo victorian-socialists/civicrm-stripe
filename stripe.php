@@ -150,13 +150,18 @@ function stripe_civicrm_buildForm($formName, &$form) {
   switch ($formName) {
     case 'CRM_Contribute_Form_Contribution_ThankYou':
     case 'CRM_Event_Form_Registration_ThankYou':
-      \Civi::resources()->addScriptUrl(\Civi::service('asset_builder')->getUrl(
-        'civicrmStripeConfirm.js',
-        [
-          'path' => \Civi::resources()->getPath(E::LONG_NAME, 'js/civicrmStripeConfirm.js'),
-          'mimetype' => 'application/javascript',
-        ]
-      ), -1000);
+      \Civi::resources()->addScriptUrl(
+        \Civi::service('asset_builder')->getUrl(
+          'civicrmStripeConfirm.js',
+          [
+            'path' => \Civi::resources()->getPath(E::LONG_NAME, 'js/civicrmStripeConfirm.js'),
+            'mimetype' => 'application/javascript',
+          ]
+        ),
+        // Load after any other scripts
+        100,
+        'page-footer'
+      );
 
       // This is a fairly nasty way of matching and retrieving our paymentIntent as it is no longer available.
       $qfKey = CRM_Utils_Request::retrieve('qfKey', 'String');
