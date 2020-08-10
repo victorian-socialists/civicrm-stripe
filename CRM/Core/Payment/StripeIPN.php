@@ -12,7 +12,7 @@
 /**
  * Class CRM_Core_Payment_StripeIPN
  */
-class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
+class CRM_Core_Payment_StripeIPN {
 
   use CRM_Core_Payment_MJWIPNTrait;
 
@@ -20,11 +20,6 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    * @var \CRM_Core_Payment_Stripe Payment processor
    */
   protected $_paymentProcessor;
-
-  // By default, always retrieve the event from stripe to ensure we are
-  // not being fed garbage. However, allow an override so when we are
-  // testing, we can properly test a failed recurring contribution.
-  protected $verify_event = TRUE;
 
   /**
    * @var \Stripe\StripeObject
@@ -96,15 +91,14 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
   /**
    * CRM_Core_Payment_StripeIPN constructor.
    *
-   * @param string $ipnData
+   * @param string $rawData
    *   json encoded string
-   * @param bool $verify
+   * @param bool $verifyRequest
+   *   Should we check the received event is valid/matches what the payment provider has?
    */
-  public function __construct($ipnData, $verify = TRUE) {
-    $this->verify_event = $verify;
-    $data = json_decode($ipnData);
-    $this->setInputParameters($data);
-    parent::__construct();
+  public function __construct($rawData, $verifyRequest = TRUE) {
+    $data = json_decode($rawData);
+    $this->setInputParameters($data, $verifyRequest);
   }
 
   /**
@@ -113,7 +107,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
    *
    * @param \Stripe\StripeObject $parameters
    */
-  public function setInputParameters($parameters) {
+  public function setInputParameters($parameters, $verifyRequest = TRUE) {
     // Determine the proper Stripe Processor ID so we can get the secret key
     // and initialize Stripe.
     $this->getPaymentProcessor();
@@ -132,7 +126,7 @@ class CRM_Core_Payment_StripeIPN extends CRM_Core_Payment_BaseIPN {
       exit();
     }
 
-    if ($this->verify_event) {
+    if ($verifyRequest) {
       $this->_inputParameters = \Stripe\Event::retrieve($parameters->id);
     }
     else {

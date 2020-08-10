@@ -1105,11 +1105,31 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @throws \Stripe\Error\Api
    */
   public function handlePaymentNotification() {
-    $dataRaw = file_get_contents("php://input");
-    $ipnClass = new CRM_Core_Payment_StripeIPN($dataRaw);
+    $rawData = file_get_contents("php://input");
+    $ipnClass = new CRM_Core_Payment_StripeIPN($rawData);
     if ($ipnClass->main()) {
       http_response_code(200);
     }
+  }
+
+  /**
+   * @param int $paymentProcessorID
+   *   The actual payment processor ID that should be used.
+   * @param $rawData
+   *   The "raw" data, eg. a JSON string that is saved in the civicrm_system_log.context table
+   * @param bool $verifyRequest
+   *   Should we verify the request data with the payment processor (eg. retrieve it again?).
+   *
+   * @return bool
+   * @throws \CRM_Core_Exception
+   * @throws \CiviCRM_API3_Exception
+   * @throws \Stripe\Error\Api
+   */
+  public static function processPaymentNotification($paymentProcessorID, $rawData, $verifyRequest = TRUE) {
+    $_GET['processor_id'] = $paymentProcessorID;
+    $ipnClass = new CRM_Core_Payment_StripeIPN($rawData, $verifyRequest);
+    $ipnClass->setExceptionMode(FALSE);
+    return $ipnClass->main();
   }
 
   public function getText($context, $params) {
