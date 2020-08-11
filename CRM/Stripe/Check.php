@@ -43,16 +43,20 @@ class CRM_Stripe_Check {
   private static function checkExtensionMjwshared(&$messages) {
     // mjwshared: required. Requires min version
     $extensionName = 'mjwshared';
-
     $extensions = civicrm_api3('Extension', 'get', [
       'full_name' => $extensionName,
     ]);
 
     if (empty($extensions['id']) || ($extensions['values'][$extensions['id']]['status'] !== 'installed')) {
       $message = new CRM_Utils_Check_Message(
-        __FUNCTION__ . 'stripe_requirements',
-        E::ts('The Stripe extension requires the mjwshared extension which is not installed (https://lab.civicrm.org/extensions/mjwshared).'),
-        E::ts('Stripe: Missing Requirements'),
+        __FUNCTION__ . E::SHORT_NAME . '_requirements',
+        E::ts('The <em>%1</em> extension requires the <em>Payment Shared</em> extension which is not installed. See <a href="%2" target="_blank">details</a> for more information.',
+          [
+            1 => ucfirst(E::SHORT_NAME),
+            2 => 'https://civicrm.org/extensions/mjwshared',
+          ]
+        ),
+        E::ts('%1: Missing Requirements', [1 => ucfirst(E::SHORT_NAME)]),
         \Psr\Log\LogLevel::ERROR,
         'fa-money'
       );
@@ -66,7 +70,7 @@ class CRM_Stripe_Check {
       return;
     }
     if ($extensions['values'][$extensions['id']]['status'] === 'installed') {
-      self::requireExtensionMinVersion($messages, $extensionName, CRM_Stripe_Check::MIN_VERSION_MJWSHARED, $extensions['values'][$extensions['id']]['version']);
+      self::requireExtensionMinVersion($messages, $extensionName, self::MIN_VERSION_MJWSHARED, $extensions['values'][$extensions['id']]['version']);
     }
   }
 
@@ -147,14 +151,15 @@ class CRM_Stripe_Check {
   private static function requireExtensionMinVersion(&$messages, $extensionName, $minVersion, $actualVersion) {
     if (version_compare($actualVersion, $minVersion) === -1) {
       $message = new CRM_Utils_Check_Message(
-        __FUNCTION__ . $extensionName . 'stripe_requirements',
-        E::ts('The Stripe extension requires the %1 extension version %2 or greater but your system has version %3.',
+        __FUNCTION__ . $extensionName . E::SHORT_NAME . '_requirements',
+        E::ts('The %1 extension requires the %2 extension version %3 or greater but your system has version %4.',
           [
-            1 => $extensionName,
-            2 => $minVersion,
-            3 => $actualVersion
+            1 => ucfirst(E::SHORT_NAME),
+            2 => $extensionName,
+            3 => $minVersion,
+            4 => $actualVersion
           ]),
-        E::ts('Stripe: Missing Requirements'),
+        E::ts('%1: Missing Requirements', [1 => ucfirst(E::SHORT_NAME)]),
         \Psr\Log\LogLevel::ERROR,
         'fa-money'
       );

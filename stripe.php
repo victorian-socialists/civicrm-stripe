@@ -227,8 +227,11 @@ function stripe_civicrm_buildForm($formName, &$form) {
  * @throws \CiviCRM_API3_Exception
  */
 function stripe_civicrm_check(&$messages) {
-  CRM_Stripe_Webhook::check($messages);
   CRM_Stripe_Check::checkRequirements($messages);
+  // If we didn't install mjwshared yet check requirements but don't crash when checking webhooks
+  if (trait_exists('CRM_Mjwshared_WebhookTrait')) {
+    CRM_Stripe_Webhook::check($messages);
+  }
 }
 
 /**
