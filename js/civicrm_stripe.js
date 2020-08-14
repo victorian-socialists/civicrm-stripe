@@ -536,6 +536,10 @@
       // Create a token when the form is submitted.
       handleCardPayment();
 
+      if ($('#stripe-recurring-start-date').is(':hidden')) {
+        $('#stripe-recurring-start-date').remove();
+      }
+
       return true;
     }
   }
