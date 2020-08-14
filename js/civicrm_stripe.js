@@ -33,10 +33,6 @@
     }
   });
 
-  $(document).on('crmBillingPaymentBlockLoaded', function() {
-    console.log('crmBillingPaymentBlockLoaded triggered');
-  });
-
   document.addEventListener('DOMContentLoaded', function() {
     debugging('DOMContentLoaded');
     load();
