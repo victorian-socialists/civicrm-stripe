@@ -7,13 +7,18 @@
   var scriptName = 'stripeRecurStart';
   var recurSection = '.is_recur-section';
   var recurMode = 'recur';
+  var stripeRecurringStartDateSection = null;
 
-  document.addEventListener('DOMContentLoaded', function() {
-    CRM.payment.debugging(scriptName, 'DOMContentLoaded');
+  $(document).on('crmStripeBillingFormReloadComplete', function() {
+    CRM.payment.debugging(scriptName, 'crmStripeBillingFormReloadComplete');
 
     if (!$(recurSection).length) {
       recurSection = '#allow_auto_renew';
       recurMode = 'membership';
+    }
+
+    if ($('#stripe-recurring-start-date').length) {
+      stripeRecurringStartDateSection = $('#stripe-recurring-start-date');
     }
     if (!$(recurSection).length) {
       // I'm not on the right kind of page, just remove the extra field
@@ -22,7 +27,7 @@
 
     // Remove/insert the recur start date element just below the recur selections
     $(recurSection + ' #stripe-recurring-start-date').remove();
-    $(recurSection).append($('#stripe-recurring-start-date'));
+    $(recurSection).append(stripeRecurringStartDateSection);
 
     // It is hard to detect when changing memberships etc.
     // So trigger on all input element changes on the form.
@@ -40,7 +45,6 @@
         toggleRecur();
         inputOnChangeRunning = false;
       }, 200);
-      toggleRecur();
     });
     // Trigger when we change the frequency unit selector (eg. month, year) on recur
     $('select#frequency_unit').on('change', function() {
