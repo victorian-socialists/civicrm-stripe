@@ -4,42 +4,51 @@
  */
 (function ($, ts) {
   'use strict';
+  var scriptName = 'stripeRecurStart';
   var recurSection = '.is_recur-section';
   var recurMode = 'recur';
-  if (!$(recurSection).length) {
-    recurSection = '#allow_auto_renew';
-    recurMode = 'membership';
-  }
-  if (!$(recurSection).length) {
-    // I'm not on the right kind of page, just remove the extra field
-    $('#stripe-recurring-start-date').remove();
-  }
 
-  // Remove/insert the recur start date element just below the recur selections
-  $(recurSection + ' #stripe-recurring-start-date').remove();
-  $(recurSection).append($('#stripe-recurring-start-date'));
+  document.addEventListener('DOMContentLoaded', function() {
+    CRM.payment.debugging(scriptName, 'DOMContentLoaded');
 
-  // It is hard to detect when changing memberships etc.
-  // So trigger on all input element changes on the form.
-  var billingFormID = CRM.payment.getBillingForm().id;
-  var debounceTimeoutId;
-  var inputOnChangeRunning = false;
-  $('#' + billingFormID + ' input').on('change', function() {
-    // As this runs on all input elements on the form we debounce so it runs max once every 200ms
-    if (inputOnChangeRunning) {
-      return;
+    if (!$(recurSection).length) {
+      recurSection = '#allow_auto_renew';
+      recurMode = 'membership';
     }
-    clearTimeout(debounceTimeoutId);
-    inputOnChangeRunning = true;
-    debounceTimeoutId = setTimeout(function() { toggleRecur(); inputOnChangeRunning = false; }, 200);
-    toggleRecur();
-  });
-  // Trigger when we change the frequency unit selector (eg. month, year) on recur
-  $('select#frequency_unit').on('change', function() {
-    toggleRecur();
-  });
+    if (!$(recurSection).length) {
+      // I'm not on the right kind of page, just remove the extra field
+      $('#stripe-recurring-start-date').remove();
+    }
 
-  toggleRecur();
+    // Remove/insert the recur start date element just below the recur selections
+    $(recurSection + ' #stripe-recurring-start-date').remove();
+    $(recurSection).append($('#stripe-recurring-start-date'));
+
+    // It is hard to detect when changing memberships etc.
+    // So trigger on all input element changes on the form.
+    var billingFormID = CRM.payment.getBillingForm().id;
+    var debounceTimeoutId;
+    var inputOnChangeRunning = false;
+    $('#' + billingFormID + ' input').on('change', function() {
+      // As this runs on all input elements on the form we debounce so it runs max once every 200ms
+      if (inputOnChangeRunning) {
+        return;
+      }
+      clearTimeout(debounceTimeoutId);
+      inputOnChangeRunning = true;
+      debounceTimeoutId = setTimeout(function() {
+        toggleRecur();
+        inputOnChangeRunning = false;
+      }, 200);
+      toggleRecur();
+    });
+    // Trigger when we change the frequency unit selector (eg. month, year) on recur
+    $('select#frequency_unit').on('change', function() {
+      toggleRecur();
+    });
+
+    toggleRecur();
+  });
 
   function toggleRecur() {
     if (CRM.payment.getIsRecur()) {
@@ -79,5 +88,6 @@
       $("#stripe-recurring-start-date option:first").prop("selected", "selected");
     }
   }
+
 }(CRM.$, CRM.ts('com.drastikbydesign.stripe')));
 

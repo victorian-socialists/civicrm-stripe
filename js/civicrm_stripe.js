@@ -3,6 +3,7 @@
  */
 (function($, ts) {
   // On initial load...
+  var scriptName = 'civicrmStripe';
   var stripe = null;
   var card = null;
   var form;
@@ -12,6 +13,13 @@
 
   // Disable the browser "Leave Page Alert" which is triggered because we mess with the form submit function.
   window.onbeforeunload = null;
+
+  if (CRM.payment.hasOwnProperty('Stripe')) {
+    return;
+  }
+  // todo: turn this script into a proper object on CRM.payment
+  var civicrmStripe = {Stripe: true};
+  $.extend(CRM.payment, civicrmStripe);
 
   // Re-prep form when we've loaded a new payproc via ajax or via webform
   $(document).ajaxComplete(function(event, xhr, settings) {
