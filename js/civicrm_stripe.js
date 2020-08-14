@@ -2,16 +2,6 @@
  * JS Integration between CiviCRM & Stripe.
  */
 (function($, ts) {
-  debugging("civicrm_stripe loaded, dom-ready function firing.");
-
-  if (window.civicrmStripeHandleReload) {
-    // Call existing instance of this, instead of making new one.
-
-    debugging("calling existing civicrmStripeHandleReload.");
-    window.civicrmStripeHandleReload();
-    return;
-  }
-
   // On initial load...
   var stripe = null;
   var card = null;
@@ -23,11 +13,50 @@
   // Disable the browser "Leave Page Alert" which is triggered because we mess with the form submit function.
   window.onbeforeunload = null;
 
+  // Re-prep form when we've loaded a new payproc via ajax or via webform
+  $(document).ajaxComplete(function(event, xhr, settings) {
+    // /civicrm/payment/form? occurs when a payproc is selected on page
+    // /civicrm/contact/view/participant occurs when payproc is first loaded on event credit card payment
+    // On wordpress these are urlencoded
+    if ((settings.url.match("civicrm(\/|%2F)payment(\/|%2F)form") !== null) ||
+      (settings.url.match("civicrm(\/|\%2F)contact(\/|\%2F)view(\/|\%2F)participant") !== null)) {
+      debugging('triggered via ajax');
+      load();
+    }
+  });
+
+  $(document).on('crmBillingPaymentBlockLoaded', function() {
+    console.log('crmBillingPaymentBlockLoaded triggered');
+  });
+
+  document.addEventListener('DOMContentLoaded', function() {
+    debugging('DOMContentLoaded');
+    load();
+  });
+
+  function load() {
+    if (window.civicrmStripeHandleReload) {
+      // Call existing instance of this, instead of making new one.
+      debugging("calling existing civicrmStripeHandleReload.");
+      window.civicrmStripeHandleReload();
+    }
+  }
+
   /**
    * This function boots the UI.
    */
   window.civicrmStripeHandleReload = function() {
     debugging('civicrmStripeHandleReload');
+
+    // Get the form containing payment details
+    form = getBillingForm();
+    if (typeof form.length === 'undefined' || form.length === 0) {
+      debugging('No billing form!');
+      return;
+    }
+
+    var submitButtons = getBillingSubmit();
+
     // Load Stripe onto the form.
     var cardElement = document.getElementById('card-element');
     if ((typeof cardElement !== 'undefined') && (cardElement)) {
@@ -35,14 +64,15 @@
         debugging('checkAndLoad from document.ready');
         checkAndLoad();
       }
+      else {
+        debugging('already loaded');
+      }
     }
     else {
       notStripe();
       triggerEvent('crmBillingFormReloadComplete');
     }
   };
-  // On initial run we need to call this now.
-  window.civicrmStripeHandleReload();
 
   function successHandler(type, object) {
     debugging(type + ': success - submitting form');
@@ -229,13 +259,6 @@
   function checkAndLoad() {
     if (typeof CRM.vars.stripe === 'undefined') {
       debugging('CRM.vars.stripe not defined! Not a Stripe processor?');
-      return;
-    }
-
-    // Get the form containing payment details
-    form = getBillingForm();
-    if (typeof form.length === 'undefined' || form.length === 0) {
-      debugging('No billing form!');
       return;
     }
 
