@@ -8,6 +8,7 @@
     <url desc="Support">https://mjw.pt/support/stripe</url>
     <url desc="Release Notes">https://docs.civicrm.org/stripe/en/latest/releasenotes/</url>
     <url desc="Documentation">https://docs.civicrm.org/stripe/en/latest/</url>
+    <url desc="Licensing">http://www.gnu.org/licenses/agpl-3.0.html</url>
   </urls>
   <license>AGPL-3.0</license>
   <maintainer>
