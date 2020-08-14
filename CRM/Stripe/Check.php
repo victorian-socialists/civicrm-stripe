@@ -27,6 +27,7 @@ class CRM_Stripe_Check {
    */
   const MIN_VERSION_MJWSHARED = '0.9';
   const MIN_VERSION_SWEETALERT = '1.2';
+  const MIN_VERSION_FIREWALL = '1.1';
 
   public static function checkRequirements(&$messages) {
     self::checkExtensionMjwshared($messages);
@@ -102,6 +103,9 @@ class CRM_Stripe_Check {
         ['path' => 'civicrm/admin/extensions', 'query' => ['action' => 'update', 'id' => $extensionName, 'key' => $extensionName]]
       );
       $messages[] = $message;
+    }
+    if ($extensions['values'][$extensions['id']]['status'] === 'installed') {
+      self::requireExtensionMinVersion($messages, $extensionName, CRM_Stripe_Check::MIN_VERSION_FIREWALL, $extensions['values'][$extensions['id']]['version']);
     }
   }
 
