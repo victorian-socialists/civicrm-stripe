@@ -171,10 +171,11 @@
       return;
   }
 
-  confirm.checkAndLoad();
-  confirm.handleCardConfirm();
+  document.addEventListener('DOMContentLoaded', function() {
+    CRM.payment.debugging(confirm.scriptName, 'DOMContentLoaded');
 
-  // Disable the browser "Leave Page Alert" which is triggered because we mess with the form submit function.
-  window.onbeforeunload = null;
+    confirm.checkAndLoad();
+    confirm.handleCardConfirm();
+  });
 
 }(CRM.$, CRM.ts('com.drastikbydesign.stripe')));
