@@ -57,7 +57,7 @@
     debugging('civicrmStripeHandleReload');
 
     // Get the form containing payment details
-    form = getBillingForm();
+    form = CRM.payment.getBillingForm();
     if (typeof form.length === 'undefined' || form.length === 0) {
       debugging('No billing form!');
       return;
@@ -190,7 +190,7 @@
         // For recur, additional participants we do NOT know the final amount so must create a paymentMethod and only create the paymentIntent
         //   once the form is finally submitted.
         // We should never get here with amount=0 as we should be doing a "nonStripeSubmit()" instead. This may become needed when we save cards
-        if (getIsRecur() || isEventAdditionalParticipants() || (getTotalAmount() === 0.0)) {
+        if (CRM.payment.getIsRecur() || CRM.payment.isEventAdditionalParticipants() || (CRM.payment.getTotalAmount() === 0.0)) {
           // Submit the form, if we need to do 3dsecure etc. we do it at the end (thankyou page) once subscription etc has been created
           successHandler('paymentMethodID', result.paymentMethod);
         }
@@ -208,7 +208,7 @@
           var url = CRM.url('civicrm/stripe/confirm-payment');
           $.post(url, {
             payment_method_id: result.paymentMethod.id,
-            amount: getTotalAmount().toFixed(2),
+            amount: CRM.payment.getTotalAmount().toFixed(2),
             currency: CRM.vars.stripe.currency,
             id: CRM.vars.stripe.id,
             description: document.title,
@@ -408,7 +408,7 @@
     addSupportForCiviDiscount();
 
     // For CiviCRM Webforms.
-    if (getIsDrupalWebform()) {
+    if (CRM.payment.getIsDrupalWebform()) {
       // We need the action field for back/submit to work and redirect properly after submission
 
       $('[type=submit]').click(function() {
@@ -449,7 +449,7 @@
       }
 
       var cardError = CRM.$('#card-errors').text();
-      if (CRM.$('#card-element.StripeElement--empty').length && (getTotalAmount() !== 0.0)) {
+      if (CRM.$('#card-element.StripeElement--empty').length && (CRM.payment.getTotalAmount() !== 0.0)) {
         debugging('card details not entered!');
         if (!cardError) {
           cardError = ts('Please enter your card details');
@@ -493,7 +493,7 @@
 
       // Handle multiple payment options and Stripe not being chosen.
       // @fixme this needs refactoring as some is not relevant anymore (with stripe 6.0)
-      if (getIsDrupalWebform()) {
+      if (CRM.payment.getIsDrupalWebform()) {
         // this element may or may not exist on the webform, but we are dealing with a single (stripe) processor enabled.
         if (!$('input[name="submitted[civicrm_1_contribution_1_contribution_payment_processor_id]"]').length) {
           chosenProcessorId = stripeProcessorId;
@@ -536,7 +536,7 @@
         return true;
       }
 
-      if (getIsDrupalWebform()) {
+      if (CRM.payment.getIsDrupalWebform()) {
         // If we have selected Stripe but amount is 0 we don't submit via Stripe
         if ($('#billing-payment-block').is(':hidden')) {
           debugging('no payment processor on webform');
@@ -553,8 +553,8 @@
         }
       }
 
-      var totalFee = getTotalAmount();
-      if (totalFee === 0.0) {
+      var totalAmount = CRM.payment.getTotalAmount();
+      if (totalAmount === 0.0) {
         debugging("Total amount is 0");
         return nonStripeSubmit();
       }
@@ -610,28 +610,9 @@
     return false;
   }
 
-  function getIsDrupalWebform() {
-    // form class for drupal webform: webform-client-form (drupal 7); webform-submission-form (drupal 8)
-    if (form !== null) {
-      return form.classList.contains('webform-client-form') || form.classList.contains('webform-submission-form');
-    }
-    return false;
-  }
-
-  function getBillingForm() {
-    // If we have a stripe billing form on the page
-    var billingFormID = $('div#card-element').closest('form').prop('id');
-    if ((typeof billingFormID === 'undefined') || (!billingFormID.length)) {
-      // If we have multiple payment processors to select and stripe is not currently loaded
-      billingFormID = $('input[name=hidden_processor]').closest('form').prop('id');
-    }
-    // We have to use document.getElementById here so we have the right elementtype for appendChild()
-    return document.getElementById(billingFormID);
-  }
-
   function getBillingSubmit() {
     var submit = null;
-    if (getIsDrupalWebform()) {
+    if (CRM.payment.getIsDrupalWebform()) {
       submit = form.querySelectorAll('[type="submit"].webform-submit');
       if (!submit) {
         // drupal 8 webform
@@ -645,112 +626,6 @@
       debugging('No submit button found!');
     }
     return submit;
-  }
-
-  /**
-   * Get the total amount on the form
-   * @returns {number}
-   */
-  function getTotalAmount() {
-    var totalFee = 0.0;
-    if (isEventAdditionalParticipants()) {
-      totalFee = null;
-    }
-    else if (CRM.payment && typeof CRM.payment.getTotalAmount == 'function') {
-      return CRM.payment.getTotalAmount(form.id);
-    }
-    else if (document.getElementById('totalTaxAmount') !== null) {
-      totalFee = parseFloat(calculateTaxAmount());
-      debugging('Calculated amount using internal calculateTaxAmount()');
-    }
-    else if (typeof calculateTotalFee == 'function') {
-      // This is ONLY triggered in the following circumstances on a CiviCRM contribution page:
-      // - With a priceset that allows a 0 amount to be selected.
-      // - When Stripe is the ONLY payment processor configured on the page.
-      totalFee = parseFloat(calculateTotalFee());
-    }
-    else if (getIsDrupalWebform()) {
-      // This is how webform civicrm calculates the amount in webform_civicrm_payment.js
-      $('.line-item:visible', '#wf-crm-billing-items').each(function() {
-        totalFee += parseFloat($(this).data('amount'));
-      });
-    }
-    else if (document.getElementById('total_amount')) {
-      // The input#total_amount field exists on backend contribution forms
-      totalFee = parseFloat(document.getElementById('total_amount').value);
-    }
-    debugging('getTotalAmount: ' + totalFee);
-    return totalFee;
-  }
-
-  /**
-   * This is calculated in CRM/Contribute/Form/Contribution.tpl and is used to calculate the total
-   *   amount with tax on backend submit contribution forms.
-   *   The only way we can get the amount is by parsing the text field and extracting the final bit after the space.
-   *   eg. "Amount including Tax: $ 4.50" gives us 4.50.
-   *   The PHP side is responsible for converting money formats (we just parse to cents and remove any ,. chars).
-   *
-   * @returns {string|prototype.value|number}
-   */
-  function calculateTaxAmount() {
-    var totalTaxAmount = 0;
-    if (document.getElementById('totalTaxAmount') === null) {
-      return totalTaxAmount;
-    }
-
-    // If tax and invoicing is disabled totalTaxAmount div exists but is empty
-    if (document.getElementById('totalTaxAmount').textContent.length === 0) {
-      totalTaxAmount = document.getElementById('total_amount').value;
-    }
-    else {
-      // Otherwise totalTaxAmount div contains a textual amount including currency symbol
-      totalTaxAmount = document.getElementById('totalTaxAmount').textContent.split(' ').pop();
-    }
-    return totalTaxAmount;
-  }
-
-  /**
-   * Are we creating a recurring contribution?
-   * @returns {boolean}
-   */
-  function getIsRecur() {
-    var isRecur = false;
-    // Auto-renew contributions for CiviCRM Webforms.
-    if (getIsDrupalWebform()) {
-      if (($('input[data-civicrm-field-key$="contribution_installments"]').length !== 0 && $('input[data-civicrm-field-key$="contribution_installments"]').val() > 1) ||
-          ($('input[data-civicrm-field-key$="contribution_frequency_interval"]').length !== 0 && $('input[data-civicrm-field-key$="contribution_frequency_interval"]').val() > 0)
-      ) {
-        isRecur = true;
-      }
-    }
-    // Auto-renew contributions
-    if (document.getElementById('is_recur') !== null) {
-      if (document.getElementById('is_recur').type == 'hidden') {
-        isRecur = (document.getElementById('is_recur').value == 1);
-      }
-      else {
-        isRecur = Boolean(document.getElementById('is_recur').checked);
-      }
-    }
-    // Auto-renew memberships
-    // This gets messy quickly!
-    // input[name="auto_renew"] : set to 1 when there is a force-renew membership with no priceset.
-    else if ($('input[name="auto_renew"]').length !== 0) {
-      if ($('input[name="auto_renew"]').prop('checked')) {
-        isRecur = true;
-      }
-      else if ($('input[name="auto_renew"]').attr('type') == 'hidden') {
-        // If the auto_renew field exists as a hidden field, then we force a
-        // recurring contribution (the value isn't useful since it depends on
-        // the locale - e.g.  "Please renew my membership")
-        isRecur = true;
-      }
-      else {
-        isRecur = Boolean($('input[name="auto_renew"]').checked);
-      }
-    }
-    debugging('isRecur is ' + isRecur);
-    return isRecur;
   }
 
   function cardElementChanged(event) {
@@ -828,18 +703,6 @@
     };
   }
 
-  /**
-   * @returns {boolean}
-   */
-  function isEventAdditionalParticipants() {
-    if ((document.getElementById('additional_participants') !== null) &&
-      (document.getElementById('additional_participants').value.length !== 0)) {
-      debugging('We don\'t know the final price - registering additional participants');
-      return true;
-    }
-    return false;
-  }
-
   function addDrupalWebformActionElement(submitAction) {
     var hiddenInput = null;
     if (document.getElementById('action') !== null) {
@@ -861,7 +724,7 @@
    */
   function getPaymentProcessorSelectorValue() {
     if ((typeof form === 'undefined') || (!form)) {
-      form = getBillingForm();
+      form = CRM.payment.getBillingForm();
       if (!form) {
         return null;
       }
@@ -886,10 +749,7 @@
    * @param {string} errorCode
    */
   function debugging(errorCode) {
-    // Uncomment the following to debug unexpected returns.
-    if ((typeof(CRM.vars.stripe) === 'undefined') || (Boolean(CRM.vars.stripe.jsDebug) === true)) {
-      console.log(new Date().toISOString() + ' civicrm_stripe.js: ' + errorCode);
-    }
+    CRM.payment.debugging(scriptName, errorCode);
   }
 
   /**
