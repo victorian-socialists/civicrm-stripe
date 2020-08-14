@@ -343,11 +343,11 @@
       '[type="submit"].cancel, ' +
       '[type="submit"].webform-previous'), i;
     for (i = 0; i < nonPaymentSubmitButtons.length; ++i) {
-      nonPaymentSubmitButtons[i].addEventListener('click', submitDontProcess());
+      nonPaymentSubmitButtons[i].addEventListener('click', submitDontProcess(nonPaymentSubmitButtons[i]));
     }
 
-    function submitDontProcess() {
-      debugging('adding submitdontprocess');
+    function submitDontProcess(element) {
+      debugging('adding submitdontprocess: ' + element.id);
       form.dataset.submitdontprocess = 'true';
     }
 
