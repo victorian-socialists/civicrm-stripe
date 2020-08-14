@@ -99,40 +99,6 @@ function stripe_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
 }
 
 /**
- * Implementation of hook_civicrm_alterContent
- *
- * Adding civicrm_stripe.js in a way that works for webforms and (some) Civi forms.
- * hook_civicrm_buildForm is not called for webforms
- *
- * @return void
- */
-function stripe_civicrm_alterContent( &$content, $context, $tplName, &$object ) {
-  /* Adding stripe js:
-   * - Webforms don't get scripts added by hook_civicrm_buildForm so we have to user alterContent
-   * - (Webforms still call buildForm and it looks like they are added but they are not,
-   *   which is why we check for $object instanceof CRM_Financial_Form_Payment here to ensure that
-   *   Webforms always have scripts added).
-   * - Almost all forms have context = 'form' and a paymentprocessor object.
-   * - Membership backend form is a 'page' and has a _isPaymentProcessor=true flag.
-   *
-   */
-  if (($context == 'form' && !empty($object->_paymentProcessor['class_name']))
-    || (($context == 'page') && !empty($object->_isPaymentProcessor))) {
-    if (!isset(\Civi::$statics[E::LONG_NAME]['stripeJSLoaded']) || $object instanceof CRM_Financial_Form_Payment) {
-      $stripeJSURL = \Civi::service('asset_builder')->getUrl(
-        'civicrmStripe.js',
-        [
-          'path' => \Civi::resources()->getPath(E::LONG_NAME, 'js/civicrm_stripe.js'),
-          'mimetype' => 'application/javascript',
-        ]
-      );
-      $content .= "<script src='{$stripeJSURL}'></script>";
-      \Civi::$statics[E::LONG_NAME]['stripeJSLoaded'] = TRUE;
-    }
-  }
-}
-
-/**
  * Add stripe.js to forms, to generate stripe token
  * hook_civicrm_alterContent is not called for all forms (eg. CRM_Contribute_Form_Contribution on backend)
  *
