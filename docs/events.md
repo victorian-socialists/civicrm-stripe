@@ -22,6 +22,9 @@ Example code:
 This event is triggered when the form has completed reloading and is ready for use (Stripe element visible etc.).
 It is useful for clearing any "loading" indicators and unfreezing form elements.
 
+### crmStripeBillingFormReloadComplete
+This event is triggered when the form has completed reloading, is ready for use and the selected payment processor is Stripe.
+
 ### crmBillingFormReloadFailed
 This event is triggered when the form fails to complete reloading and is NOT ready for use. It usually happens if there
 is a problem (such as a network issue) when loading the Stripe elements.

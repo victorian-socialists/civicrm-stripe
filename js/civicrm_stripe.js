@@ -289,6 +289,7 @@
           debugging("Script loaded and executed.");
           loadStripeBillingBlock();
           triggerEvent('crmBillingFormReloadComplete');
+          triggerEvent('crmStripeBillingFormReloadComplete');
         })
         .fail(function() {
           stripeLoading = false;
@@ -299,7 +300,7 @@
     else {
       loadStripeBillingBlock();
       if (checkPaymentElementsAreValid()) {
-        triggerEvent('crmBillingFormReloadComplete');
+        triggerEvent('crmStripeBillingFormReloadComplete');
       }
       else {
         debugging('Failed to load payment elements');
