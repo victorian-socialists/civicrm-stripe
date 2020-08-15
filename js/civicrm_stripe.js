@@ -205,7 +205,7 @@
           $.post(url, {
             payment_method_id: result.paymentMethod.id,
             amount: CRM.payment.getTotalAmount().toFixed(2),
-            currency: getCurrency(),
+            currency: CRM.payment.getCurrency(CRM.vars.stripe.currency),
             id: CRM.vars.stripe.id,
             description: document.title,
             csrfToken: CRM.vars.stripe.csrfToken
@@ -623,19 +623,6 @@
       debugging('No submit button found!');
     }
     return submit;
-  }
-
-  /**
-   * Get currency on the form
-   * @returns {currency}
-   */
-  function getCurrency() {
-    if (document.getElementById('currency')) {
-      return document.getElementById("currency").value;
-    }
-    else {
-      return CRM.vars.stripe.currency;
-    }
   }
 
   function cardElementChanged(event) {
