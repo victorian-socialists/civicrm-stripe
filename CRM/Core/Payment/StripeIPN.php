@@ -236,6 +236,7 @@ class CRM_Core_Payment_StripeIPN {
             'trxn_id' => $this->charge_id,
             'total_amount' => $this->amount,
             'fee_amount' => $this->fee,
+            'contribution_status_id' => $this->contribution['contribution_status_id']
           ];
           $this->updateContributionCompleted($params);
           // Don't touch the contributionRecur as it's updated automatically by Contribution.completetransaction
@@ -351,7 +352,6 @@ class CRM_Core_Payment_StripeIPN {
         }
 
         // If contribution is in Pending or Failed state record payment and transition to Completed
-        // @fixme: CiviCRM doesn't allow Failed => X but probably should do.
         $statusesToUpdate = [
           $pendingStatusId,
           CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Failed'),
@@ -364,6 +364,7 @@ class CRM_Core_Payment_StripeIPN {
             'trxn_id' => $this->charge_id,
             'total_amount' => $this->amount,
             'fee_amount' => $this->fee,
+            'contribution_status_id' => $this->contribution['contribution_status_id']
           ];
           $this->updateContributionCompleted($params);
         }
