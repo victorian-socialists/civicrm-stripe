@@ -160,7 +160,7 @@ class CRM_Core_Payment_StripeIPN {
    * @return bool
    * @throws \CRM_Core_Exception
    * @throws \CiviCRM_API3_Exception
-   * @throws \Stripe\Error\Api
+   * @throws \Stripe\Exception\UnknownApiErrorException
    */
   public function main() {
     // Collect and determine all data about this event.

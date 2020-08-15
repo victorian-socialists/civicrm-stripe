@@ -104,7 +104,7 @@ class CRM_Stripe_AJAX {
           'confirm' => $confirm,
         ]);
       } catch (Exception $e) {
-        if ($e instanceof \Stripe\Error\Card) {
+        if ($e instanceof \Stripe\Exception\CardException) {
           if (($e->getDeclineCode() === 'fraudulent') && class_exists('\Civi\Firewall\Event\FraudEvent')) {
             \Civi\Firewall\Event\FraudEvent::trigger(\CRM_Utils_System::ipAddress(), 'CRM_Stripe_AJAX::confirmPayment');
           }

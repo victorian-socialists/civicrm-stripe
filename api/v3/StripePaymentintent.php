@@ -106,7 +106,7 @@ function _civicrm_api3_stripe_paymentintent_process_spec(&$spec) {
  * @return array API result descriptor
  * @throws \API_Exception
  * @throws \CiviCRM_API3_Exception
- * @throws \Stripe\Error\Api
+ * @throws \Stripe\Exception\UnknownApiErrorException
  */
 function civicrm_api3_stripe_paymentintent_process($params) {
   $paymentMethodID = $params['payment_method_id'];

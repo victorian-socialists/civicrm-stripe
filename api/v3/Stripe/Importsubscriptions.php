@@ -33,7 +33,7 @@ function _civicrm_api3_stripe_importsubscriptions_spec(&$spec) {
  *
  * @return array
  * @throws \CiviCRM_API3_Exception
- * @throws \Stripe\Error\Api
+ * @throws \Stripe\Exception\UnknownApiErrorException
  */
 function civicrm_api3_stripe_importsubscriptions($params) {
   $ppid = $params['ppid'];

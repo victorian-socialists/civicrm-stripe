@@ -179,7 +179,7 @@ function civicrm_api3_stripe_ProcessParams($params) {
  * @return array API result descriptor
  * @throws \API_Exception
  * @throws \CiviCRM_API3_Exception
- * @throws \Stripe\Error\Api
+ * @throws \Stripe\Exception\UnknownApiErrorException
  */
 function civicrm_api3_stripe_Listevents($params) {
   $parsed = civicrm_api3_stripe_ProcessParams($params);

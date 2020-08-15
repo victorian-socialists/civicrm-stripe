@@ -153,7 +153,7 @@ WHERE trxn_id=%1;";
  * @return array
  * @throws \API_Exception
  * @throws \CiviCRM_API3_Exception
- * @throws \Stripe\Error\Api
+ * @throws \Stripe\Exception\UnknownApiErrorException
  */
 function civicrm_api3_stripe_subscription_import($params) {
   civicrm_api3_verify_mandatory($params, NULL, ['subscription_id', 'contact_id', 'payment_processor_id']);

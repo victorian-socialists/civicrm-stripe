@@ -258,7 +258,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     try {
       $plan = \Stripe\Plan::retrieve($planId);
     }
-    catch (Stripe\Error\InvalidRequest $e) {
+    catch (Stripe\Exception\InvalidRequestException $e) {
       $err = self::parseStripeException('plan_retrieve', $e, FALSE);
       if ($err['code'] === 'resource_missing') {
         $formatted_amount = CRM_Utils_Money::formatLocaleNumericRoundedByCurrency(($amount / 100), $currency);
@@ -1102,7 +1102,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    *
    * @throws \CRM_Core_Exception
    * @throws \CiviCRM_API3_Exception
-   * @throws \Stripe\Error\Api
+   * @throws \Stripe\Exception\UnknownApiErrorException
    */
   public function handlePaymentNotification() {
     $rawData = file_get_contents("php://input");
@@ -1123,7 +1123,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return bool
    * @throws \CRM_Core_Exception
    * @throws \CiviCRM_API3_Exception
-   * @throws \Stripe\Error\Api
+   * @throws \Stripe\Exception\UnknownApiErrorException
    */
   public static function processPaymentNotification($paymentProcessorID, $rawData, $verifyRequest = TRUE) {
     $_GET['processor_id'] = $paymentProcessorID;
