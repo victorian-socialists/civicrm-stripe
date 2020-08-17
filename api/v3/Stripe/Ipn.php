@@ -47,7 +47,7 @@ function civicrm_api3_stripe_Ipn($params) {
   $object = NULL;
   $ppid = NULL;
   if (array_key_exists('id', $params)) {
-    $data = civicrm_api3('SystemLog', 'getsingle', array('id' => $params['id'], 'return' => array('message', 'context')));
+    $data = civicrm_api3('SystemLog', 'getsingle', ['id' => $params['id'], 'return' => ['message', 'context']]);
     if (empty($data)) {
       throw new API_Exception('Failed to find that entry in the system log', 3234);
     }
@@ -64,8 +64,8 @@ function civicrm_api3_stripe_Ipn($params) {
       throw new API_Exception('Please pass the payment processor id (ppid) if using evtid.', 3236);
     }
     $ppid = $params['ppid'];
-    $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $ppid]));
-    $processor->setAPIParams();
+    $paymentProcessor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $ppid]));
+    $paymentProcessor->setAPIParams();
 
     $object = \Stripe\Event::retrieve($params['evtid']);
   }
@@ -97,16 +97,8 @@ function civicrm_api3_stripe_Ipn($params) {
   }
 
   if (class_exists('CRM_Core_Payment_StripeIPN')) {
-    // The $_GET['processor_id'] value is normally set by
-    // CRM_Core_Payment::handlePaymentMethod
-    $_GET['processor_id'] = $ppid;
-    $ipnClass = new CRM_Core_Payment_StripeIPN($object);
-    $ipnClass->setExceptionMode(FALSE);
-    if ($params['noreceipt'] == 1) {
-      $ipnClass->setSendEmailReceipt(0);
-    }
     try {
-      $ipnClass->main();
+      $paymentProcessor->processPaymentNotification($ppid, $object, TRUE, ($params['noreceipt'] == 1) ? 0 : NULL);
     } catch(Throwable $e) {
       return civicrm_api3_create_error($e->getMessage());
     }
@@ -114,5 +106,5 @@ function civicrm_api3_stripe_Ipn($params) {
   else {
     trigger_error("The api depends on CRM_Core_Payment_StripeIPN");
   }
-  return civicrm_api3_create_success(array());
+  return civicrm_api3_create_success([]);
 }

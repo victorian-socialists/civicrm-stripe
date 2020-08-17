@@ -1125,10 +1125,13 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @throws \CiviCRM_API3_Exception
    * @throws \Stripe\Exception\UnknownApiErrorException
    */
-  public static function processPaymentNotification($paymentProcessorID, $rawData, $verifyRequest = TRUE) {
+  public static function processPaymentNotification($paymentProcessorID, $rawData, $verifyRequest = TRUE, $emailReceipt = NULL) {
     $_GET['processor_id'] = $paymentProcessorID;
     $ipnClass = new CRM_Core_Payment_StripeIPN($rawData, $verifyRequest);
     $ipnClass->setExceptionMode(FALSE);
+    if (isset($emailReceipt)) {
+      $ipnClass->setSendEmailReceipt($emailReceipt);
+    }
     return $ipnClass->main();
   }
 

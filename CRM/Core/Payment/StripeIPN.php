@@ -404,8 +404,6 @@ class CRM_Core_Payment_StripeIPN {
    * @throws \CRM_Core_Exception
    */
   public function setInfo() {
-    $stripeObjectName = get_class($this->_inputParameters->data->object);
-
     if (!$this->getCustomer()) {
       if ((bool)\Civi::settings()->get('stripe_ipndebug')) {
         $message = $this->_paymentProcessor->getPaymentProcessorLabel() . ': ' . CRM_Stripe_Api::getParam('id', $this->_inputParameters) . ': Missing customer_id';
@@ -427,7 +425,7 @@ class CRM_Core_Payment_StripeIPN {
     $this->plan_start = $this->retrieve('plan_start', 'String', FALSE);
     $this->amount = $this->retrieve('amount', 'String', FALSE);
 
-    if (($stripeObjectName !== 'Stripe\Charge') && ($this->charge_id !== NULL)) {
+    if (($this->_inputParameters->data->object->object !== 'charge') && ($this->charge_id !== NULL)) {
       $charge = \Stripe\Charge::retrieve($this->charge_id);
       $balanceTransactionID = CRM_Stripe_Api::getObjectParam('balance_transaction', $charge);
     }
