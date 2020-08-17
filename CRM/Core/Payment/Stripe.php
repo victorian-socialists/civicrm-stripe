@@ -1119,6 +1119,8 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    *   The "raw" data, eg. a JSON string that is saved in the civicrm_system_log.context table
    * @param bool $verifyRequest
    *   Should we verify the request data with the payment processor (eg. retrieve it again?).
+   * @param null|int $emailReceipt
+   *   Override setting of email receipt if set to 0, 1
    *
    * @return bool
    * @throws \CRM_Core_Exception
