@@ -12,9 +12,8 @@
 class CRM_Stripe_Api {
 
   public static function getObjectParam($name, $stripeObject) {
-    $className = get_class($stripeObject);
-    switch ($className) {
-      case 'Stripe\Charge':
+    switch ($stripeObject->object) {
+      case 'charge':
         switch ($name) {
           case 'charge_id':
             return (string) $stripeObject->id;
@@ -55,7 +54,7 @@ class CRM_Stripe_Api {
         }
         break;
 
-      case 'Stripe\Invoice':
+      case 'invoice':
         switch ($name) {
           case 'charge_id':
             return (string) $stripeObject->charge;
@@ -102,7 +101,7 @@ class CRM_Stripe_Api {
         }
         break;
 
-      case 'Stripe\Subscription':
+      case 'subscription':
         switch ($name) {
           case 'frequency_interval':
             return (string) $stripeObject->plan->interval_count;
