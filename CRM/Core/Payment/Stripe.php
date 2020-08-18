@@ -1083,13 +1083,24 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    */
   public function cancelSubscription(&$message = '', $params = []) {
     $propertyBag = \Civi\Payment\PropertyBag::cast($params);
+
+    // Fix Unknown property 'subscriptionId' (for < 5.25)
+    // @see https://lab.civicrm.org/extensions/stripe/-/issues/234
+    if (version_compare(CRM_Utils_System::version(), '5.25', '<')) {
+      if (isset($params['subscriptionId'])) {
+        $propertyBag->setRecurProcessorID($params['subscriptionId']);
+      }
+    }
+
     if (!$propertyBag->has('recurProcessorID')) {
       throw new \Civi\Payment\Exception\PaymentProcessorException("cancelSubscription requires the recurProcessorID");
     }
 
     // contributionRecurID is set when doCancelRecurring is called directly (from 5.25)
     if (!$propertyBag->has('contributionRecurID')) {
-      $contrib_recur = civicrm_api3('ContributionRecur', 'getsingle', ['processor_id' => $propertyBag->getRecurProcessorID()]);
+      $contrib_recur = civicrm_api3('ContributionRecur', 'getsingle', [
+        'trxn_id' => $propertyBag->getRecurProcessorID(),
+      ]);
       $propertyBag->setContributionRecurID($contrib_recur['id']);
     }
 
