@@ -109,16 +109,25 @@ class CRM_Stripe_AJAX {
             \Civi\Firewall\Event\FraudEvent::trigger(\CRM_Utils_System::ipAddress(), 'CRM_Stripe_AJAX::confirmPayment');
           }
         }
+        // Save the "error" in the paymentIntent table in in case investigation is required.
+        $intentParams = [
+          'paymentintent_id' => 'null',
+          'payment_processor_id' => $processorID,
+          'status' => 'failed',
+          'description' => "{$e->getMessage()};{$title}",
+          'referrer' => $_SERVER['HTTP_REFERER'],
+        ];
+        CRM_Stripe_BAO_StripePaymentintent::create($intentParams);
         CRM_Utils_JSON::output(['error' => ['message' => $e->getMessage()]]);
       }
     }
-
     // Save the generated paymentIntent in the CiviCRM database for later tracking
     $intentParams = [
       'paymentintent_id' => $intent->id,
       'payment_processor_id' => $processorID,
       'status' => $intent->status,
-      'description' => $title,
+      'description' => ";{$title}",
+      'referrer' => $_SERVER['HTTP_REFERER'],
     ];
     CRM_Stripe_BAO_StripePaymentintent::create($intentParams);
 

@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS `civicrm_stripe_paymentintent` (
     `contact_id` int unsigned    COMMENT 'FK to Contact',
     `created_date` timestamp   DEFAULT CURRENT_TIMESTAMP COMMENT 'When was paymentIntent created',
     `flags` varchar(100) NULL   COMMENT 'Flags associated with this PaymentIntent (NC=no contributionID when doPayment called)',
+    `referrer` varchar(255) NULL   COMMENT 'HTTP referrer of this paymentIntent'
     PRIMARY KEY (`id`),
     UNIQUE INDEX `UI_paymentintent_id` (
         paymentintent_id

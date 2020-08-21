@@ -24,7 +24,7 @@ function civicrm_api3_job_process_stripe($params) {
   if ($params['delete_old'] !== 0 && !empty($params['delete_old'])) {
     // Delete all locally recorded paymentIntents that are older than 3 months
     $oldPaymentIntents = civicrm_api3('StripePaymentintent', 'get', [
-      'status' => ['IN' => ["succeeded", "cancelled"]],
+      'status' => ['IN' => ["succeeded", "cancelled", "failed"]],
       'created_date' => ['<' => $params['delete_old']],
     ]);
     foreach ($oldPaymentIntents['values'] as $id => $detail) {

@@ -379,4 +379,13 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
     return TRUE;
   }
 
+  public function upgrade_5025() {
+    $this->ctx->log->info('Applying Stripe update 5025. Add referrer column to civicrm_stripe_paymentintent database table');
+    if (!CRM_Core_BAO_SchemaHandler::checkIfFieldExists('civicrm_stripe_paymentintent', 'referrer', FALSE)) {
+      CRM_Core_DAO::executeQuery("ALTER TABLE `civicrm_stripe_paymentintent`
+        ADD COLUMN `referrer` varchar(255) NULL   COMMENT 'HTTP referrer of this paymentIntent'");
+    }
+    return TRUE;
+  }
+
 }

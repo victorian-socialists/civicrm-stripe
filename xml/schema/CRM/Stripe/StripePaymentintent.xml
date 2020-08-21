@@ -109,4 +109,13 @@
     <comment>Flags associated with this PaymentIntent (NC=no contributionID when doPayment called)</comment>
   </field>
 
+  <field>
+    <name>referrer</name>
+    <title>Referrer</title>
+    <type>varchar</type>
+    <required>false</required>
+    <length>255</length>
+    <comment>HTTP referrer of this paymentIntent</comment>
+  </field>
+
 </table>
