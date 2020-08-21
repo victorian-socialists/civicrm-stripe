@@ -212,10 +212,12 @@
           })
             .done(function (result) {
               // Handle server response (see Step 3)
+              swalClose();
               handleServerResponse(result);
             })
-            .always(function() {
+            .fail(function() {
               swalClose();
+              displayError('Unknown error', true);
             });
         }
       }
