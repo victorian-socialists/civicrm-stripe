@@ -291,7 +291,7 @@ CRM.$(function($) {
 
     var style = {
       base: {
-        fontSize: '20px',
+        fontSize: '1.1em', fontWeight: 'lighter',
       },
     };
 
