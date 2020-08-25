@@ -9,7 +9,7 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
-## Release 6.5 - not yet released (2020-07-18)
+## Release 6.5 - not yet released (2020-08-25)
 **This release REQUIRES that you upgrade mjwshared to 0.9**
 
 * Implement [#199](https://lab.civicrm.org/extensions/stripe/-/issues/199):
@@ -26,6 +26,8 @@ Releases use the following numbering system:
 * Add system check for 'Is separate membership payment' on contribution pages which is not supported by the Stripe extension
 * Fix [#225](https://lab.civicrm.org/extensions/stripe/-/issues/225) No credit card display in Internet Explorer 11 (Support ECMAScript 5.1 javascript syntax).
 * Support translating text strings in javascript.
+* Fix issues with popup notifications not showing in some circumstances (eg. "Card declined").
+* Disable logging for `civicrm_stripe_paymentintent` table.
 
 * Fix PHP notices:
   * When a checking for an extension dependency that is not yet downloaded or installed.
