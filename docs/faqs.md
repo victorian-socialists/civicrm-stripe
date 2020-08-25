@@ -2,9 +2,18 @@
 
 #### CiviCRM <=> Stripe
 
+* A CiviCRM **Recurring Contribution** is the equivalent of a Stripe **Subscription**.
 * A CiviCRM **Contribution** is the equivalent of a Stripe **Invoice**.
 * A CiviCRM **Payment** is the equivalent of a Stripe **Charge**.
 * A CiviCRM **Contact** is the equivalent of a Stripe **Customer**.
+
+|Field|CiviCRM entity|Stripe|CiviCRM field|
+|---|---|---|---|
+|Subscription ID|ContributionRecur|Subscription ID|trxn_id/processor_id|
+|Order Reference/Invoice|Contribution|Order Reference|Payment.order_reference|
+|Transaction ID|Contribution|Transaction ID|trxn_id|
+|Transaction ID|Payment|Transaction ID|trxn_id|
+|Order Reference|Payment|Order Reference|order_reference|
 
 #### Stripe
 
