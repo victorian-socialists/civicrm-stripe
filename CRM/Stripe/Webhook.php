@@ -228,7 +228,8 @@ class CRM_Stripe_Webhook {
   public static function getDefaultEnabledEvents() {
     return [
       'invoice.finalized',
-      'invoice.paid',
+      //'invoice.paid' Ignore this event because it sometimes causes duplicates (it's sent at almost the same time as invoice.payment_succeeded
+      //   and if they are both processed at the same time the check to see if the payment already exists is missed and it gets created twice.
       'invoice.payment_succeeded',
       'invoice.payment_failed',
       'charge.failed',

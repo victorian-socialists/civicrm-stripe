@@ -214,7 +214,6 @@ class CRM_Core_Payment_StripeIPN {
         }
         break;
 
-      case 'invoice.paid':
       case 'invoice.payment_succeeded':
         // Successful recurring payment. Either we are completing an existing contribution or it's the next one in a subscription
         if (!$this->setInfo()) {
