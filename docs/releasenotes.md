@@ -28,6 +28,7 @@ Releases use the following numbering system:
 * Support translating text strings in javascript.
 * Fix issues with popup notifications not showing in some circumstances (eg. "Card declined").
 * Disable logging for `civicrm_stripe_paymentintent` table.
+* Fix [#239](https://lab.civicrm.org/extensions/stripe/-/issues/239): Hide configuration fields that we don't use.
 
 * Fix PHP notices:
   * When a checking for an extension dependency that is not yet downloaded or installed.

@@ -184,6 +184,14 @@ function stripe_civicrm_buildForm($formName, &$form) {
         // Do nothing, we won't attempt further stripe processing
       }
       break;
+
+    case 'CRM_Admin_Form_PaymentProcessor':
+      // Hide configuration fields that we don't use
+      foreach (['accept_credit_cards', 'url_site', 'url_recur', 'test_url_site', 'test_url_recur'] as $element)
+      if ($form->elementExists($element)) {
+        $form->removeElement($element);
+      }
+      break;
   }
 }
 
@@ -204,14 +212,14 @@ function stripe_civicrm_check(&$messages) {
  * Implements hook_civicrm_navigationMenu().
  */
 function stripe_civicrm_navigationMenu(&$menu) {
-  _stripe_civix_insert_navigation_menu($menu, 'Administer/CiviContribute', array(
+  _stripe_civix_insert_navigation_menu($menu, 'Administer/CiviContribute', [
     'label' => E::ts('Stripe Settings'),
     'name' => 'stripe_settings',
     'url' => 'civicrm/admin/setting/stripe',
     'permission' => 'administer CiviCRM',
     'operator' => 'OR',
     'separator' => 0,
-  ));
+  ]);
   _stripe_civix_navigationMenu($menu);
 }
 
