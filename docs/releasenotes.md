@@ -30,6 +30,7 @@ Releases use the following numbering system:
 * Disable logging for `civicrm_stripe_paymentintent` table.
 * Fix [#239](https://lab.civicrm.org/extensions/stripe/-/issues/239) Hide configuration fields that we don't use.
 * Fix [#241](https://lab.civicrm.org/extensions/stripe/-/issues/241) Incorrect Form Validation for checkboxes on profiles
+* Fix [#242](https://lab.civicrm.org/extensions/stripe/-/issues/242) Stripe IPN events arriving out of order causing contributions to be stuck in "Pending" status.
 
 * Fix PHP notices:
     * When a checking for an extension dependency that is not yet downloaded or installed.
