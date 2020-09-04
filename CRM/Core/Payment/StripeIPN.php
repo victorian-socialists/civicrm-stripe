@@ -185,20 +185,7 @@ class CRM_Core_Payment_StripeIPN {
             return TRUE;
           }
           else {
-            // We have a recurring contribution but no contribution so we'll repeattransaction
-            // Stripe has generated a new invoice (next payment in a subscription) so we
-            //   create a new contribution in CiviCRM
-            $params = [
-              'contribution_recur_id' => $this->contribution_recur_id,
-              'contribution_status_id' => CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending'),
-              'receive_date' => $this->receive_date,
-              'order_reference' => $this->invoice_id,
-              'trxn_id' => $this->charge_id,
-              'total_amount' => $this->amount,
-              'fee_amount' => $this->fee,
-            ];
-            $this->repeatContribution($params);
-            // Don't touch the contributionRecur as it's updated automatically by Contribution.repeattransaction
+            $this->createNextContributionForRecur();
           }
           return TRUE;
         }
@@ -217,7 +204,16 @@ class CRM_Core_Payment_StripeIPN {
       case 'invoice.payment_succeeded':
         // Successful recurring payment. Either we are completing an existing contribution or it's the next one in a subscription
         if (!$this->setInfo()) {
-          return TRUE;
+          if (!$this->contribution_recur_id) {
+            return TRUE;
+          }
+          else {
+            // We have a recurring contribution but have not yet received invoice.finalized so we don't have the next contribution yet.
+            // invoice.payment_succeeded sometimes comes before invoice.finalized so trigger the same behaviour here to create a new contribution
+            $this->createNextContributionForRecur();
+            // Now get the contribution we just created.
+            $this->getContribution();
+          }
         }
         if (civicrm_api3('Mjwpayment', 'get_payment', [
           'trxn_id' => $this->charge_id,
@@ -390,6 +386,29 @@ class CRM_Core_Payment_StripeIPN {
     }
     // Unhandled event type.
     return TRUE;
+  }
+
+  /**
+   * Create the next contribution for a recurring contribution
+   * This happens when Stripe generates a new invoice and notifies us (normally by invoice.finalized but invoice.payment_succeeded sometimes arrives first).
+   *
+   * @throws \CiviCRM_API3_Exception
+   */
+  public function createNextContributionForRecur() {
+    // We have a recurring contribution but no contribution so we'll repeattransaction
+    // Stripe has generated a new invoice (next payment in a subscription) so we
+    //   create a new contribution in CiviCRM
+    $params = [
+      'contribution_recur_id' => $this->contribution_recur_id,
+      'contribution_status_id' => CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending'),
+      'receive_date' => $this->receive_date,
+      'order_reference' => $this->invoice_id,
+      'trxn_id' => $this->charge_id,
+      'total_amount' => $this->amount,
+      'fee_amount' => $this->fee,
+    ];
+    $this->repeatContribution($params);
+    // Don't touch the contributionRecur as it's updated automatically by Contribution.repeattransaction
   }
 
   /**
