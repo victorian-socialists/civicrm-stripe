@@ -88,14 +88,7 @@
     hiddenInput.setAttribute('value', object.id);
     form.appendChild(hiddenInput);
 
-    // The "name" parameter on a set of checkboxes where at least one must be checked must be the same or validation will require all of them!
-    // (But we have to reset this back before we submit otherwise the submission has no data (that's a Civi issue I think).
-    $('div#priceset input[type="checkbox"]').each(function() {
-      CRM.$(this).attr('name', CRM.$(this).attr('name') + '[' + CRM.$(this).attr('id').split('_').pop() + ']');
-      CRM.$(this).removeAttr('required');
-      CRM.$(this).removeClass('required');
-      CRM.$(this).removeAttr('aria-required');
-    });
+    resetBillingFieldsRequiredForJQueryValidate();
 
     // Submit the form
     form.submit();
@@ -659,6 +652,17 @@
     }
   }
 
+  function resetBillingFieldsRequiredForJQueryValidate() {
+    // The "name" parameter on a set of checkboxes where at least one must be checked must be the same or validation will require all of them!
+    // (But we have to reset this back before we submit otherwise the submission has no data (that's a Civi issue I think).
+    $('div#priceset input[type="checkbox"], fieldset.crm-profile input[type="checkbox"]').each(function() {
+      CRM.$(this).attr('name', CRM.$(this).attr('name') + '[' + CRM.$(this).attr('id').split('_').pop() + ']');
+      CRM.$(this).removeAttr('required');
+      CRM.$(this).removeClass('required');
+      CRM.$(this).removeAttr('aria-required');
+    });
+  }
+
   function setBillingFieldsRequiredForJQueryValidate() {
     // Work around https://github.com/civicrm/civicrm-core/compare/master...mattwire:stripe_147
     // The main billing fields do not get set to required so don't get checked by jquery validateform.
@@ -669,7 +673,7 @@
     });
     // The "name" parameter on a set of checkboxes where at least one must be checked must be the same or validation will require all of them!
     // (But we have to reset this back before we submit otherwise the submission has no data (that's a Civi issue I think).
-    $('div#priceset input[type="checkbox"]').each(function() {
+    $('div#priceset input[type="checkbox"], fieldset.crm-profile input[type="checkbox"]').each(function() {
       $(this).attr('name', $(this).attr('name').split('[').shift());
     });
 
