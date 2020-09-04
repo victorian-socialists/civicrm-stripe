@@ -13,10 +13,10 @@ Releases use the following numbering system:
 **This release REQUIRES that you upgrade mjwshared to 0.9.2**
 
 * Implement [#199](https://lab.civicrm.org/extensions/stripe/-/issues/199):
-  * Support future recurring start date on backend forms
-  * Add support for selecting and creating subscriptions with future start date on frontend forms
-  * Allow selection of which frequency intervals to enable public recurring start date
-  * Support future recur start date for memberships on frontend.
+    * Support future recurring start date on backend forms
+    * Add support for selecting and creating subscriptions with future start date on frontend forms
+    * Allow selection of which frequency intervals to enable public recurring start date
+    * Support future recur start date for memberships on frontend.
 * Fix [#221](https://lab.civicrm.org/extensions/stripe/-/issues/199) Return 200 OK for webhooks that stripe can't match to CiviCRM. Look for contribution using subscription_id for future recurring start date
 * Map customer to contact ID in IPN
 * Handle invoice.finalized IPN event - we now create the new contribution once we receive the invoice.finalized event. It will then be transitioned to Completed by invoice.payment_succeeded.
@@ -32,12 +32,12 @@ Releases use the following numbering system:
 * Fix [#241](https://lab.civicrm.org/extensions/stripe/-/issues/241) Incorrect Form Validation for checkboxes on profiles
 
 * Fix PHP notices:
-  * When a checking for an extension dependency that is not yet downloaded or installed.
-  * When checking for recur frequency on billing form.
+    * When a checking for an extension dependency that is not yet downloaded or installed.
+    * When checking for recur frequency on billing form.
 
 * IPN Code:
-  * Pass json string to IPN class for decoding instead of decoding before passing
-  * handlePaymentNotification should not be a static function.
+    * Pass json string to IPN class for decoding instead of decoding before passing
+    * handlePaymentNotification should not be a static function.
 
 ## Release 6.4.2
 
@@ -76,8 +76,8 @@ Releases use the following numbering system:
 
 * The Stripe "element" now follows the current CMS/CiviCRM locale.
 * Add jquery form events:
-  * 'crmBillingFormReloadComplete' and document jquery events.
-  * 'crmBillingFormNotValid' so 3rd-party integrations can re-enable custom submit buttons etc.
+    * 'crmBillingFormReloadComplete' and document jquery events.
+    * 'crmBillingFormNotValid' so 3rd-party integrations can re-enable custom submit buttons etc.
       Add custom property on billing form to allow for custom validations
 
 * Add support for sweetalert library on form validation errors so we popup nice messages when you are missing required fields and for card errors and you click submit.
@@ -242,9 +242,9 @@ This release requires an upgrade to version 0.4 of the MJWShared extension.
 * Support cards that do not request a postal/zip code (*fixes [#80](https://lab.civicrm.org/extensions/stripe/issues/80)*).
 * Enable payments on backend (*fixes [#79](https://lab.civicrm.org/extensions/stripe/issues/79)*).
 * Resolve multiple issues with "more than one" payment processor on the form and stripe failing to submit if it wasn't the first to be selected:
-  * Fix issue when script is reloaded by changes of payment processors.
-  * Improve handling for multiple processors and pay later.
-  * Make sure we clear the paymentIntentID from the session once we've used it (this prevents a browser refresh trying to use an already captured paymentIntent).
+    * Fix issue when script is reloaded by changes of payment processors.
+    * Improve handling for multiple processors and pay later.
+    * Make sure we clear the paymentIntentID from the session once we've used it (this prevents a browser refresh trying to use an already captured paymentIntent).
 
 ## Release 6.0
 
