@@ -204,6 +204,7 @@ class CRM_Stripe_Check {
         $contributionPages = civicrm_api3('ContributionPage', 'get', [
           'return' => ['payment_processor'],
           'id' => ['IN' => $contributionPagesToCheck],
+          'is_active' => 1,
         ]);
         foreach ($contributionPages['values'] as $contributionPage) {
           $enabledPaymentProcessors = explode(CRM_Core_DAO::VALUE_SEPARATOR, $contributionPage['payment_processor']);
