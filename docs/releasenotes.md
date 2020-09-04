@@ -9,8 +9,8 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
-## Release 6.5 - not yet released (2020-08-25)
-**This release REQUIRES that you upgrade mjwshared to 0.9**
+## Release 6.5 - not yet released (2020-09-04)
+**This release REQUIRES that you upgrade mjwshared to 0.9.2**
 
 * Implement [#199](https://lab.civicrm.org/extensions/stripe/-/issues/199):
   * Support future recurring start date on backend forms
@@ -19,7 +19,7 @@ Releases use the following numbering system:
   * Support future recur start date for memberships on frontend.
 * Fix [#221](https://lab.civicrm.org/extensions/stripe/-/issues/199) Return 200 OK for webhooks that stripe can't match to CiviCRM. Look for contribution using subscription_id for future recurring start date
 * Map customer to contact ID in IPN
-* Handle invoice.paid, invoice.finalized IPN events - we now create the new contribution once we receive the invoice.finalized event. It will then be transitioned to Completed by invoice.paid/invoice.payment_succeeded
+* Handle invoice.finalized IPN event - we now create the new contribution once we receive the invoice.finalized event. It will then be transitioned to Completed by invoice.payment_succeeded.
 * Record refund against the already recorded payment in CiviCRM so we update financial items correctly
 * API3 Stripe.Listevents [!117](https://lab.civicrm.org/extensions/stripe/-/merge_requests/117) Provide additional information about stripe events.
 * If a contribution status is `Failed` and it later receives a successful payment notification it is updated from `Failed` to `Completed`.
@@ -28,7 +28,8 @@ Releases use the following numbering system:
 * Support translating text strings in javascript.
 * Fix issues with popup notifications not showing in some circumstances (eg. "Card declined").
 * Disable logging for `civicrm_stripe_paymentintent` table.
-* Fix [#239](https://lab.civicrm.org/extensions/stripe/-/issues/239): Hide configuration fields that we don't use.
+* Fix [#239](https://lab.civicrm.org/extensions/stripe/-/issues/239) Hide configuration fields that we don't use.
+* Fix [#241](https://lab.civicrm.org/extensions/stripe/-/issues/241) Incorrect Form Validation for checkboxes on profiles
 
 * Fix PHP notices:
   * When a checking for an extension dependency that is not yet downloaded or installed.

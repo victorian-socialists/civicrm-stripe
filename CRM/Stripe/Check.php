@@ -19,14 +19,14 @@ class CRM_Stripe_Check {
   /**
    * @var string
    */
-  const API_VERSION = '2020-03-02';
+  const API_VERSION = '2020-08-27';
   const API_MIN_VERSION = '2019-12-03';
 
   /**
    * @var string
    */
   const MIN_VERSION_MJWSHARED = '0.9.2';
-  const MIN_VERSION_SWEETALERT = '1.2';
+  const MIN_VERSION_SWEETALERT = '1.3';
   const MIN_VERSION_FIREWALL = '1.1';
 
   public static function checkRequirements(&$messages) {
