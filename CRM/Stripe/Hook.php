@@ -23,7 +23,7 @@ class CRM_Stripe_Hook {
    */
   public static function updateRecurringContribution(&$recurContributionParams) {
     return CRM_Utils_Hook::singleton()
-      ->invoke(1, $recurContributionParams, CRM_Utils_Hook::$_nullObject, CRM_Utils_Hook::$_nullObject, CRM_Utils_Hook::$_nullObject,
+      ->invoke(['recurContributionParams'], $recurContributionParams, CRM_Utils_Hook::$_nullObject, CRM_Utils_Hook::$_nullObject, CRM_Utils_Hook::$_nullObject,
         CRM_Utils_Hook::$_nullObject, CRM_Utils_Hook::$_nullObject, 'civicrm_stripe_updateRecurringContribution');
   }
 
