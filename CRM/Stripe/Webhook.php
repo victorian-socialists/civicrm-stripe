@@ -41,7 +41,7 @@ class CRM_Stripe_Webhook {
       $processor->setAPIParams();
 
       try {
-        $webhooks = \Stripe\WebhookEndpoint::all(["limit" => 100]);
+        $webhooks = $processor->stripeClient->webhookEndpoints->all(["limit" => 100]);
       }
       catch (Exception $e) {
         $error = $e->getMessage();
@@ -93,7 +93,7 @@ class CRM_Stripe_Webhook {
                   \Psr\Log\LogLevel::WARNING,
                   'fa-money'
                 );
-                \Stripe\WebhookEndpoint::update($wh['id'], $updates);
+                $processor->stripeClient->webhookEndpoints->update($wh['id'], $updates);
               }
               else {
                 $message = new CRM_Utils_Check_Message(
@@ -201,7 +201,7 @@ class CRM_Stripe_Webhook {
       'url' => self::getWebhookPath($paymentProcessorId),
       'connect' => FALSE,
     ];
-    \Stripe\WebhookEndpoint::create($params);
+    $processor->stripeClient->webhookEndpoints->create($params);
   }
 
 

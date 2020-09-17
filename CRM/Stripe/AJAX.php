@@ -80,7 +80,7 @@ class CRM_Stripe_AJAX {
 
     if ($paymentIntentID) {
       // We already have a PaymentIntent, retrieve and attempt confirm.
-      $intent = \Stripe\PaymentIntent::retrieve($paymentIntentID);
+      $intent = $processor->stripeClient->paymentIntents->retrieve($paymentIntentID);
       if ($intent->status === 'requires_confirmation') {
         $intent->confirm();
       }
@@ -92,7 +92,7 @@ class CRM_Stripe_AJAX {
       // We don't yet have a PaymentIntent, create one using the
       // Payment Method ID and attempt to confirm it too.
       try {
-        $intent = \Stripe\PaymentIntent::create([
+        $intent = $processor->stripeClient->paymentIntents->create([
           'payment_method' => $paymentMethodID,
           'amount' => $processor->getAmount(['amount' => $amount, 'currency' => $currency]),
           'currency' => $currency,

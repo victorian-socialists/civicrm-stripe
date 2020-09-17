@@ -127,7 +127,7 @@ class CRM_Core_Payment_StripeIPN {
     }
 
     if ($verifyRequest) {
-      $this->_inputParameters = \Stripe\Event::retrieve($parameters->id);
+      $this->_inputParameters = $this->_paymentProcessor->stripeClient->events->retrieve($parameters->id);
     }
     else {
       $this->_inputParameters = $parameters;
@@ -301,7 +301,7 @@ class CRM_Core_Payment_StripeIPN {
         // This gives us the actual amount refunded
         $amountRefunded = CRM_Stripe_Api::getObjectParam('amount_refunded', $this->_inputParameters->data->object);
         // This gives us the refund date + reason code
-        $refunds = \Stripe\Refund::all(['charge' => $this->charge_id, 'limit' => 1]);
+        $refunds = $this->_paymentProcessor->stripeClient->refunds->all(['charge' => $this->charge_id, 'limit' => 1]);
         // This gets the fee refunded
         $this->setBalanceTransactionDetails($refunds->data[0]->balance_transaction);
 
@@ -444,7 +444,7 @@ class CRM_Core_Payment_StripeIPN {
     $this->amount = $this->retrieve('amount', 'String', FALSE);
 
     if (($this->_inputParameters->data->object->object !== 'charge') && ($this->charge_id !== NULL)) {
-      $charge = \Stripe\Charge::retrieve($this->charge_id);
+      $charge = $this->_paymentProcessor->stripeClient->charges->retrieve($this->charge_id);
       $balanceTransactionID = CRM_Stripe_Api::getObjectParam('balance_transaction', $charge);
     }
     else {
@@ -566,7 +566,7 @@ class CRM_Core_Payment_StripeIPN {
     if ($balanceTransactionID) {
       try {
         $currency = $this->retrieve('currency', 'String', FALSE);
-        $balanceTransaction = \Stripe\BalanceTransaction::retrieve($balanceTransactionID);
+        $balanceTransaction = $this->_paymentProcessor->stripeClient->balanceTransactions->retrieve($balanceTransactionID);
         if ($currency !== $balanceTransaction->currency && !empty($balanceTransaction->exchange_rate)) {
           $this->fee = CRM_Stripe_Api::currencyConversion($balanceTransaction->fee, $balanceTransaction->exchange_rate, $currency);
         } else {
@@ -601,12 +601,12 @@ class CRM_Core_Payment_StripeIPN {
       return;
     }
 
-    $stripeSubscription = \Stripe\Subscription::retrieve($this->subscription_id);
+    $stripeSubscription = $this->_paymentProcessor->stripeClient->subscriptions->retrieve($this->subscription_id);
     // If we've passed the end date cancel the subscription
     if (($stripeSubscription->current_period_end >= strtotime($contributionRecur['end_date']))
       || ($contributionRecur['contribution_status_id']
         == CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_ContributionRecur', 'contribution_status_id', 'Completed'))) {
-      \Stripe\Subscription::update($this->subscription_id, ['cancel_at_period_end' => TRUE]);
+      $this->_paymentProcessor->stripeClient->subscriptions->update($this->subscription_id, ['cancel_at_period_end' => TRUE]);
       $this->updateRecurCompleted(['id' => $this->contribution_recur_id]);
     }
     // There is no easy way of retrieving a count of all invoices for a subscription so we ignore the "installments"

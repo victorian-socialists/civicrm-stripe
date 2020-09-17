@@ -20,6 +20,11 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   use CRM_Core_Payment_MJWTrait;
 
   /**
+   * @var \Stripe\StripeClient
+   */
+  public $stripeClient;
+
+  /**
    * Constructor
    *
    * @param string $mode
@@ -202,6 +207,8 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     \Stripe\Stripe::setAppInfo('CiviCRM', CRM_Utils_System::version(), CRM_Utils_System::baseURL());
     \Stripe\Stripe::setApiKey(self::getSecretKey($this->_paymentProcessor));
     \Stripe\Stripe::setApiVersion(CRM_Stripe_Check::API_VERSION);
+
+    $this->stripeClient = new \Stripe\StripeClient(self::getSecretKey($this->_paymentProcessor));
   }
 
   /**
@@ -256,7 +263,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     // Try and retrieve existing plan from Stripe
     // If this fails, we'll create a new one
     try {
-      $plan = \Stripe\Plan::retrieve($planId);
+      $plan = $this->stripeClient->plans->retrieve($planId);
     }
     catch (Stripe\Exception\InvalidRequestException $e) {
       $err = self::parseStripeException('plan_retrieve', $e, FALSE);
@@ -266,7 +273,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         if ($this->_paymentProcessor['is_test']) {
           $productName .= '-test';
         }
-        $product = \Stripe\Product::create([
+        $product = $this->stripeClient->products->create([
           "name" => $productName,
           "type" => "service"
         ]);
@@ -279,7 +286,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
           'id' => $planId,
           'interval_count' => $params['recurFrequencyInterval'],
         ];
-        $plan = \Stripe\Plan::create($stripePlan);
+        $plan = $this->stripeClient->plans->create($stripePlan);
       }
     }
 
@@ -515,7 +522,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     else {
       // Customer was found in civicrm database, fetch from Stripe.
       try {
-        $stripeCustomer = \Stripe\Customer::retrieve($stripeCustomerId);
+        $stripeCustomer = $this->stripeClient->customers->retrieve($stripeCustomerId);
       } catch (Exception $e) {
         $err = self::parseStripeException('retrieve_customer', $e, FALSE);
         $errorMessage = $this->handleErrorNotification($err, $propertyBag->getCustomProperty('error_url'));
@@ -529,7 +536,8 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
           $stripeCustomer = CRM_Stripe_Customer::create($customerParams, $this);
         } catch (Exception $e) {
           // We still failed to create a customer
-          $errorMessage = $this->handleErrorNotification($stripeCustomer, $propertyBag->getCustomProperty('error_url'));
+          $err = self::parseStripeException('create_customer', $e, FALSE);
+          $errorMessage = $this->handleErrorNotification($err, $propertyBag->getCustomProperty('error_url'));
           throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to create Stripe Customer: ' . $errorMessage);
         }
       }
@@ -545,22 +553,20 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       // This is where we save the customer card
       // @todo For a recurring payment we have to save the card. For a single payment we'd like to develop the
       //   save card functionality but should not save by default as the customer has not agreed.
-      $paymentMethod = \Stripe\PaymentMethod::retrieve($propertyBag->getCustomProperty('paymentMethodID'));
+      $paymentMethod = $this->stripeClient->paymentMethods->retrieve($propertyBag->getCustomProperty('paymentMethodID'));
       $paymentMethod->attach(['customer' => $stripeCustomer->id]);
-      $stripeCustomer = \Stripe\Customer::retrieve($stripeCustomer->id);
+      $stripeCustomer = $this->stripeClient->customers->retrieve($stripeCustomer->id);
 
       return $this->doRecurPayment($propertyBag, $amountFormattedForStripe, $stripeCustomer, $paymentMethod);
     }
     elseif ($this->isPaymentForEventAdditionalParticipants($propertyBag)) {
-      // @fixme FROM HERE we are using $params ONLY - SET things if required ($propertyBag is not used beyond here)
-
       // We're processing an event registration for multiple participants - because we did not know
       //   the amount until now we process via a saved paymentMethod.
-      $paymentMethod = \Stripe\PaymentMethod::retrieve($params['paymentMethodID']);
+      $paymentMethod = $this->stripeClient->paymentMethods->retrieve($propertyBag->getCustomProperty('paymentMethodID'));
       $paymentMethod->attach(['customer' => $stripeCustomer->id]);
-      $stripeCustomer = \Stripe\Customer::retrieve($stripeCustomer->id);
-      $intent = \Stripe\PaymentIntent::create([
-        'payment_method' => $params['paymentMethodID'],
+      $stripeCustomer = $this->stripeClient->customers->retrieve($stripeCustomer->id);
+      $intent = $this->stripeClient->paymentIntents->create([
+        'payment_method' => $propertyBag->getCustomProperty('paymentMethodID'),
         'customer' => $stripeCustomer->id,
         'amount' => $amountFormattedForStripe,
         'currency' => $this->getCurrency($params),
@@ -571,9 +577,12 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         // Setup the card to be saved and used later
         'confirm' => true,
       ]);
+
+      $propertyBag->setCustomProperty('paymentIntentID', $intent->id);
       $params['paymentIntentID'] = $intent->id;
     }
     // @fixme FROM HERE we are using $params ONLY - SET things if required ($propertyBag is not used beyond here)
+    //   Note that we set both $propertyBag and $params paymentIntentID in the case of participants above
 
     $intentParams = [
       'customer' => $stripeCustomer->id,
@@ -584,11 +593,11 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
 
     // This is where we actually charge the customer
     try {
-      $intent = \Stripe\PaymentIntent::retrieve($params['paymentIntentID']);
+      $intent = $this->stripeClient->paymentIntents->retrieve($propertyBag->getCustomProperty('paymentIntentID'));
       if ($intent->amount != $this->getAmount($params)) {
         $intentParams['amount'] = $this->getAmount($params);
       }
-      $intent = \Stripe\PaymentIntent::update($intent->id, $intentParams);
+      $intent = $this->stripeClient->paymentIntents->update($intent->id, $intentParams);
     }
     catch (Exception $e) {
       $this->handleError($e->getCode(), $e->getMessage(), $params['error_url']);
@@ -669,6 +678,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'default_payment_method' => $stripePaymentMethod,
       'metadata' => ['Description' => $params['description']],
       'expand' => ['latest_invoice.payment_intent'],
+      'customer' => $stripeCustomer->id,
     ];
     // This is the parameter that specifies the start date for the subscription.
     // If omitted the subscription will start immediately.
@@ -678,7 +688,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     }
 
     // Create the stripe subscription for the customer
-    $stripeSubscription = $stripeCustomer->subscriptions->create($subscriptionParams);
+    $stripeSubscription = $this->stripeClient->subscriptions->create($subscriptionParams);
     $this->setPaymentProcessorSubscriptionID($stripeSubscription->id);
 
     $recurParams = [
@@ -767,7 +777,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
           // Return fees & net amount for Civi reporting.
           $stripeCharge = $intent->charges->data[0];
           try {
-            $stripeBalanceTransaction = \Stripe\BalanceTransaction::retrieve($stripeCharge->balance_transaction);
+            $stripeBalanceTransaction = $this->stripeClient->balanceTransactions->retrieve($stripeCharge->balance_transaction);
           }
           catch (Exception $e) {
             $err = self::parseStripeException('retrieve_balance_transaction', $e, FALSE);
@@ -794,7 +804,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
           if ((boolean) \Civi::settings()->get('stripe_oneoffreceipt')) {
             // Send a receipt from Stripe - we have to set the receipt_email after the charge has been captured,
             //   as the customer receives an email as soon as receipt_email is updated and would receive two if we updated before capture.
-            \Stripe\PaymentIntent::update($intent->id, ['receipt_email' => $email]);
+            $this->stripeClient->paymentIntents->update($intent->id, ['receipt_email' => $email]);
           }
           break;
       }
@@ -836,15 +846,18 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       if (!isset($params[$required])) {
         $message = 'Stripe doRefund: Missing mandatory parameter: ' . $required;
         Civi::log()->error($message);
-        Throw new \Civi\Payment\Exception\PaymentProcessorException($message);
+        throw new \Civi\Payment\Exception\PaymentProcessorException($message);
       }
     }
+
+    $this->setAPIParams();
+
     $refundParams = [
       'charge' => $params['trxn_id'],
     ];
     $refundParams['amount'] = $this->getAmount($params);
     try {
-      $refund = \Stripe\Refund::create($refundParams);
+      $refund = $this->stripeClient->refunds->create($refundParams);
     }
     catch (Exception $e) {
       $this->handleError($e->getCode(), $e->getMessage());
@@ -1054,7 +1067,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     }
 
     try {
-      $subscription = \Stripe\Subscription::retrieve($propertyBag->getRecurProcessorID());
+      $subscription = $this->stripeClient->subscriptions->retrieve($propertyBag->getRecurProcessorID());
       if (!$subscription->isDeleted()) {
         $subscription->cancel();
       }

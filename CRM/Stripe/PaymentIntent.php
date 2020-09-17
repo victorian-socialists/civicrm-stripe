@@ -111,7 +111,7 @@ class CRM_Stripe_PaymentIntent {
 
     $stripe->setAPIParams();
 
-    $intent = \Stripe\PaymentIntent::retrieve($params['id']);
+    $intent = $stripe->stripeClient->paymentIntents->retrieve($params['id']);
     $intent->cancel();
   }
 
@@ -131,7 +131,7 @@ class CRM_Stripe_PaymentIntent {
 
     $stripe->setAPIParams();
 
-    $intent = \Stripe\PaymentIntent::retrieve($params['id']);
+    $intent = $stripe->stripeClient->paymentIntents->retrieve($params['id']);
     $paymentIntent = self::get($params);
     $params['status'] = $intent->status;
     self::add($params);
