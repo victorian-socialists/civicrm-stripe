@@ -171,7 +171,12 @@ class CRM_Core_Payment_StripeIPN {
       return TRUE;
     }
 
-    $pendingStatusId = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending');
+    $pendingContributionStatusID = (int) CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending');
+    $failedContributionStatusID = (int) CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Failed');
+    $statusesAllowedToComplete = [
+      $pendingContributionStatusID,
+      $failedContributionStatusID
+    ];
 
     // NOTE: If you add an event here make sure you add it to the webhook or it will never be received!
     switch($this->event_type) {
@@ -223,7 +228,8 @@ class CRM_Core_Payment_StripeIPN {
           return TRUE;
         }
 
-        if ($this->contribution['contribution_status_id'] == $pendingStatusId) {
+        // If contribution is in Pending or Failed state record payment and transition to Completed
+        if (in_array($this->contribution['contribution_status_id'], $statusesAllowedToComplete)) {
           $params = [
             'contribution_id' => $this->contribution['id'],
             'trxn_date' => $this->receive_date,
@@ -245,7 +251,7 @@ class CRM_Core_Payment_StripeIPN {
           return TRUE;
         }
 
-        if ($this->contribution['contribution_status_id'] == $pendingStatusId) {
+        if ($this->contribution['contribution_status_id'] == $pendingContributionStatusID) {
           // If this contribution is Pending, set it to Failed.
           $params = [
             'contribution_id' => $this->contribution['id'],
@@ -347,11 +353,7 @@ class CRM_Core_Payment_StripeIPN {
         }
 
         // If contribution is in Pending or Failed state record payment and transition to Completed
-        $statusesToUpdate = [
-          $pendingStatusId,
-          CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Failed'),
-        ];
-        if (in_array($this->contribution['contribution_status_id'], $statusesToUpdate)) {
+        if (in_array($this->contribution['contribution_status_id'], $statusesAllowedToComplete)) {
           $params = [
             'contribution_id' => $this->contribution['id'],
             'trxn_date' => $this->receive_date,

@@ -45,6 +45,9 @@ Releases use the following numbering system:
 * Fix [#249](https://lab.civicrm.org/extensions/stripe/-/issues/249) 500 error on recurring contribution.
 * Update Stripe PHP library.
 
+#### Beta 3
+* Fix Failed->Completed status for recurring contributions/subscriptions.
+
 ## Release 6.4.2
 
 * Fix [#210](https://lab.civicrm.org/extensions/stripe/-/issues/210): If there are multiple reCaptcha on the page check and validate the one on the Stripe billing form only.
