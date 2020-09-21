@@ -9,7 +9,7 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
-## Release 6.5 - not yet released (2020-09-17)
+## Release 6.5 - not yet released (2020-09-21)
 
 **This release REQUIRES that you upgrade mjwshared to 0.9.2**
 
@@ -47,6 +47,7 @@ Releases use the following numbering system:
 
 #### Beta 3
 * Fix Failed->Completed status for recurring contributions/subscriptions.
+* Fix [#243](https://lab.civicrm.org/extensions/stripe/-/issues/242) False notification for separate membership payment on contribution page.
 
 ## Release 6.4.2
 
