@@ -27,7 +27,7 @@
 
     // Remove/insert the recur start date element just below the recur selections
     $(recurSection + ' #stripe-recurring-start-date').remove();
-    $(recurSection).append(stripeRecurringStartDateSection);
+    $(recurSection).after(stripeRecurringStartDateSection);
 
     // It is hard to detect when changing memberships etc.
     // So trigger on all input element changes on the form.
