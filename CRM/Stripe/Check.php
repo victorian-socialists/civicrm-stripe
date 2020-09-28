@@ -183,6 +183,7 @@ class CRM_Stripe_Check {
   private static function checkIfSeparateMembershipPaymentEnabled(&$messages) {
     $membershipBlocks = civicrm_api3('MembershipBlock', 'get', [
       'is_separate_payment' => 1,
+      'is_active' => 1,
     ]);
     if ($membershipBlocks['count'] === 0) {
       return;
