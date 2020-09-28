@@ -9,9 +9,11 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
-## Release 6.5 - not yet released (2020-09-21)
+## Release 6.5
 
-**This release REQUIRES that you upgrade mjwshared to 0.9.2**
+**This release REQUIRES that you upgrade mjwshared to 0.9.4**.
+
+**The recommended Stripe API version is 2020-08-27**.
 
 * Implement [#199](https://lab.civicrm.org/extensions/stripe/-/issues/199):
     * Support future recurring start date on backend forms
@@ -40,14 +42,7 @@ Releases use the following numbering system:
 * IPN Code:
     * Pass json string to IPN class for decoding instead of decoding before passing
     * handlePaymentNotification should not be a static function.
-
-#### Beta 2
-* Fix [#249](https://lab.civicrm.org/extensions/stripe/-/issues/249) 500 error on recurring contribution.
-* Update Stripe PHP library.
-
-#### Beta 3
-* Fix Failed->Completed status for recurring contributions/subscriptions.
-* Fix [#243](https://lab.civicrm.org/extensions/stripe/-/issues/242) False notification for separate membership payment on contribution page.
+    * Set cancel_date/cancel_reason for failed contribution. Don't update `receive_date`.
 
 ## Release 6.4.2
 

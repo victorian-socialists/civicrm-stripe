@@ -23,13 +23,13 @@ View/Download this extension in the [Extension Directory](https://civicrm.org/ex
 
 #### Required extensions
 
-* [MJWShared extension](https://civicrm.org/extensions/mjwshared) version 0.9.2.
-* [SweetAlert extension](https://civicrm.org/extensions/sweetalert) version 1.3+.
+* [MJWShared extension](https://civicrm.org/extensions/mjwshared) version 0.9.4.
+* [SweetAlert extension](https://civicrm.org/extensions/sweetalert) version 1.4+.
 
 #### Recommended extensions
 
 * [Firewall extension](https://civicrm.org/extensions/firewall) version 1.1+.
-* [contributiontransactlegacy extension](https://civicrm.org/extensions/contribution-transact-api) version 1.2+.
+* [contributiontransactlegacy extension](https://civicrm.org/extensions/contribution-transact-api) version 1.3+.
 
 **Please ensure that you are running the ProcessStripe scheduled job every hour or you will have issues with failed/uncaptured payments appearing on customer credit cards and blocking their balance for up to a week!**
 
