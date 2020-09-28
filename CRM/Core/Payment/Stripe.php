@@ -673,7 +673,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
 
     // Attach the Subscription to the Stripe Customer.
     $subscriptionParams = [
-      'prorate' => FALSE,
+      'proration_behavior' => 'none',
       'plan' => $planId,
       'default_payment_method' => $stripePaymentMethod,
       'metadata' => ['Description' => $params['description']],
