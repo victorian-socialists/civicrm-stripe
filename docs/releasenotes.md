@@ -9,6 +9,11 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
+## Release 6.5.1
+**You must update to this version if using API version 2020-08-27**.
+
+* Fix subscription parameter (prorate -> proration_behavior) for API version 2020-08-27.
+
 ## Release 6.5
 
 **This release REQUIRES that you upgrade mjwshared to 0.9.4**.
