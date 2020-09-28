@@ -29,6 +29,10 @@ class CRM_Stripe_Webhook {
    * @throws \CiviCRM_API3_Exception
    */
   public static function check(&$messages, $attemptFix = FALSE) {
+    $env = Civi::settings()->get('environment');
+    if ($env && $env !== 'Production') {
+      return;
+    }
     $result = civicrm_api3('PaymentProcessor', 'get', [
       'class_name' => 'Payment_Stripe',
       'is_active' => 1,
