@@ -12,6 +12,7 @@ Releases use the following numbering system:
 ## Release 6.5.2 (not yet released 2020-10-06)
 
 * [!129](https://lab.civicrm.org/extensions/stripe/-/merge_requests/129) Don't check inactive membership blocks for separate payment setting.
+* [!128](https://lab.civicrm.org/extensions/stripe/-/merge_requests/128) Don't check for webhooks on non-production instances.
 
 ## Release 6.5.1
 **You must update to this version if using API version 2020-08-27**.
