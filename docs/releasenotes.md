@@ -9,7 +9,7 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
-## Release 6.5.2 (not yet released 2020-10-06)
+## Release 6.5.2
 
 * [!129](https://lab.civicrm.org/extensions/stripe/-/merge_requests/129) Don't check inactive membership blocks for separate payment setting.
 * [!128](https://lab.civicrm.org/extensions/stripe/-/merge_requests/128) Don't check for webhooks on non-production instances.
