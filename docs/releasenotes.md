@@ -9,6 +9,10 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
+## Release 6.5.3 (not yet released 2020-10-16)
+
+* Fix [#258](https://lab.civicrm.org/extensions/stripe/-/issues/258) Credit card element doesn't load in "Submit credit card contribution" popup form on backend.
+
 ## Release 6.5.2
 
 * [!129](https://lab.civicrm.org/extensions/stripe/-/merge_requests/129) Don't check inactive membership blocks for separate payment setting.
