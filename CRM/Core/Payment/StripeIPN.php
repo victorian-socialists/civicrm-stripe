@@ -46,11 +46,9 @@ class CRM_Core_Payment_StripeIPN {
   protected $customer_id = NULL;
   protected $charge_id = NULL;
   protected $previous_plan_id = NULL;
-  protected $plan_id = NULL;
   protected $plan_amount = NULL;
   protected $frequency_interval = NULL;
   protected $frequency_unit = NULL;
-  protected $plan_name = NULL;
   protected $plan_start = NULL;
 
   /**
@@ -356,7 +354,7 @@ class CRM_Core_Payment_StripeIPN {
         return TRUE;
 
       case 'customer.subscription.updated':
-        if (!$this->setInfo()) {
+        if (!$this->getSubscriptionDetails()) {
           return TRUE;
         }
         if (empty($this->previous_plan_id)) {
@@ -430,16 +428,9 @@ class CRM_Core_Payment_StripeIPN {
       return FALSE;
     }
 
-    $this->previous_plan_id = CRM_Stripe_Api::getParam('previous_plan_id', $this->_inputParameters);
     $this->invoice_id = $this->retrieve('invoice_id', 'String', FALSE);
     $this->receive_date = $this->retrieve('receive_date', 'String', FALSE);
     $this->charge_id = $this->retrieve('charge_id', 'String', FALSE);
-    $this->plan_id = $this->retrieve('plan_id', 'String', FALSE);
-    $this->plan_amount = $this->retrieve('plan_amount', 'String', FALSE);
-    $this->frequency_interval = $this->retrieve('frequency_interval', 'String', FALSE);
-    $this->frequency_unit = $this->retrieve('frequency_unit', 'String', FALSE);
-    $this->plan_name = $this->retrieve('plan_name', 'String', FALSE);
-    $this->plan_start = $this->retrieve('plan_start', 'String', FALSE);
     $this->amount = $this->retrieve('amount', 'String', FALSE);
 
     if (($this->_inputParameters->data->object->object !== 'charge') && ($this->charge_id !== NULL)) {
@@ -481,6 +472,11 @@ class CRM_Core_Payment_StripeIPN {
         return FALSE;
       }
     }
+    $this->previous_plan_id = CRM_Stripe_Api::getParam('previous_plan_id', $this->_inputParameters);
+    $this->plan_amount = $this->retrieve('plan_amount', 'String', FALSE);
+    $this->frequency_interval = $this->retrieve('frequency_interval', 'String', FALSE);
+    $this->frequency_unit = $this->retrieve('frequency_unit', 'String', FALSE);
+    $this->plan_start = $this->retrieve('plan_start', 'String', FALSE);
     return TRUE;
   }
 

@@ -115,12 +115,6 @@ class CRM_Stripe_Api {
           case 'currency':
             return (string) mb_strtoupper($stripeObject->plan->currency);
 
-          case 'plan_id':
-            return (string) $stripeObject->plan->id;
-
-          case 'plan_name':
-            return (string) $stripeObject->plan->name;
-
           case 'plan_start':
             return self::formatDate($stripeObject->start_date);
 
