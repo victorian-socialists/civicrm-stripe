@@ -221,9 +221,9 @@ class CRM_Core_Payment_StripeIPN {
           }
         }
         if (civicrm_api3('Mjwpayment', 'get_payment', [
-          'trxn_id' => $this->charge_id,
-          'status_id' => 'Completed'
-        ])['count'] > 0) {
+            'trxn_id' => $this->charge_id,
+            'status_id' => 'Completed'
+          ])['count'] > 0) {
           // Payment already recorded
           return TRUE;
         }
@@ -261,16 +261,6 @@ class CRM_Core_Payment_StripeIPN {
           ];
           $this->updateContributionFailed($params);
         }
-        return TRUE;
-
-      case 'customer.subscription.deleted':
-        // Subscription is cancelled
-        if (!$this->getSubscriptionDetails()) {
-          // Subscription was not found in CiviCRM
-          return TRUE;
-        }
-        // Cancel the recurring contribution
-        $this->updateRecurCancelled(['id' => $this->contribution_recur_id, 'cancel_date' => $this->retrieve('cancel_date', 'String', FALSE)]);
         return TRUE;
 
       // One-time donation and per invoice payment.
@@ -382,6 +372,16 @@ class CRM_Core_Payment_StripeIPN {
           'frequency_unit' => $this->frequency_unit,
           'frequency_interval' => $this->frequency_interval,
         ]);
+        return TRUE;
+
+      case 'customer.subscription.deleted':
+        // Subscription is cancelled
+        if (!$this->getSubscriptionDetails()) {
+          // Subscription was not found in CiviCRM
+          return TRUE;
+        }
+        // Cancel the recurring contribution
+        $this->updateRecurCancelled(['id' => $this->contribution_recur_id, 'cancel_date' => $this->retrieve('cancel_date', 'String', FALSE)]);
         return TRUE;
     }
     // Unhandled event type.
