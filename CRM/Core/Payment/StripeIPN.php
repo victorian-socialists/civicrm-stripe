@@ -265,7 +265,7 @@ class CRM_Core_Payment_StripeIPN {
 
       case 'customer.subscription.deleted':
         // Subscription is cancelled
-        if (!$this->setInfo()) {
+        if (!$this->getSubscriptionDetails()) {
           // Subscription was not found in CiviCRM
           return TRUE;
         }
@@ -431,7 +431,6 @@ class CRM_Core_Payment_StripeIPN {
     }
 
     $this->previous_plan_id = CRM_Stripe_Api::getParam('previous_plan_id', $this->_inputParameters);
-    $this->subscription_id = $this->retrieve('subscription_id', 'String', FALSE);
     $this->invoice_id = $this->retrieve('invoice_id', 'String', FALSE);
     $this->receive_date = $this->retrieve('receive_date', 'String', FALSE);
     $this->charge_id = $this->retrieve('charge_id', 'String', FALSE);
@@ -452,6 +451,21 @@ class CRM_Core_Payment_StripeIPN {
     }
     $this->setBalanceTransactionDetails($balanceTransactionID);
 
+    // Get the CiviCRM recurring contribution that matches the Stripe subscription (if we have one).
+    $this->getSubscriptionDetails();
+    // Get the CiviCRM contribution that matches the Stripe metadata we have from the event
+    return $this->getContribution();
+  }
+
+  /**
+   * Get the recurring contribution from the Stripe event parameters (subscription_id)
+   *   and set subscription_id, contribution_recur_id vars.
+   *
+   * @return bool
+   * @throws \CRM_Core_Exception
+   */
+  public function getSubscriptionDetails() {
+    $this->subscription_id = $this->retrieve('subscription_id', 'String', FALSE);
     // Additional processing of values is only relevant if there is a subscription id.
     if ($this->subscription_id) {
       // Get the recurring contribution record associated with the Stripe subscription.
@@ -467,9 +481,7 @@ class CRM_Core_Payment_StripeIPN {
         return FALSE;
       }
     }
-
-    // Get the CiviCRM contribution that matches the Stripe metadata we have from the event
-    return $this->getContribution();
+    return TRUE;
   }
 
   /**
