@@ -9,11 +9,12 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
-## Release 6.5.3 (not yet released 2020-10-20)
+## Release 6.5.3
 
-* Fix [#258](https://lab.civicrm.org/extensions/stripe/-/issues/258) Credit card element doesn't load in "Submit credit card contribution" popup form on backend.
+* Fix [#258](https://lab.civicrm.org/extensions/stripe/-/issues/258) Credit card element doesn't load in "Submit credit card contribution" popup form on backend (fixed for memberships and contributions).
 * Fix [#262](https://lab.civicrm.org/extensions/stripe/-/issues/262) Fix `customer.subscription.deleted` webhook event not working (500 internal server error).
 * Fix [#270](https://lab.civicrm.org/extensions/stripe/-/issues/270) Fix 500 Internal Server error for the customer.subscription.updated event
+
 ## Release 6.5.2
 
 * [!129](https://lab.civicrm.org/extensions/stripe/-/merge_requests/129) Don't check inactive membership blocks for separate payment setting.
