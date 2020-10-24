@@ -9,6 +9,11 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
+## Release 6.5.4 (not yet released 2020-10-24)
+**This release REQUIRES that you upgrade mjwshared to 0.9.6**.
+
+* Use `CRM.payment.isAJAXPaymentForm()` to check if we should load on backend forms. There is no change for the user, we are just switching to an identical shared function to reduce code duplication.
+
 ## Release 6.5.3
 
 * Fix [#258](https://lab.civicrm.org/extensions/stripe/-/issues/258) Credit card element doesn't load in "Submit credit card contribution" popup form on backend (fixed for memberships and contributions).
