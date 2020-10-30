@@ -867,24 +867,29 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     switch ($refund->status) {
       case 'pending':
         $refundStatus = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending');
+        $refundStatusName = 'Pending';
         break;
 
       case 'succeeded':
         $refundStatus = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Completed');
+        $refundStatusName = 'Completed';
         break;
 
       case 'failed':
         $refundStatus = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Failed');
+        $refundStatusName = 'Failed';
         break;
 
       case 'canceled':
         $refundStatus = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Cancelled');
+        $refundStatusName = 'Cancelled';
         break;
     }
 
     $refundParams = [
       'refund_trxn_id' => $refund->id,
       'refund_status_id' => $refundStatus,
+      'refund_status_name' => $refundStatusName,
       'processor_result' => $refund->jsonSerialize(),
     ];
     return $refundParams;
