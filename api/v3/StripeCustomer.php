@@ -73,9 +73,6 @@ function civicrm_api3_stripe_customer_get($params) {
       'contact_id' => $dao->contact_id,
       'processor_id' => $dao->processor_id,
     ];
-    if ($dao->email) {
-      $result['email'] = $dao->email;
-    }
     $results[] = $result;
   }
   return civicrm_api3_create_success($results);
