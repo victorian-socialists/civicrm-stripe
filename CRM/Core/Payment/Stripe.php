@@ -459,7 +459,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return array
    */
   public function getPreApprovalDetails($storedDetails) {
-    return $storedDetails;
+    return $storedDetails ?? [];
   }
 
   /**
