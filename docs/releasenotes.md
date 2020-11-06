@@ -9,11 +9,12 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
-## Release 6.5.4 (not yet released 2020-11-01)
+## Release 6.5.4 (not yet released 2020-11-06)
 **This release REQUIRES that you upgrade mjwshared to 0.9.6**.
 
 * Use `CRM.payment.isAJAXPaymentForm()` to check if we should load on backend forms. There is no change for the user, we are just switching to an identical shared function to reduce code duplication.
 * Fix [#272](https://lab.civicrm.org/extensions/stripe/-/issues/272) "undefined property" PHP notice.
+* Response to test webhook now includes payment processor name from CiviCRM (makes it easier to be sure which payment processor is responding).
 
 ## Release 6.5.3
 

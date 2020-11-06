@@ -119,8 +119,9 @@ class CRM_Core_Payment_StripeIPN {
     // Special case if this is the test webhook
     if (substr($parameters->id, -15, 15) === '_00000000000000') {
       http_response_code(200);
-      $test = (boolean) $this->_paymentProcessor->getPaymentProcessor()['is_test'] ? '(Test processor)' : '(Live processor)';
-      echo "Test webhook from Stripe ({$parameters->id}) received successfully by CiviCRM {$test}.";
+      $test = (boolean) $this->_paymentProcessor->getPaymentProcessor()['is_test'] ? '(Test)' : '(Live)';
+      $name = $this->_paymentProcessor->getPaymentProcessor()['name'];
+      echo "Test webhook from Stripe ({$parameters->id}) received successfully by CiviCRM: {$name} {$test}.";
       exit();
     }
 
