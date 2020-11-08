@@ -5,7 +5,10 @@
   // On initial load...
   var scriptName = 'civicrmStripe';
   var stripe = null;
-  var card = null;
+  var elements = {
+    card: null,
+    paymentrequest: null
+  };
   var form;
   var submitButtons;
   var stripeLoading = false;
@@ -131,27 +134,35 @@
     }
   }
 
-  function getPaymentElements() {
+  function getJQueryPaymentElements() {
     return {
-      card: $('div#card-element')
+      card: $('div#card-element'),
+      paymentrequest: $('div#paymentrequest-element')
     };
   }
 
   /**
    * Hide any visible payment elements
    */
-  function hidePaymentElements() {
-    getPaymentElements().card.hide();
+  function hideJQueryPaymentElements() {
+    var jQueryPaymentElements = getJQueryPaymentElements();
+    for (var elementName in jQueryPaymentElements) {
+      var element = jQueryPaymentElements[elementName];
+      element.hide();
+    }
   }
 
   /**
    * Destroy any payment elements we have already created
    */
   function destroyPaymentElements() {
-    if (card !== null) {
-      debugging("destroying card element");
-      card.destroy();
-      card = null;
+    for (var elementName in elements) {
+      var element = elements[elementName];
+      if (element !== null) {
+        debugging("destroying " + elementName + " element");
+        element.destroy();
+        elements[elementName] = null;
+      }
     }
   }
 
@@ -160,17 +171,21 @@
    * @returns {boolean}
    */
   function checkPaymentElementsAreValid() {
-    var elements = getPaymentElements();
-    if ((elements.card.length !== 0) && (elements.card.children().length === 0)) {
-      debugging('card element is empty');
-      return false;
+    var jQueryPaymentElements = getJQueryPaymentElements();
+    for (var elementName in jQueryPaymentElements) {
+      var element = jQueryPaymentElements[elementName];
+      if ((element.length !== 0) && (element.children().length !== 0)) {
+        debugging(elementName + ' element found');
+        return true;
+      }
     }
-    return true;
+    debugging('no valid elements found');
+    return false;
   }
 
   function handleCardPayment() {
     debugging('handle card payment');
-    stripe.createPaymentMethod('card', card).then(function (result) {
+    stripe.createPaymentMethod('card', elements.card).then(function (result) {
       if (result.error) {
         // Show error in payment form
         displayError(result.error.message, true);
@@ -314,45 +329,10 @@
     debugging('New Stripe ID: ' + CRM.vars.stripe.id + ' pubKey: ' + CRM.vars.stripe.publishableKey);
     stripe = Stripe(CRM.vars.stripe.publishableKey);
 
-    debugging('locale: ' + CRM.vars.stripe.locale);
     var stripeElements = stripe.elements({locale: CRM.vars.stripe.locale});
 
-    var style = {
-      base: {
-        fontSize: '1.1em', fontWeight: 'lighter'
-      }
-    };
-
-    var elementsCreateParams = {style: style, value: {}};
-
-    var postCodeElement = document.getElementById('billing_postal_code-' + CRM.vars.stripe.billingAddressID);
-    if (postCodeElement) {
-      var postCode = document.getElementById('billing_postal_code-' + CRM.vars.stripe.billingAddressID).value;
-      debugging('existing postcode: ' + postCode);
-      elementsCreateParams.value.postalCode = postCode;
-    }
-
-    // Cleanup any classes leftover from previous switching payment processors
-    getPaymentElements().card.removeClass();
-    // Create an instance of the card Element.
-    card = stripeElements.create('card', elementsCreateParams);
-    card.mount('#card-element');
-    debugging("created new card element", card);
-
-    if (postCodeElement) {
-      // Hide the CiviCRM postcode field so it will still be submitted but will contain the value set in the stripe card-element.
-      if (document.getElementById('billing_postal_code-5').value) {
-        document.getElementById('billing_postal_code-5')
-          .setAttribute('disabled', true);
-      }
-      else {
-        document.getElementsByClassName('billing_postal_code-' + CRM.vars.stripe.billingAddressID + '-section')[0].setAttribute('hidden', true);
-      }
-    }
-
-    card.addEventListener('change', function (event) {
-      cardElementChanged(event);
-    });
+    createElementCard(stripeElements);
+    //createElementPaymentRequest(stripeElements);
 
     setBillingFieldsRequiredForJQueryValidate();
     submitButtons = getBillingSubmit();
@@ -568,6 +548,100 @@
     return true;
   }
 
+  function createElementCard(stripeElements) {
+    var style = {
+      base: {
+        fontSize: '1.1em', fontWeight: 'lighter'
+      }
+    };
+
+    var elementsCreateParams = {style: style, value: {}};
+
+    var postCodeElement = document.getElementById('billing_postal_code-' + CRM.vars.stripe.billingAddressID);
+    if (postCodeElement) {
+      var postCode = document.getElementById('billing_postal_code-' + CRM.vars.stripe.billingAddressID).value;
+      debugging('existing postcode: ' + postCode);
+      elementsCreateParams.value.postalCode = postCode;
+    }
+
+    // Cleanup any classes leftover from previous switching payment processors
+    getJQueryPaymentElements().card.removeClass();
+    // Create an instance of the card Element.
+    elements.card = stripeElements.create('card', elementsCreateParams);
+    elements.card.mount('#card-element');
+    debugging("created new card element", elements.card);
+
+    if (postCodeElement) {
+      // Hide the CiviCRM postcode field so it will still be submitted but will contain the value set in the stripe card-element.
+      if (document.getElementById('billing_postal_code-5').value) {
+        document.getElementById('billing_postal_code-5')
+          .setAttribute('disabled', true);
+      }
+      else {
+        document.getElementsByClassName('billing_postal_code-' + CRM.vars.stripe.billingAddressID + '-section')[0].setAttribute('hidden', true);
+      }
+    }
+
+    elements.card.addEventListener('change', function (event) {
+      cardElementChanged(event);
+    });
+  }
+
+  function createElementPaymentRequest(stripeElements) {
+    var paymentRequest = null;
+    try {
+      paymentRequest = stripe.paymentRequest({
+        country: CRM.vars.stripe.country,
+        currency: CRM.vars.stripe.currency.toLowerCase(),
+        total: {
+          label: document.title,
+          amount: 0
+        },
+        requestPayerName: true,
+        requestPayerEmail: true
+      });
+    } catch(err) {
+      if (err.name === 'IntegrationError') {
+        debugging('Cannot enable paymentRequestButton: ' + err.message);
+        return;
+      }
+    }
+
+    // Check the availability of the Payment Request API first.
+    paymentRequest.canMakePayment().then(function(result) {
+      elements.paymentrequest = stripeElements.create('paymentRequestButton', {
+        paymentRequest: paymentRequest,
+        style: {
+          paymentRequestButton: {
+            // One of 'default', 'book', 'buy', or 'donate'
+            type: 'default',
+            // One of 'dark', 'light', or 'light-outline'
+            theme: 'dark',
+            // Defaults to '40px'. The width is always '100%'.
+            height: '64px'
+          }
+        }
+      });
+
+      elements.paymentrequest.on('click', function() {
+        debugging('PaymentRequest clicked');
+        paymentRequest.update({
+          total: {
+            label: document.title,
+            amount: CRM.payment.getTotalAmount() * 100
+          }
+        });
+      });
+
+      if (result) {
+        elements.paymentrequest.mount('#paymentrequest-element');
+        document.getElementById('paymentrequest-element').style.display = 'block';
+      } else {
+        document.getElementById('paymentrequest-element').style.display = 'none';
+      }
+    });
+  }
+
   /**
    * Validate a reCaptcha if it exists on the form.
    * Ideally we would use grecaptcha.getResponse() but the reCaptcha is already render()ed by CiviCRM
@@ -773,7 +847,7 @@
    */
   function triggerEventCrmBillingFormReloadFailed() {
     triggerEvent('crmBillingFormReloadFailed');
-    hidePaymentElements();
+    hideJQueryPaymentElements();
     displayError(ts('Could not load payment element - Is there a problem with your network connection?'), true);
   }
 

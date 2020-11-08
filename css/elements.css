@@ -20,3 +20,8 @@
   margin: 2%;
   display: none;
 }
+
+#payment-request-button {
+  max-width: 400px;
+  margin: 2% auto;
+}
