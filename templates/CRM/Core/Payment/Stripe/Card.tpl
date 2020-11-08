@@ -23,7 +23,10 @@
 
 {* Add the components required for a Stripe card element *}
 {crmScope extensionKey='com.drastikbydesign.stripe'}
-<div id="card-element"></div>
-{* Area for Stripe to report errors *}
-<div id="card-errors" role="alert" class="crm-error alert alert-danger"></div>
+  <div id="stripeContainer">
+    <div id="card-element"></div>
+    <div id="paymentrequest-element" style="display: none"></div>
+    {* Area for Stripe to report errors *}
+    <div id="card-errors" role="alert" class="crm-error alert alert-danger"></div>
+  </div>
 {/crmScope}

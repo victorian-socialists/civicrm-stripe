@@ -332,7 +332,7 @@
     var stripeElements = stripe.elements({locale: CRM.vars.stripe.locale});
 
     createElementCard(stripeElements);
-    //createElementPaymentRequest(stripeElements);
+    createElementPaymentRequest(stripeElements);
 
     setBillingFieldsRequiredForJQueryValidate();
     submitButtons = getBillingSubmit();
