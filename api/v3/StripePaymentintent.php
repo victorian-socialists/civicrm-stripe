@@ -126,7 +126,7 @@ function civicrm_api3_stripe_paymentintent_process($params) {
   }
 
   $title = CRM_Utils_Type::validate($params['description'], 'String');
-  $confirm = TRUE;
+  $intentParams['confirm'] = TRUE;
   $currency = CRM_Utils_Type::validate($params['currency'], 'String', CRM_Core_Config::singleton()->defaultCurrency);
   $processorID = CRM_Utils_Type::validate((int)$params['id'], 'Positive');
   !empty($processorID) ?: _civicrm_api3_stripe_paymentintent_returnInvalid();
@@ -135,8 +135,10 @@ function civicrm_api3_stripe_paymentintent_process($params) {
   $processor = new CRM_Core_Payment_Stripe('', $paymentProcessor);
   $processor->setAPIParams();
 
+  $intentParams['confirmation_method'] = 'manual';
   if (empty($paymentIntentID) && empty($paymentMethodID)) {
-    _civicrm_api3_stripe_paymentintent_returnInvalid();
+    $intentParams['confirm'] = FALSE;
+    $intentParams['confirmation_method'] = 'automatic';
   }
 
   if ($paymentIntentID) {
@@ -153,17 +155,17 @@ function civicrm_api3_stripe_paymentintent_process($params) {
     // We don't yet have a PaymentIntent, create one using the
     // Payment Method ID and attempt to confirm it too.
     try {
-      $intent = $processor->stripeClient->paymentIntents->create([
-        'payment_method' => $paymentMethodID,
-        'amount' => $processor->getAmount(['amount' => $amount, 'currency' => $currency]),
-        'currency' => $currency,
-        'confirmation_method' => 'manual',
-        'capture_method' => 'manual',
-        // authorize the amount but don't take from card yet
-        'setup_future_usage' => 'off_session',
-        // Setup the card to be saved and used later
-        'confirm' => $confirm,
-      ]);
+      $intentParams['amount'] = $processor->getAmount(['amount' => $amount, 'currency' => $currency]);
+      $intentParams['currency'] = $currency;
+      // authorize the amount but don't take from card yet
+      $intentParams['capture_method'] = 'manual';
+      // Setup the card to be saved and used later
+      $intentParams['setup_future_usage'] = 'off_session';
+      if ($paymentMethodID) {
+        $intentParams['payment_method'] = $paymentMethodID;
+      }
+
+      $intent = $processor->stripeClient->paymentIntents->create($intentParams);
     } catch (Exception $e) {
       // Save the "error" in the paymentIntent table in in case investigation is required.
       $stripePaymentintentParams = [
@@ -220,6 +222,12 @@ function civicrm_api3_stripe_paymentintent_process($params) {
     return civicrm_api3_create_success([
       'success' => true,
       'paymentIntent' => ['id' => $intent->id],
+    ]);
+  }
+  elseif ($intent->status === 'requires_payment_method') {
+    return civicrm_api3_create_success([
+      'requires_payment_method' => true,
+      'payment_intent_client_secret' => $intent->client_secret,
     ]);
   }
   else {
