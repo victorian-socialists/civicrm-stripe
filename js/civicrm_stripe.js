@@ -7,7 +7,7 @@
   var stripe = null;
   var elements = {
     card: null,
-    paymentrequest: null
+    paymentRequestButton: null
   };
   var form;
   var submitButtons;
@@ -183,8 +183,8 @@
     return false;
   }
 
-  function handleCardPayment() {
-    debugging('handle card payment');
+  function handleSubmitCard(submitEvent) {
+    debugging('handle submit card');
     stripe.createPaymentMethod('card', elements.card).then(function (result) {
       if (result.error) {
         // Show error in payment form
@@ -402,8 +402,8 @@
     }
   }
 
-  function submit(event) {
-    event.preventDefault();
+  function submit(submitEvent) {
+    submitEvent.preventDefault();
     debugging('submit handler');
 
     if (form.dataset.submitted === 'true') {
@@ -541,7 +541,15 @@
     }
 
     // Create a token when the form is submitted.
-    handleCardPayment();
+    switch(submitEvent.elementType) {
+      case 'card':
+        handleSubmitCard(submitEvent);
+        break;
+
+      case 'paymentRequestButton':
+        handleSubmitPaymentRequestButton(submitEvent);
+        break;
+    }
 
     if ($('#stripe-recurring-start-date').is(':hidden')) {
       $('#stripe-recurring-start-date').remove();
@@ -620,7 +628,7 @@
         return false;
       })
       .then(function(result) {
-      elements.paymentrequest = stripeElements.create('paymentRequestButton', {
+      elements.paymentRequestButton = stripeElements.create('paymentRequestButton', {
         paymentRequest: paymentRequest,
         style: {
           paymentRequestButton: {
@@ -634,7 +642,7 @@
         }
       });
 
-      elements.paymentrequest.on('click', function(event) {
+      elements.paymentRequestButton.on('click', function(event) {
         debugging('PaymentRequest clicked');
         paymentRequest.update({
           total: {
@@ -688,7 +696,7 @@
       });
 
       if (result) {
-        elements.paymentrequest.mount('#paymentrequest-element');
+        elements.paymentRequestButton.mount('#paymentrequest-element');
         document.getElementById('paymentrequest-element').style.display = 'block';
       } else {
         document.getElementById('paymentrequest-element').style.display = 'none';
