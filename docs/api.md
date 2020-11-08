@@ -37,9 +37,16 @@ Accepts various parameters but requires: Payment Processor ID, Stripe subscripti
 
 ## StripePaymentintents
 
-This API is used internally for tracking and managing paymentIntents. It can be used for querying information about attempted / successful payments using `StripePaymentintent.get`.
+#### `StripePaymentintents.get`
+It can be used for debugging and querying information about attempted / successful payments.
 
+#### `StripePaymentintents.create`
+This API is used internally for tracking and managing paymentIntents.
 It's not advised that you use this API for anything else.
+
+#### `StripePaymentintents.Process`
+This API is used by the client javascript integration and by third-party frontend integrations.
+Please contact [MJW Consulting](https://mjw.pt/stripe) if you require more information or are planning to use this API.
 
 ## Scheduled Jobs
 

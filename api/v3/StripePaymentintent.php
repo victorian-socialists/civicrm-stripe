@@ -109,20 +109,35 @@ function _civicrm_api3_stripe_paymentintent_process_spec(&$spec) {
  * @throws \Stripe\Exception\UnknownApiErrorException
  */
 function civicrm_api3_stripe_paymentintent_process($params) {
-  $paymentMethodID = $params['payment_method_id'];
-  $paymentIntentID = $params['payment_intent_id'];
-  $amount = $params['amount'];
-  $capture = $params['capture'];
-  $title = $params['description'];
-  $confirm = TRUE;
-  if (empty($amount)) {
-    $amount = 1;
-    $confirm = FALSE;
+  if (class_exists('\Civi\Firewall\Firewall')) {
+    if (!\Civi\Firewall\Firewall::isCSRFTokenValid(CRM_Utils_Type::validate($params['csrfToken'], 'String'))) {
+      _civicrm_api3_stripe_paymentintent_returnInvalid();
+    }
   }
-  $currency = $params['currency'];
-  $processorID = $params['payment_processor_id'];
-  $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $processorID]));
+  $paymentMethodID = CRM_Utils_Type::validate($params['payment_method_id'], 'String');
+  $paymentIntentID = CRM_Utils_Type::validate($params['payment_intent_id'], 'String');
+  $capture = CRM_Utils_Type::validate($params['capture'], 'Boolean', FALSE);
+  $amount = CRM_Utils_Type::validate($params['amount'], 'String');
+  // $capture is normally true if we have already created the intent and just need to get extra
+  //   authentication from the user (eg. on the confirmation page). So we don't need the amount
+  //   in this case.
+  if (empty($amount) && !$capture) {
+    _civicrm_api3_stripe_paymentintent_returnInvalid();
+  }
+
+  $title = CRM_Utils_Type::validate($params['description'], 'String');
+  $confirm = TRUE;
+  $currency = CRM_Utils_Type::validate($params['currency'], 'String', CRM_Core_Config::singleton()->defaultCurrency);
+  $processorID = CRM_Utils_Type::validate((int)$params['id'], 'Positive');
+  !empty($processorID) ?: _civicrm_api3_stripe_paymentintent_returnInvalid();
+  $paymentProcessor = civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $processorID]);
+  ($paymentProcessor['class_name'] === 'Payment_Stripe') ?: _civicrm_api3_stripe_paymentintent_returnInvalid();
+  $processor = new CRM_Core_Payment_Stripe('', $paymentProcessor);
   $processor->setAPIParams();
+
+  if (empty($paymentIntentID) && empty($paymentMethodID)) {
+    _civicrm_api3_stripe_paymentintent_returnInvalid();
+  }
 
   if ($paymentIntentID) {
     // We already have a PaymentIntent, retrieve and attempt confirm.
@@ -137,28 +152,53 @@ function civicrm_api3_stripe_paymentintent_process($params) {
   else {
     // We don't yet have a PaymentIntent, create one using the
     // Payment Method ID and attempt to confirm it too.
-    $intent = \Stripe\PaymentIntent::create([
-      'payment_method' => $paymentMethodID,
-      'amount' => $processor->getAmount(['amount' => $amount, 'currency' => $currency]),
-      'currency' => $currency,
-      'confirmation_method' => 'manual',
-      'capture_method' => 'manual',
-      // authorize the amount but don't take from card yet
-      'setup_future_usage' => 'off_session',
-      // Setup the card to be saved and used later
-      'confirm' => $confirm,
-    ]);
+    try {
+      $intent = $processor->stripeClient->paymentIntents->create([
+        'payment_method' => $paymentMethodID,
+        'amount' => $processor->getAmount(['amount' => $amount, 'currency' => $currency]),
+        'currency' => $currency,
+        'confirmation_method' => 'manual',
+        'capture_method' => 'manual',
+        // authorize the amount but don't take from card yet
+        'setup_future_usage' => 'off_session',
+        // Setup the card to be saved and used later
+        'confirm' => $confirm,
+      ]);
+    } catch (Exception $e) {
+      // Save the "error" in the paymentIntent table in in case investigation is required.
+      $stripePaymentintentParams = [
+        'paymentintent_id' => 'null',
+        'payment_processor_id' => $processorID,
+        'status' => 'failed',
+        'description' => "{$e->getRequestId()};{$e->getMessage()};{$title}",
+        'referrer' => $_SERVER['HTTP_REFERER'],
+      ];
+      CRM_Stripe_BAO_StripePaymentintent::create($stripePaymentintentParams);
+
+      if ($e instanceof \Stripe\Exception\CardException) {
+        if (($e->getDeclineCode() === 'fraudulent') && class_exists('\Civi\Firewall\Event\FraudEvent')) {
+          \Civi\Firewall\Event\FraudEvent::trigger(\CRM_Utils_System::ipAddress(), 'CRM_Stripe_AJAX::confirmPayment');
+        }
+        $message = $e->getMessage();
+      }
+      elseif ($e instanceof \Stripe\Exception\InvalidRequestException) {
+        $message = 'Invalid request';
+      }
+      return civicrm_api3_create_error(['message' => $message]);
+    }
   }
 
   // Save the generated paymentIntent in the CiviCRM database for later tracking
-  $intentParams = [
+  $stripePaymentintentParams = [
     'paymentintent_id' => $intent->id,
     'payment_processor_id' => $processorID,
     'status' => $intent->status,
-    'description' => $title,
+    'description' => "{$title}",
+    'referrer' => $_SERVER['HTTP_REFERER'],
   ];
-  CRM_Stripe_BAO_StripePaymentintent::create($intentParams);
+  CRM_Stripe_BAO_StripePaymentintent::create($stripePaymentintentParams);
 
+  // generatePaymentResponse()
   if ($intent->status === 'requires_action' &&
     $intent->next_action->type === 'use_stripe_sdk') {
     // Tell the client to handle the action
@@ -184,6 +224,20 @@ function civicrm_api3_stripe_paymentintent_process($params) {
   }
   else {
     // Invalid status
-    throw new API_Exception('Invalid PaymentIntent status');
+    if (isset($intent->last_payment_error->message)) {
+      $message = E::ts('Payment failed: %1', [1 => $intent->last_payment_error->message]);
+    }
+    else {
+      $message = E::ts('Payment failed.');
+    }
+    return civicrm_api3_create_error($message);
   }
+}
+
+/**
+ * Passed parameters were invalid
+ */
+function _civicrm_api3_stripe_paymentintent_returnInvalid() {
+  http_response_code(400);
+  exit(1);
 }
