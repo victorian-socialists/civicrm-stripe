@@ -385,7 +385,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'locale' => CRM_Core_I18n::getLocale(),
       'apiVersion' => CRM_Stripe_Check::API_VERSION,
       'csrfToken' => class_exists('\Civi\Firewall\Firewall') ? \Civi\Firewall\Firewall::getCSRFToken() : NULL,
-      'country' => CRM_Core_BAO_Country::defaultContactCountry(),
+      'country' => \Civi::settings()->get('stripe_country'),
     ];
 
     // Add help and javascript
