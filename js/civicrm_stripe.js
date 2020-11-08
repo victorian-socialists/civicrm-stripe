@@ -416,154 +416,154 @@
       $('#billingcheckbox:input').hide();
       $('label[for="billingcheckbox"]').hide();
     }
+  }
 
-    function submit(event) {
-      event.preventDefault();
-      debugging('submit handler');
+  function submit(event) {
+    event.preventDefault();
+    debugging('submit handler');
 
-      if (form.dataset.submitted === 'true') {
-        return;
+    if (form.dataset.submitted === 'true') {
+      return;
+    }
+    form.dataset.submitted = 'true';
+
+    if (($(form).valid() === false) || $(form).data('crmBillingFormValid') === false) {
+      debugging('Form not valid');
+      $('div#card-errors').hide();
+      swalFire({
+        icon: 'error',
+        text: ts('Please check and fill in all required fields!'),
+        title: ''
+      }, '#crm-container', true);
+      triggerEvent('crmBillingFormNotValid');
+      form.dataset.submitted = 'false';
+      return false;
+    }
+
+    var cardError = CRM.$('#card-errors').text();
+    if (CRM.$('#card-element.StripeElement--empty').length && (CRM.payment.getTotalAmount() !== 0.0)) {
+      debugging('card details not entered!');
+      if (!cardError) {
+        cardError = ts('Please enter your card details');
       }
-      form.dataset.submitted = 'true';
+      swalFire({
+        icon: 'warning',
+        text: '',
+        title: cardError
+      }, '#card-element', true);
+      triggerEvent('crmBillingFormNotValid');
+      form.dataset.submitted = 'false';
+      return false;
+    }
 
-      if (($(form).valid() === false) || $(form).data('crmBillingFormValid') === false) {
-        debugging('Form not valid');
-        $('div#card-errors').hide();
-        swalFire({
-          icon: 'error',
-          text: ts('Please check and fill in all required fields!'),
-          title: ''
-        }, '#crm-container', true);
-        triggerEvent('crmBillingFormNotValid');
-        form.dataset.submitted = 'false';
-        return false;
+    if (CRM.$('#card-element.StripeElement--invalid').length) {
+      if (!cardError) {
+        cardError = ts('Please check your card details!');
       }
+      debugging('card details not valid!');
+      swalFire({
+        icon: 'error',
+        text: '',
+        title: cardError
+      }, '#card-element', true);
+      triggerEvent('crmBillingFormNotValid');
+      form.dataset.submitted = 'false';
+      return false;
+    }
 
-      var cardError = CRM.$('#card-errors').text();
-      if (CRM.$('#card-element.StripeElement--empty').length && (CRM.payment.getTotalAmount() !== 0.0)) {
-        debugging('card details not entered!');
-        if (!cardError) {
-          cardError = ts('Please enter your card details');
-        }
-        swalFire({
-          icon: 'warning',
-          text: '',
-          title: cardError
-        }, '#card-element', true);
-        triggerEvent('crmBillingFormNotValid');
-        form.dataset.submitted = 'false';
-        return false;
-      }
+    if (!validateReCaptcha()) {
+      return false;
+    }
 
-      if (CRM.$('#card-element.StripeElement--invalid').length) {
-        if (!cardError) {
-          cardError = ts('Please check your card details!');
-        }
-        debugging('card details not valid!');
-        swalFire({
-          icon: 'error',
-          text: '',
-          title: cardError
-        }, '#card-element', true);
-        triggerEvent('crmBillingFormNotValid');
-        form.dataset.submitted = 'false';
-        return false;
-      }
-
-      if (!validateReCaptcha()) {
-        return false;
-      }
-
-      if (typeof CRM.vars.stripe === 'undefined') {
-        debugging('Submitting - not a stripe processor');
-        return true;
-      }
-
-      var stripeProcessorId = parseInt(CRM.vars.stripe.id);
-      var chosenProcessorId = null;
-
-      // Handle multiple payment options and Stripe not being chosen.
-      // @fixme this needs refactoring as some is not relevant anymore (with stripe 6.0)
-      if (CRM.payment.getIsDrupalWebform()) {
-        // this element may or may not exist on the webform, but we are dealing with a single (stripe) processor enabled.
-        if (!$('input[name="submitted[civicrm_1_contribution_1_contribution_payment_processor_id]"]').length) {
-          chosenProcessorId = stripeProcessorId;
-        } else {
-          chosenProcessorId = parseInt(form.querySelector('input[name="submitted[civicrm_1_contribution_1_contribution_payment_processor_id]"]:checked').value);
-        }
-      }
-      else {
-        // Most forms have payment_processor-section but event registration has credit_card_info-section
-        if ((form.querySelector(".crm-section.payment_processor-section") !== null) ||
-          (form.querySelector(".crm-section.credit_card_info-section") !== null)) {
-          stripeProcessorId = CRM.vars.stripe.id;
-          if (form.querySelector('input[name="payment_processor_id"]:checked') !== null) {
-            chosenProcessorId = parseInt(form.querySelector('input[name="payment_processor_id"]:checked').value);
-          }
-        }
-      }
-
-      // If any of these are true, we are not using the stripe processor:
-      // - Is the selected processor ID pay later (0)
-      // - Is the Stripe processor ID defined?
-      // - Is selected processor ID and stripe ID undefined? If we only have stripe ID, then there is only one (stripe) processor on the page
-      if ((chosenProcessorId === 0) || (stripeProcessorId === null) ||
-        ((chosenProcessorId === null) && (stripeProcessorId === null))) {
-        debugging('Not a Stripe transaction, or pay-later');
-        return nonStripeSubmit();
-      }
-      else {
-        debugging('Stripe is the selected payprocessor');
-      }
-
-      // Don't handle submits generated by non-stripe processors
-      if (typeof CRM.vars.stripe.publishableKey === 'undefined') {
-        debugging('submit missing stripe-pub-key element or value');
-        return true;
-      }
-      // Don't handle submits generated by the CiviDiscount button.
-      if (form.dataset.submitdontprocess === 'true') {
-        debugging('non-payment submit detected - not submitting payment');
-        return true;
-      }
-
-      if (CRM.payment.getIsDrupalWebform()) {
-        // If we have selected Stripe but amount is 0 we don't submit via Stripe
-        if ($('#billing-payment-block').is(':hidden')) {
-          debugging('no payment processor on webform');
-          return true;
-        }
-
-        // If we have more than one processor (user-select) then we have a set of radio buttons:
-        var $processorFields = $('[name="submitted[civicrm_1_contribution_1_contribution_payment_processor_id]"]');
-        if ($processorFields.length) {
-          if ($processorFields.filter(':checked').val() === '0' || $processorFields.filter(':checked').val() === 0) {
-            debugging('no payment processor selected');
-            return true;
-          }
-        }
-      }
-
-      var totalAmount = CRM.payment.getTotalAmount();
-      if (totalAmount === 0.0) {
-        debugging("Total amount is 0");
-        return nonStripeSubmit();
-      }
-
-      // Disable the submit button to prevent repeated clicks
-      for (i = 0; i < submitButtons.length; ++i) {
-        submitButtons[i].setAttribute('disabled', true);
-      }
-
-      // Create a token when the form is submitted.
-      handleCardPayment();
-
-      if ($('#stripe-recurring-start-date').is(':hidden')) {
-        $('#stripe-recurring-start-date').remove();
-      }
-
+    if (typeof CRM.vars.stripe === 'undefined') {
+      debugging('Submitting - not a stripe processor');
       return true;
     }
+
+    var stripeProcessorId = parseInt(CRM.vars.stripe.id);
+    var chosenProcessorId = null;
+
+    // Handle multiple payment options and Stripe not being chosen.
+    // @fixme this needs refactoring as some is not relevant anymore (with stripe 6.0)
+    if (CRM.payment.getIsDrupalWebform()) {
+      // this element may or may not exist on the webform, but we are dealing with a single (stripe) processor enabled.
+      if (!$('input[name="submitted[civicrm_1_contribution_1_contribution_payment_processor_id]"]').length) {
+        chosenProcessorId = stripeProcessorId;
+      } else {
+        chosenProcessorId = parseInt(form.querySelector('input[name="submitted[civicrm_1_contribution_1_contribution_payment_processor_id]"]:checked').value);
+      }
+    }
+    else {
+      // Most forms have payment_processor-section but event registration has credit_card_info-section
+      if ((form.querySelector(".crm-section.payment_processor-section") !== null) ||
+        (form.querySelector(".crm-section.credit_card_info-section") !== null)) {
+        stripeProcessorId = CRM.vars.stripe.id;
+        if (form.querySelector('input[name="payment_processor_id"]:checked') !== null) {
+          chosenProcessorId = parseInt(form.querySelector('input[name="payment_processor_id"]:checked').value);
+        }
+      }
+    }
+
+    // If any of these are true, we are not using the stripe processor:
+    // - Is the selected processor ID pay later (0)
+    // - Is the Stripe processor ID defined?
+    // - Is selected processor ID and stripe ID undefined? If we only have stripe ID, then there is only one (stripe) processor on the page
+    if ((chosenProcessorId === 0) || (stripeProcessorId === null) ||
+      ((chosenProcessorId === null) && (stripeProcessorId === null))) {
+      debugging('Not a Stripe transaction, or pay-later');
+      return nonStripeSubmit();
+    }
+    else {
+      debugging('Stripe is the selected payprocessor');
+    }
+
+    // Don't handle submits generated by non-stripe processors
+    if (typeof CRM.vars.stripe.publishableKey === 'undefined') {
+      debugging('submit missing stripe-pub-key element or value');
+      return true;
+    }
+    // Don't handle submits generated by the CiviDiscount button.
+    if (form.dataset.submitdontprocess === 'true') {
+      debugging('non-payment submit detected - not submitting payment');
+      return true;
+    }
+
+    if (CRM.payment.getIsDrupalWebform()) {
+      // If we have selected Stripe but amount is 0 we don't submit via Stripe
+      if ($('#billing-payment-block').is(':hidden')) {
+        debugging('no payment processor on webform');
+        return true;
+      }
+
+      // If we have more than one processor (user-select) then we have a set of radio buttons:
+      var $processorFields = $('[name="submitted[civicrm_1_contribution_1_contribution_payment_processor_id]"]');
+      if ($processorFields.length) {
+        if ($processorFields.filter(':checked').val() === '0' || $processorFields.filter(':checked').val() === 0) {
+          debugging('no payment processor selected');
+          return true;
+        }
+      }
+    }
+
+    var totalAmount = CRM.payment.getTotalAmount();
+    if (totalAmount === 0.0) {
+      debugging("Total amount is 0");
+      return nonStripeSubmit();
+    }
+
+    // Disable the submit button to prevent repeated clicks
+    for (i = 0; i < submitButtons.length; ++i) {
+      submitButtons[i].setAttribute('disabled', true);
+    }
+
+    // Create a token when the form is submitted.
+    handleCardPayment();
+
+    if ($('#stripe-recurring-start-date').is(':hidden')) {
+      $('#stripe-recurring-start-date').remove();
+    }
+
+    return true;
   }
 
   /**
