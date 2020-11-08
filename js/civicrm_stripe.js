@@ -14,6 +14,11 @@
   var stripeLoading = false;
   var paymentProcessorID = null;
 
+  var paymentData = {
+    clientSecret: null,
+    paymentRequest: null
+  };
+
   // Disable the browser "Leave Page Alert" which is triggered because we mess with the form submit function.
   window.onbeforeunload = null;
 
@@ -232,6 +237,45 @@
     });
   }
 
+  function handleSubmitPaymentRequestButton(submitEvent) {
+    debugging('handle submit paymentRequestButton');
+
+    // Send paymentMethod.id to server
+    debugging('Waiting for pre-auth');
+    swalFire({
+      title: ts('Please wait'),
+      text: ts(' preparing your payment...'),
+      allowOutsideClick: false,
+      onBeforeOpen: function() {
+        Swal.showLoading();
+      }
+    }, '', false);
+    CRM.api3('StripePaymentintent', 'Process', {
+      amount: CRM.payment.getTotalAmount().toFixed(2),
+      currency: CRM.payment.getCurrency(CRM.vars.stripe.currency),
+      id: CRM.vars.stripe.id,
+      description: document.title,
+      csrfToken: CRM.vars.stripe.csrfToken
+      //metadata: {integration_check: accept_a_payment}
+    })
+      .done(function(result) {
+        // Handle server response (see Step 3)
+        swalClose();
+        // Trigger the paymentRequest dialog
+        paymentData.clientSecret = result.values.payment_intent_client_secret;
+        paymentData.paymentRequest.show();
+        // From here the on 'paymentmethod' of the paymentRequest handles completion/failure
+      })
+      .fail(function(result) {
+        var error = 'Unknown error';
+        if (result.hasOwnProperty('statusText')) {
+          error = result.statusText;
+        }
+        swalClose();
+        displayError(error, true);
+      });
+  }
+
   function handleServerResponse(result) {
     debugging('handleServerResponse');
     if (result.error) {
@@ -246,16 +290,17 @@
     }
   }
 
-  function handleAction(response) {
-    stripe.handleCardAction(response.payment_intent_client_secret)
-      .then(function(result) {
-        if (result.error) {
+  function handleAction(result) {
+    paymentData.clientSecret = result.payment_intent_client_secret;
+    stripe.handleCardAction(paymentData.clientSecret)
+      .then(function(cardActionResult) {
+        if (cardActionResult.error) {
           // Show error in payment form
-          displayError(result.error.message, true);
+          displayError(cardActionResult.error.message, true);
         } else {
           // The card action has been handled
           // The PaymentIntent can be confirmed again on the server
-          successHandler('paymentIntentID', result.paymentIntent);
+          successHandler('paymentIntentID', cardActionResult.paymentIntent);
         }
       });
   }
@@ -318,6 +363,10 @@
   function loadStripeBillingBlock() {
     debugging('loadStripeBillingBlock');
 
+    // When switching payment processors we need to make sure these are empty
+    paymentData.clientSecret = null;
+    paymentData.paymentRequest = null;
+
     var oldPaymentProcessorID = paymentProcessorID;
     paymentProcessorID = getPaymentProcessorSelectorValue();
     debugging('payment processor old: ' + oldPaymentProcessorID + ' new: ' + paymentProcessorID + ' id: ' + CRM.vars.stripe.id);
@@ -361,7 +410,7 @@
       submitButtons[i].addEventListener('click', submitButtonClick);
     }
 
-    function submitButtonClick(event) {
+    function submitButtonClick(clickEvent) {
       // Take over the click function of the form.
       if (typeof CRM.vars.stripe === 'undefined') {
         // Submit the form
@@ -372,7 +421,7 @@
 
       // Run through our own submit, that executes Stripe submission if
       // appropriate for this submit.
-      return submit(event);
+      return submit(clickEvent);
     }
 
     // Remove the onclick attribute added by CiviCRM.
@@ -390,10 +439,10 @@
         addDrupalWebformActionElement(this.value);
       });
       // If enter pressed, use our submit function
-      form.addEventListener('keydown', function (event) {
-        if (event.code === 'Enter') {
+      form.addEventListener('keydown', function (keydownEvent) {
+        if (keydownEvent.code === 'Enter') {
           addDrupalWebformActionElement(this.value);
-          submit(event);
+          submit(keydownEvent);
         }
       });
 
@@ -540,8 +589,17 @@
       submitButtons[i].setAttribute('disabled', true);
     }
 
+    // When we click the stripe element we already have the elementType.
+    // But clicking an alternative submit button we have to work it out.
+    var elementType = 'card';
+    if (submitEvent.hasOwnProperty(elementType)) {
+      elementType = submitEvent.elementType;
+    }
+    else if (paymentData.paymentRequest !== null) {
+      elementType = 'paymentRequestButton';
+    }
     // Create a token when the form is submitted.
-    switch(submitEvent.elementType) {
+    switch(elementType) {
       case 'card':
         handleSubmitCard(submitEvent);
         break;
@@ -628,81 +686,91 @@
         return false;
       })
       .then(function(result) {
-      elements.paymentRequestButton = stripeElements.create('paymentRequestButton', {
-        paymentRequest: paymentRequest,
-        style: {
-          paymentRequestButton: {
-            // One of 'default', 'book', 'buy', or 'donate'
-            type: 'default',
-            // One of 'dark', 'light', or 'light-outline'
-            theme: 'dark',
-            // Defaults to '40px'. The width is always '100%'.
-            height: '64px'
-          }
-        }
-      });
-
-      elements.paymentRequestButton.on('click', function(event) {
-        debugging('PaymentRequest clicked');
-        paymentRequest.update({
-          total: {
-            label: document.title,
-            amount: CRM.payment.getTotalAmount() * 100
-          }
-        });
-        debugging('clearing submitdontprocess');
-        form.dataset.submitdontprocess = 'false';
-
-        // Run through our own submit, that executes Stripe submission if
-        // appropriate for this submit.
-        //parent.submit(event);
-        return submit(event);
-
-      });
-
-      paymentRequest.on('paymentmethod', function(ev) {
-        // Confirm the PaymentIntent without handling potential next actions (yet).
-        stripe.confirmCardPayment(
-          clientSecret,
-          {payment_method: ev.paymentMethod.id},
-          {handleActions: false}
-        ).then(function(confirmResult) {
-          if (confirmResult.error) {
-            // Report to the browser that the payment failed, prompting it to
-            // re-show the payment interface, or show an error message and close
-            // the payment interface.
-            ev.complete('fail');
-          } else {
-            // Report to the browser that the confirmation was successful, prompting
-            // it to close the browser payment method collection interface.
-            ev.complete('success');
-            // Check if the PaymentIntent requires any actions and if so let Stripe.js
-            // handle the flow. If using an API version older than "2019-02-11" instead
-            // instead check for: `paymentIntent.status === "requires_source_action"`.
-            if (confirmResult.paymentIntent.status === "requires_action") {
-              // Let Stripe.js handle the rest of the payment flow.
-              stripe.confirmCardPayment(clientSecret).then(function(result) {
-                if (result.error) {
-                  // The payment failed -- ask your customer for a new payment method.
-                } else {
-                  // The payment has succeeded.
-                }
-              });
-            } else {
-              // The payment has succeeded.
+        paymentData.paymentRequest = paymentRequest;
+        elements.paymentRequestButton = stripeElements.create('paymentRequestButton', {
+          paymentRequest: paymentRequest,
+          style: {
+            paymentRequestButton: {
+              // One of 'default', 'book', 'buy', or 'donate'
+              type: 'default',
+              // One of 'dark', 'light', or 'light-outline'
+              theme: 'dark',
+              // Defaults to '40px'. The width is always '100%'.
+              height: '64px'
             }
           }
         });
-      });
 
-      if (result) {
-        elements.paymentRequestButton.mount('#paymentrequest-element');
-        document.getElementById('paymentrequest-element').style.display = 'block';
-      } else {
-        document.getElementById('paymentrequest-element').style.display = 'none';
-      }
-      return true;
-    });
+        elements.paymentRequestButton.on('click', function(clickEvent) {
+          debugging('PaymentRequest clicked');
+          paymentRequest.update({
+            total: {
+              label: document.title,
+              amount: CRM.payment.getTotalAmount() * 100
+            }
+          });
+          debugging('clearing submitdontprocess');
+          form.dataset.submitdontprocess = 'false';
+
+          form.dataset.submitted = 'false';
+
+          // Run through our own submit, that executes Stripe submission if
+          // appropriate for this submit.
+          submit(clickEvent);
+        });
+
+        paymentRequest.on('paymentmethod', function(paymentRequestEvent) {
+          try {
+            // Confirm the PaymentIntent without handling potential next actions (yet).
+            stripe.confirmCardPayment(
+              paymentData.clientSecret,
+              {payment_method: paymentRequestEvent.paymentMethod.id},
+              {handleActions: false}
+            ).then(function(confirmResult) {
+              if (confirmResult.error) {
+                // Report to the browser that the payment failed, prompting it to
+                // re-show the payment interface, or show an error message and close
+                // the payment interface.
+                paymentRequestEvent.complete('fail');
+              } else {
+                // Report to the browser that the confirmation was successful, prompting
+                // it to close the browser payment method collection interface.
+                paymentRequestEvent.complete('success');
+                // Check if the PaymentIntent requires any actions and if so let Stripe.js
+                // handle the flow.
+                if (confirmResult.paymentIntent.status === "requires_action") {
+                  // Let Stripe.js handle the rest of the payment flow.
+                  stripe.confirmCardPayment(paymentData.clientSecret).then(function(result) {
+                    if (result.error) {
+                      // The payment failed -- ask your customer for a new payment method.
+                      debugging('confirmCardPayment failed');
+                      displayError('The payment failed - please try a different payment method.', true);
+                    } else {
+                      // The payment has succeeded.
+                      successHandler('paymentIntentID', result.paymentIntent);
+                    }
+                  });
+                } else {
+                  // The payment has succeeded.
+                  successHandler('paymentIntentID', confirmResult.paymentIntent);
+                }
+              }
+            });
+          } catch(err) {
+            if (err.name === 'IntegrationError') {
+              debugging(err.message);
+            }
+            paymentRequestEvent.complete('fail');
+          }
+        });
+
+        if (result) {
+          elements.paymentRequestButton.mount('#paymentrequest-element');
+          document.getElementById('paymentrequest-element').style.display = 'block';
+        } else {
+          document.getElementById('paymentrequest-element').style.display = 'none';
+        }
+      });
   }
 
   /**
