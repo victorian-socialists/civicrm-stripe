@@ -331,8 +331,10 @@
 
     var stripeElements = stripe.elements({locale: CRM.vars.stripe.locale});
 
-    createElementCard(stripeElements);
-    createElementPaymentRequest(stripeElements);
+    // By default we load paymentRequest button if we can, fallback to card element
+    if (createElementPaymentRequest(stripeElements) === false) {
+      createElementCard(stripeElements);
+    }
 
     setBillingFieldsRequiredForJQueryValidate();
     submitButtons = getBillingSubmit();
@@ -549,6 +551,7 @@
   }
 
   function createElementCard(stripeElements) {
+    debugging('try to create card element');
     var style = {
       base: {
         fontSize: '1.1em', fontWeight: 'lighter'
@@ -582,12 +585,16 @@
       }
     }
 
+    // All containers start as display: none and are enabled on demand
+    document.getElementById('card-element').style.display = 'block';
+
     elements.card.addEventListener('change', function (event) {
       cardElementChanged(event);
     });
   }
 
   function createElementPaymentRequest(stripeElements) {
+    debugging('try to create paymentRequest element');
     var paymentRequest = null;
     try {
       paymentRequest = stripe.paymentRequest({
@@ -603,12 +610,16 @@
     } catch(err) {
       if (err.name === 'IntegrationError') {
         debugging('Cannot enable paymentRequestButton: ' + err.message);
-        return;
+        return false;
       }
     }
 
     // Check the availability of the Payment Request API first.
-    paymentRequest.canMakePayment().then(function(result) {
+    paymentRequest.canMakePayment()
+      .catch(function(result) {
+        return false;
+      })
+      .then(function(result) {
       elements.paymentrequest = stripeElements.create('paymentRequestButton', {
         paymentRequest: paymentRequest,
         style: {
@@ -623,12 +634,55 @@
         }
       });
 
-      elements.paymentrequest.on('click', function() {
+      elements.paymentrequest.on('click', function(event) {
         debugging('PaymentRequest clicked');
         paymentRequest.update({
           total: {
             label: document.title,
             amount: CRM.payment.getTotalAmount() * 100
+          }
+        });
+        debugging('clearing submitdontprocess');
+        form.dataset.submitdontprocess = 'false';
+
+        // Run through our own submit, that executes Stripe submission if
+        // appropriate for this submit.
+        //parent.submit(event);
+        return submit(event);
+
+      });
+
+      paymentRequest.on('paymentmethod', function(ev) {
+        // Confirm the PaymentIntent without handling potential next actions (yet).
+        stripe.confirmCardPayment(
+          clientSecret,
+          {payment_method: ev.paymentMethod.id},
+          {handleActions: false}
+        ).then(function(confirmResult) {
+          if (confirmResult.error) {
+            // Report to the browser that the payment failed, prompting it to
+            // re-show the payment interface, or show an error message and close
+            // the payment interface.
+            ev.complete('fail');
+          } else {
+            // Report to the browser that the confirmation was successful, prompting
+            // it to close the browser payment method collection interface.
+            ev.complete('success');
+            // Check if the PaymentIntent requires any actions and if so let Stripe.js
+            // handle the flow. If using an API version older than "2019-02-11" instead
+            // instead check for: `paymentIntent.status === "requires_source_action"`.
+            if (confirmResult.paymentIntent.status === "requires_action") {
+              // Let Stripe.js handle the rest of the payment flow.
+              stripe.confirmCardPayment(clientSecret).then(function(result) {
+                if (result.error) {
+                  // The payment failed -- ask your customer for a new payment method.
+                } else {
+                  // The payment has succeeded.
+                }
+              });
+            } else {
+              // The payment has succeeded.
+            }
           }
         });
       });
@@ -639,6 +693,7 @@
       } else {
         document.getElementById('paymentrequest-element').style.display = 'none';
       }
+      return true;
     });
   }
 
