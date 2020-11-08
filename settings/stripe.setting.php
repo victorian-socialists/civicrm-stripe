@@ -92,9 +92,9 @@ Required by the paymentRequest button. 2-character code (eg. "US") that can be f
       ]),
     'html_attributes' => [],
     'settings_pages' => [
-    //  'stripe' => [
-    //     'weight' => 21,
-    //  ]
+      'stripe' => [
+         'weight' => 21,
+      ]
     ],
   ],
   'stripe_enable_public_future_recur_start' => [
