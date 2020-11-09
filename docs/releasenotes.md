@@ -9,6 +9,11 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
+## Release 6.6 (not yet released 2021-02-20)
+
+* Support for [Payment Request Button](https://stripe.com/docs/stripe-js/elements/payment-request-button) which provides Google Pay and Apple Pay support.
+  * To enable, you must set the "Country" in Stripe Settings and then the payment request button will replace the card element when the client browser supports it.
+
 ## Release 6.5.8
 
 * Fix [#298](https://lab.civicrm.org/extensions/stripe/-/issues/298) jQuery validation on checkboxes in 'On behalf of' profiles.
