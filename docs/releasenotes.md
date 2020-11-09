@@ -9,8 +9,8 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
-## Release 6.5.4 (not yet released 2020-11-08)
-**This release REQUIRES that you upgrade mjwshared to 0.9.6**.
+## Release 6.5.4
+**This release REQUIRES that you upgrade mjwshared to 0.9.7**.
 
 * Use `CRM.payment.isAJAXPaymentForm()` to check if we should load on backend forms. There is no change for the user, we are just switching to an identical shared function to reduce code duplication.
 * Fix [#272](https://lab.civicrm.org/extensions/stripe/-/issues/272) "undefined property" PHP notice.
@@ -19,8 +19,9 @@ Releases use the following numbering system:
 * [!136](https://lab.civicrm.org/extensions/stripe/-/merge_requests/136):
     * Use CiviCRM log file for Stripe library errors.
     * Retry once if we can't connect to stripe servers.
-* [!135](https://lab.civicrm.org/extensions/stripe/-/merge_requests/135) Add hidden Stripe Country setting which will be required for [paymentRequest](https://stripe.com/docs/stripe-js/elements/payment-request-button) button.
-
+* [!135](https://lab.civicrm.org/extensions/stripe/-/merge_requests/135) Add hidden Stripe Country setting which will be required for [paymentRequest](https://stripe.com/docs/stripe-js/elements/payment-request-button) button (not yet implemented).
+* Return refund_status_name from `doRefund()` - this allows you to issue refunds via the UI following
+[mjwshared!12](https://lab.civicrm.org/extensions/mjwshared/-/merge_requests/12) - Add support for issuing refunds via the payment UI for payment processors that support refunds (eg. Stripe).
 
 ## Release 6.5.3
 
