@@ -98,6 +98,7 @@
     for (i = 0; i < submitButtons.length; ++i) {
       submitButtons[i].setAttribute('disabled', true);
     }
+    resetBillingFieldsRequiredForJQueryValidate();
     return form.submit();
   }
 
