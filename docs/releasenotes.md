@@ -9,6 +9,13 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
+## Release 6.5.5 (not yet released 2020-11-17)
+**Requires mjwshared (Payment Shared) 0.9.9**
+
+* Catch and log error if Stripe tries to process a duplicate IPN at the same time. This should resolve issues with "Contribution already completed" exceptions in the logs.
+    * The attempted processing of a duplicate does not seem to cause any data issues but does trigger an exception which is logged. This doesn't fix that underlying issue but
+    does write a more user-friendly error with context to the CiviCRM logs.
+
 ## Release 6.5.4
 **This release REQUIRES that you upgrade mjwshared to 0.9.7**.
 

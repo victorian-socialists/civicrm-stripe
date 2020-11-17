@@ -189,7 +189,9 @@ class CRM_Core_Payment_StripeIPN {
             return TRUE;
           }
           else {
-            $this->createNextContributionForRecur();
+            if (!$this->createNextContributionForRecur()) {
+              return FALSE;
+            }
           }
           return TRUE;
         }
@@ -214,7 +216,9 @@ class CRM_Core_Payment_StripeIPN {
           else {
             // We have a recurring contribution but have not yet received invoice.finalized so we don't have the next contribution yet.
             // invoice.payment_succeeded sometimes comes before invoice.finalized so trigger the same behaviour here to create a new contribution
-            $this->createNextContributionForRecur();
+            if (!$this->createNextContributionForRecur()) {
+              return FALSE;
+            }
             // Now get the contribution we just created.
             $this->getContribution();
           }
@@ -391,7 +395,9 @@ class CRM_Core_Payment_StripeIPN {
    * Create the next contribution for a recurring contribution
    * This happens when Stripe generates a new invoice and notifies us (normally by invoice.finalized but invoice.payment_succeeded sometimes arrives first).
    *
+   * @return bool
    * @throws \CiviCRM_API3_Exception
+   * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
   public function createNextContributionForRecur() {
     // We have a recurring contribution but no contribution so we'll repeattransaction
@@ -406,7 +412,7 @@ class CRM_Core_Payment_StripeIPN {
       'total_amount' => $this->amount,
       'fee_amount' => $this->fee,
     ];
-    $this->repeatContribution($params);
+    return $this->repeatContribution($params);
     // Don't touch the contributionRecur as it's updated automatically by Contribution.repeattransaction
   }
 
