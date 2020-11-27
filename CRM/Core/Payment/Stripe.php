@@ -480,21 +480,13 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
   public function doPayment(&$propertyBag, $component = 'contribute') {
-
-    // If we have a $0 amount, skip call to processor and set payment_status to Completed.
-    // https://github.com/civicrm/civicrm-core/blob/master/CRM/Core/Payment.php#L1362
-    if ($propertyBag['amount'] == 0) {
-      $result = [
-        'payment_status_id' => CRM_Core_PseudoConstant::getKey(
-          'CRM_Contribute_BAO_Contribution',
-          'contribution_status_id', 'Completed'
-        )
-      ];
-      return $result;
-    }
-
     /* @var \Civi\Payment\PropertyBag $propertyBag */
     $propertyBag = \Civi\Payment\PropertyBag::cast($propertyBag);
+
+    $zeroAmountPayment = $this->processZeroAmountPayment($propertyBag);
+    if ($zeroAmountPayment) {
+      return $zeroAmountPayment;
+    }
     $propertyBag = $this->beginDoPayment($propertyBag);
 
     $isRecur = ($propertyBag->getIsRecur() && $this->getRecurringContributionId($propertyBag));
