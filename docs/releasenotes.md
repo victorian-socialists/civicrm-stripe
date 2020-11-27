@@ -9,13 +9,15 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
-## Release 6.5.5 (not yet released 2020-11-17)
+## Release 6.5.5 (not yet released 2020-11-27)
 **Requires mjwshared (Payment Shared) 0.9.9**
 
 * Catch and log error if Stripe tries to process a duplicate IPN at the same time. This should resolve issues with "Contribution already completed" exceptions in the logs.
     * The attempted processing of a duplicate does not seem to cause any data issues but does trigger an exception which is logged. This doesn't fix that underlying issue but
     does write a more user-friendly error with context to the CiviCRM logs.
 * [!140](https://lab.civicrm.org/extensions/stripe/-/merge_requests/140) Fix option to not send receipt when running `Stripe.Ipn` API.
+* When not submitting via stripe reset billing fields so CiviCRM interprets them correctly (Fix JS rewrite of name attribute for checkbox field).
+* Fix [#256](https://lab.civicrm.org/extensions/stripe/-/issues/256) Can't submit contribution page online form for 0 amount (when membership fee is 0 and confirmation page enabled).
 
 ## Release 6.5.4
 **This release REQUIRES that you upgrade mjwshared to 0.9.7**.
