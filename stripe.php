@@ -226,7 +226,7 @@ function stripe_civicrm_navigationMenu(&$menu) {
 /**
  * Implements hook_civicrm_alterLogTables().
  *
- * Exclude firewall tables from logging tables since they hold mostly temp data.
+ * Exclude tables from logging tables since they hold mostly temp data.
  */
 function stripe_civicrm_alterLogTables(&$logTableSpec) {
   unset($logTableSpec['civicrm_stripe_paymentintent']);
