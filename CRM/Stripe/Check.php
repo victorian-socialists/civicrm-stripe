@@ -25,7 +25,7 @@ class CRM_Stripe_Check {
   /**
    * @var string
    */
-  const MIN_VERSION_MJWSHARED = '0.9.9';
+  const MIN_VERSION_MJWSHARED = '0.9.10';
   const MIN_VERSION_SWEETALERT = '1.4';
   const MIN_VERSION_FIREWALL = '1.1.2';
 
