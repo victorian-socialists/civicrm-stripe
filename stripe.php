@@ -135,7 +135,7 @@ function stripe_civicrm_buildForm($formName, &$form) {
         try {
           $paymentIntent = civicrm_api3('StripePaymentintent', 'getsingle', [
             'return' => [
-              'paymentintent_id',
+              'stripe_intent_id',
               'status',
               'contribution_id'
             ],
@@ -164,13 +164,8 @@ function stripe_civicrm_buildForm($formName, &$form) {
       $paymentProcessor = \Civi\Payment\System::singleton()->getById($form->_paymentProcessor['id']);
       $paymentProcessor->setAPIParams();
       try {
-        $intent = \Stripe\PaymentIntent::retrieve($paymentIntent['paymentintent_id']);
-        // We need the confirmation_method to decide whether to use handleCardAction (manual) or handleCardPayment (automatic) on the js side
         $jsVars = [
           'id' => $form->_paymentProcessor['id'],
-          'paymentIntentID' => $paymentIntent['paymentintent_id'],
-          'paymentIntentStatus' => $intent->status,
-          'paymentIntentMethod' => $intent->confirmation_method,
           'publishableKey' => CRM_Core_Payment_Stripe::getPublicKeyById($form->_paymentProcessor['id']),
           'locale' => CRM_Stripe_Api::mapCiviCRMLocaleToStripeLocale(),
           'apiVersion' => CRM_Stripe_Check::API_VERSION,
@@ -178,6 +173,26 @@ function stripe_civicrm_buildForm($formName, &$form) {
           'csrfToken' => class_exists('\Civi\Firewall\Firewall') ? \Civi\Firewall\Firewall::getCSRFToken() : NULL,
           'country' => CRM_Core_BAO_Country::defaultContactCountry(),
         ];
+
+        switch(substr($paymentIntent['stripe_intent_id'], 0, 2)) {
+          case 'pi':
+            // pi_ Stripe PaymentIntent
+            $paymentIntent = \Stripe\PaymentIntent::retrieve($paymentIntent['stripe_intent_id']);
+            // We need the confirmation_method to decide whether to use handleCardAction (manual) or handleCardPayment (automatic) on the js side
+            $jsVars['paymentIntentID'] = $paymentIntent['stripe_intent_id'];
+            $jsVars['intentStatus'] = $paymentIntent->status;
+            $jsVars['paymentIntentMethod'] = $paymentIntent->confirmation_method;
+            break;
+
+          case 'se':
+            // seti_ Stripe SetupIntent
+            $setupIntent = \Stripe\SetupIntent::retrieve($paymentIntent['stripe_intent_id']);
+            $jsVars['setupIntentID'] = $paymentIntent['stripe_intent_id'];
+            $jsVars['setupIntentNextAction'] = $setupIntent->next_action;
+            $jsVars['setupIntentClientSecret'] = $setupIntent->client_secret;
+            $jsVars['intentStatus'] = $setupIntent->status;
+            break;
+        }
         \Civi::resources()->addVars(E::SHORT_NAME, $jsVars);
       }
       catch (Exception $e) {
@@ -230,4 +245,15 @@ function stripe_civicrm_navigationMenu(&$menu) {
  */
 function stripe_civicrm_alterLogTables(&$logTableSpec) {
   unset($logTableSpec['civicrm_stripe_paymentintent']);
+}
+
+/**
+ * @param string $entity
+ * @param string $action
+ * @param array $params
+ * @param array $permissions
+ */
+function stripe_civicrm_alterAPIPermissions($entity, $action, &$params, &$permissions) {
+  $permissions['stripe_paymentintent']['process'] = ['make online contributions'];
+  $permissions['stripe_paymentintent']['createorupdate'] = ['make online contributions'];
 }

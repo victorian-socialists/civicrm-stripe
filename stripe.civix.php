@@ -7,9 +7,9 @@
  * extension.
  */
 class CRM_Stripe_ExtensionUtil {
-  const SHORT_NAME = "stripe";
-  const LONG_NAME = "com.drastikbydesign.stripe";
-  const CLASS_PREFIX = "CRM_Stripe";
+  const SHORT_NAME = 'stripe';
+  const LONG_NAME = 'com.drastikbydesign.stripe';
+  const CLASS_PREFIX = 'CRM_Stripe';
 
   /**
    * Translate a string using the extension's domain.

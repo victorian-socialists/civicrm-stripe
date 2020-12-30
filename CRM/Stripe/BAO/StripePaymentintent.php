@@ -16,28 +16,6 @@ class CRM_Stripe_BAO_StripePaymentintent extends CRM_Stripe_DAO_StripePaymentint
   public static function getEntityName() {
     return 'StripePaymentintent';
   }
-  /**
-   * Create a new StripePaymentintent based on array-data
-   *
-   * @param array $params key-value pairs
-   * @return CRM_Stripe_DAO_StripePaymentintent|NULL
-   *
-  public static function create($params) {
-    $className = 'CRM_Stripe_DAO_StripePaymentintent';
-    $entityName = 'StripePaymentintent';
-    $hook = empty($params['id']) ? 'create' : 'edit';
-
-    CRM_Utils_Hook::pre($hook, $entityName, CRM_Utils_Array::value('id', $params), $params);
-    $instance = new $className();
-    $instance->copyValues($params);
-    $instance->save();
-    CRM_Utils_Hook::post($hook, $entityName, $instance->id, $instance);
-
-    return $instance;
-  } */
-
-  public static function test() {
-  }
 
   /**
    * Create a new StripePaymentintent based on array-data
@@ -52,10 +30,10 @@ class CRM_Stripe_BAO_StripePaymentintent extends CRM_Stripe_DAO_StripePaymentint
       if (!empty($params['id'])) {
         $instance->id = $params['id'];
       }
-      elseif ($params['paymentintent_id']) {
+      elseif ($params['stripe_intent_id']) {
         $instance->id = civicrm_api3('StripePaymentintent', 'getvalue', [
           'return' => "id",
-          'paymentintent_id' => $params['paymentintent_id'],
+          'stripe_intent_id' => $params['stripe_intent_id'],
         ]);
       }
       if ($instance->id) {
@@ -78,6 +56,10 @@ class CRM_Stripe_BAO_StripePaymentintent extends CRM_Stripe_DAO_StripePaymentint
       unset($params['flags']);
     }
     $instance->flags = serialize($flags);
+
+    if (!empty($_SERVER['HTTP_REFERER']) && empty($instance->referrer)) {
+      $instance->referrer = $_SERVER['HTTP_REFERER'];
+    }
 
     $hook = empty($instance->id) ? 'create' : 'edit';
     CRM_Utils_Hook::pre($hook, self::getEntityName(), $params['id'] ?? NULL, $params);

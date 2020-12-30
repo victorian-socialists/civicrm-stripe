@@ -190,18 +190,36 @@
 
   function handleSubmitCard(submitEvent) {
     debugging('handle submit card');
-    stripe.createPaymentMethod('card', elements.card).then(function (result) {
-      if (result.error) {
+    stripe.createPaymentMethod('card', elements.card).then(function (createPaymentMethodResult) {
+      if (createPaymentMethodResult.error) {
         // Show error in payment form
-        displayError(result.error.message, true);
+        displayError(createPaymentMethodResult.error.message, true);
       }
       else {
         // For recur, additional participants we do NOT know the final amount so must create a paymentMethod and only create the paymentIntent
         //   once the form is finally submitted.
         // We should never get here with amount=0 as we should be doing a "nonStripeSubmit()" instead. This may become needed when we save cards
-        if (CRM.payment.getIsRecur() || CRM.payment.isEventAdditionalParticipants() || (CRM.payment.getTotalAmount() === 0.0)) {
-          // Submit the form, if we need to do 3dsecure etc. we do it at the end (thankyou page) once subscription etc has been created
-          successHandler('paymentMethodID', result.paymentMethod);
+        if (CRM.payment.getIsRecur() || CRM.payment.isEvenAdditionalParticipants() || (CRM.payment.getTotalAmount() === 0.0)) {
+          CRM.api3('StripePaymentintent', 'createorupdate', {
+            stripe_intent_id: createPaymentMethodResult.paymentMethod.id,
+            description: document.title,
+            payment_processor_id: CRM.vars.stripe.id,
+            amount: CRM.payment.getTotalAmount().toFixed(2),
+            currency: CRM.payment.getCurrency(CRM.vars.stripe.currency),
+            status: 'payment_method',
+            csrfToken: CRM.vars.stripe.csrfToken,
+            extra_data: CRM.payment.getBillingEmail() + CRM.payment.getBillingName()
+          })
+            .done(function (result) {
+              // Handle server response (see Step 3)
+              swalClose();
+              // Submit the form, if we need to do 3dsecure etc. we do it at the end (thankyou page) once subscription etc has been created
+              successHandler('paymentMethodID', {id: result.values[result.id].stripe_intent_id});
+            })
+            .fail(function() {
+              swalClose();
+              displayError('Unknown error', true);
+            });
         }
         else {
           // Send paymentMethod.id to server
@@ -214,14 +232,14 @@
               Swal.showLoading();
             }
           }, '', false);
-          var url = CRM.url('civicrm/stripe/confirm-payment');
-          $.post(url, {
+          CRM.api3('StripePaymentintent', 'Process', {
             payment_method_id: result.paymentMethod.id,
             amount: CRM.payment.getTotalAmount().toFixed(2),
             currency: CRM.payment.getCurrency(CRM.vars.stripe.currency),
             id: CRM.vars.stripe.id,
             description: document.title,
-            csrfToken: CRM.vars.stripe.csrfToken
+            csrfToken: CRM.vars.stripe.csrfToken,
+            extra_data: CRM.payment.getBillingEmail() + CRM.payment.getBillingName()
           })
             .done(function (result) {
               // Handle server response (see Step 3)
@@ -909,7 +927,7 @@
     validator.settings.ignoreTitle = true;
 
     // Default email validator accepts test@example but on test@example.org is valid (https://jqueryvalidation.org/jQuery.validator.methods/)
-    $.validator.methods.email = function( value, element ) {
+    $.validator.methods.email = function(value, element) {
       // Regex from https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
       return this.optional(element) || /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/.test(value);
     };

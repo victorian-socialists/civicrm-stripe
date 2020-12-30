@@ -19,15 +19,15 @@
   </primaryKey>
 
   <field>
-    <name>paymentintent_id</name>
-    <title>PaymentIntent ID</title>
+    <name>stripe_intent_id</name>
+    <title>Stripe Intent ID</title>
     <type>varchar</type>
     <length>255</length>
-    <comment>The PaymentIntent ID</comment>
+    <comment>The Stripe PaymentIntent/SetupIntent/PaymentMethod ID</comment>
   </field>
   <index>
-    <name>UI_paymentintent_id</name>
-    <fieldName>paymentintent_id</fieldName>
+    <name>UI_stripe_intent_id</name>
+    <fieldName>stripe_intent_id</fieldName>
     <unique>true</unique>
   </index>
 
@@ -118,4 +118,12 @@
     <comment>HTTP referrer of this paymentIntent</comment>
   </field>
 
+  <field>
+    <name>extra_data</name>
+    <title>Extra Data</title>
+    <type>varchar</type>
+    <required>false</required>
+    <length>255</length>
+    <comment>Extra data collected to help with diagnostics (such as email, name)</comment>
+  </field>
 </table>

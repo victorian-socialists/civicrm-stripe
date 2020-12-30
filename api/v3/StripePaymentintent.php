@@ -23,6 +23,32 @@ function civicrm_api3_stripe_paymentintent_create($params) {
 }
 
 /**
+ * @param array $params
+ *
+ * @return array
+ * @throws \CRM_Core_Exception
+ * @throws \CiviCRM_API3_Exception
+ */
+function civicrm_api3_stripe_paymentintent_createorupdate($params) {
+  if (class_exists('\Civi\Firewall\Firewall')) {
+    if (!\Civi\Firewall\Firewall::isCSRFTokenValid(CRM_Utils_Type::validate($params['csrfToken'], 'String'))) {
+      _civicrm_api3_stripe_paymentintent_returnInvalid();
+    }
+  }
+  if (!empty($params['stripe_intent_id'])) {
+    try {
+      $params['id'] = civicrm_api3('StripePaymentintent', 'getvalue', ['stripe_intent_id' => $params['stripe_intent_id'], 'return' => 'id']);
+    }
+    catch (Exception $e) {
+      // Do nothing, we will creating a new StripePaymentIntent record
+    }
+  }
+  // We already checked permissions for createorupdate and now we're "trusted".
+  $params['check_permissions'] = FALSE;
+  return civicrm_api3('StripePaymentintent', 'create', $params);
+}
+
+/**
  * StripePaymentintent.delete API
  *
  * @param array $params
@@ -58,24 +84,26 @@ function _civicrm_api3_stripe_paymentintent_process_spec(&$spec) {
   $spec['payment_method_id']['title'] = E::ts("Stripe generated code used to create a payment intent.");
   $spec['payment_method_id']['type'] = CRM_Utils_Type::T_STRING;
   $spec['payment_method_id']['api.default'] = NULL;
-  $spec['payment_intent_id']['title'] = ts("The payment intent id itself, if available.");
+  $spec['payment_intent_id']['title'] = E::ts("The payment intent id itself, if available.");
   $spec['payment_intent_id']['type'] = CRM_Utils_Type::T_STRING;
   $spec['payment_intent_id']['api.default'] = NULL;
-  $spec['amount']['title'] = ts("The payment amount.");
+  $spec['amount']['title'] = E::ts("The payment amount.");
   $spec['amount']['type'] = CRM_Utils_Type::T_STRING;
   $spec['amount']['api.default'] = NULL;
-  $spec['capture']['title'] = ts("Whether we should try to capture the amount, not just confirm it.");
+  $spec['capture']['title'] = E::ts("Whether we should try to capture the amount, not just confirm it.");
   $spec['capture']['type'] = CRM_Utils_Type::T_BOOLEAN;
   $spec['capture']['api.default'] = FALSE;
-  $spec['description']['title'] = ts("Describe the payment.");
+  $spec['description']['title'] = E::ts("Describe the payment.");
   $spec['description']['type'] = CRM_Utils_Type::T_STRING;
   $spec['description']['api.default'] = NULL;
-  $spec['currency']['title'] = ts("Whether we should try to capture the amount, not just confirm it.");
+  $spec['currency']['title'] = E::ts("Whether we should try to capture the amount, not just confirm it.");
   $spec['currency']['type'] = CRM_Utils_Type::T_STRING;
   $spec['currency']['api.default'] = CRM_Core_Config::singleton()->defaultCurrency;
-  $spec['payment_processor_id']['title'] = ts("The stripe payment processor id.");
+  $spec['payment_processor_id']['title'] = E::ts("The stripe payment processor id.");
   $spec['payment_processor_id']['type'] = CRM_Utils_Type::T_INT;
   $spec['payment_processor_id']['api.required'] = TRUE;
+  $spec['extra_data']['title'] = E::ts('Extra Data');
+  $spec['extra_data']['type'] = CRM_Utils_Type::T_STRING;
 }
 
 /**
@@ -169,12 +197,13 @@ function civicrm_api3_stripe_paymentintent_process($params) {
     } catch (Exception $e) {
       // Save the "error" in the paymentIntent table in in case investigation is required.
       $stripePaymentintentParams = [
-        'paymentintent_id' => 'null',
+        'stripe_intent_id' => 'null',
         'payment_processor_id' => $processorID,
         'status' => 'failed',
         'description' => "{$e->getRequestId()};{$e->getMessage()};{$title}",
         'referrer' => $_SERVER['HTTP_REFERER'],
       ];
+      isset($params['extra_data']) ? $stripePaymentintentParams['extra_data'] = $params['extra_data'] : NULL;
       CRM_Stripe_BAO_StripePaymentintent::create($stripePaymentintentParams);
 
       if ($e instanceof \Stripe\Exception\CardException) {
@@ -192,12 +221,13 @@ function civicrm_api3_stripe_paymentintent_process($params) {
 
   // Save the generated paymentIntent in the CiviCRM database for later tracking
   $stripePaymentintentParams = [
-    'paymentintent_id' => $intent->id,
+    'stripe_intent_id' => $intent->id,
     'payment_processor_id' => $processorID,
     'status' => $intent->status,
     'description' => "{$title}",
     'referrer' => $_SERVER['HTTP_REFERER'],
   ];
+  isset($params['extra_data']) ? $stripePaymentintentParams['extra_data'] = $params['extra_data'] : NULL;
   CRM_Stripe_BAO_StripePaymentintent::create($stripePaymentintentParams);
 
   // generatePaymentResponse()
@@ -206,7 +236,7 @@ function civicrm_api3_stripe_paymentintent_process($params) {
     // Tell the client to handle the action
     return civicrm_api3_create_success([
       'requires_action' => true,
-      'payment_intent_client_secret' => $intent->client_secret,
+      'paymentintent_client_secret' => $intent->client_secret,
     ]);
   }
   elseif (($intent->status === 'requires_capture') || ($intent->status === 'requires_confirmation')) {
@@ -227,7 +257,7 @@ function civicrm_api3_stripe_paymentintent_process($params) {
   elseif ($intent->status === 'requires_payment_method') {
     return civicrm_api3_create_success([
       'requires_payment_method' => true,
-      'payment_intent_client_secret' => $intent->client_secret,
+      'paymentintent_client_secret' => $intent->client_secret,
     ]);
   }
   else {

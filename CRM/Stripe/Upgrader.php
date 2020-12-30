@@ -388,4 +388,21 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
     return TRUE;
   }
 
+  public function upgrade_5026() {
+    $this->ctx->log->info('Change paymentintent_id column to stripe_intent_id in civicrm_stripe_paymentintent database table');
+    if (CRM_Core_BAO_SchemaHandler::checkIfFieldExists('civicrm_stripe_paymentintent', 'paymentintent_id')) {
+      CRM_Core_DAO::executeQuery("ALTER TABLE civicrm_stripe_paymentintent
+        CHANGE paymentintent_id stripe_intent_id varchar(255) COMMENT 'The Stripe PaymentIntent/SetupIntent/PaymentMethod ID'");
+    }
+    if (CRM_Core_BAO_SchemaHandler::checkIfIndexExists('civicrm_stripe_paymentintent', 'UI_paymentintent_id')) {
+      CRM_Core_DAO::executeQuery("ALTER TABLE civicrm_stripe_paymentintent
+        DROP INDEX UI_paymentintent_id, ADD INDEX UI_stripe_intent_id (stripe_intent_id)");
+    }
+    if (!CRM_Core_BAO_SchemaHandler::checkIfFieldExists('civicrm_stripe_paymentintent', 'extra_data')) {
+      CRM_Core_DAO::executeQuery("ALTER TABLE civicrm_stripe_paymentintent
+        ADD COLUMN `extra_data` varchar(255) NULL   COMMENT 'Extra data collected to help with diagnostics (such as email, name)'");
+    }
+    return TRUE;
+  }
+
 }

@@ -736,6 +736,26 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       $this->setPaymentProcessorOrderID($stripeSubscription->latest_invoice['id']);
     }
     else {
+      // Update the paymentIntent in the CiviCRM database for later tracking
+      // If we are not starting the recurring series immediately we probably have a "setupIntent" which needs confirming
+      $intentParams = [
+        'stripe_intent_id' => $intent->id ?? $stripeSubscription->pending_setup_intent ?? $propertyBag->getCustomProperty('paymentMethodID'),
+        'payment_processor_id' => $this->_paymentProcessor['id'],
+        'contribution_id' =>  $params['contributionID'] ?? NULL,
+        'identifier' => $params['qfKey'] ?? NULL,
+        'contact_id' => $params['contactID'],
+      ];
+      try {
+        $intentParams['id'] = civicrm_api3('StripePaymentintent', 'getvalue', ['stripe_intent_id' => $propertyBag->getCustomProperty('paymentMethodID'), 'return' => 'id']);
+      }
+      catch (Exception $e) {
+        // Do nothing, we should already have a StripePaymentintent record but we don't so we'll create one.
+      }
+
+      if (empty($intentParams['contribution_id'])) {
+        $intentParams['flags'][] = 'NC';
+      }
+      CRM_Stripe_BAO_StripePaymentintent::create($intentParams);
       // Set the orderID (trxn_id) to the subscription ID because we don't yet have an invoice.
       // The IPN will change it to the invoice_id and then the charge_id
       $this->setPaymentProcessorOrderID($stripeSubscription->id);
@@ -824,7 +844,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
 
     // Update the paymentIntent in the CiviCRM database for later tracking
     $intentParams = [
-      'paymentintent_id' => $intent->id,
+      'stripe_intent_id' => $intent->id,
       'payment_processor_id' => $this->_paymentProcessor['id'],
       'status' => $intent->status,
       'contribution_id' =>  $params['contributionID'] ?? NULL,

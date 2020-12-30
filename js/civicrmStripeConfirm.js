@@ -9,20 +9,30 @@
     stripe: null,
     stripeLoading: false,
 
-    handleServerResponse: function(result) {
+    /**
+     * Handle the response from the server for the payment/setupIntent
+     * @param result
+     */
+    handleIntentServerResponse: function(result) {
       CRM.payment.debugging(confirm.scriptName, 'handleServerResponse');
       if (result.error) {
         // Show error from server on payment form
         CRM.payment.debugging(confirm.scriptName, result.error.message);
         confirm.swalFire({
-          title: result.error.message,
+          title: '',
+          text: result.error.message,
           icon: 'error'
         }, '', true);
       }
       else
         if (result.requires_action) {
           // Use Stripe.js to handle required card action
-          confirm.handleAction(result);
+          if (CRM.vars.stripe.hasOwnProperty('paymentIntentID')) {
+            confirm.handlePaymentIntentAction(result);
+          }
+          else if (CRM.vars.stripe.hasOwnProperty('setupIntentID')) {
+            confirm.handleCardConfirm();
+          }
         }
         else {
           // All good, nothing more to do
@@ -34,18 +44,22 @@
         }
     },
 
-    handleAction: function(response) {
+    /**
+     * Handle the next action for the paymentIntent
+     * @param response
+     */
+    handlePaymentIntentAction: function(response) {
       switch (CRM.vars.stripe.paymentIntentMethod) {
         case 'automatic':
           confirm.stripe.handleCardPayment(response.payment_intent_client_secret)
-            .then(function (result) {
+            .then(function(result) {
               if (result.error) {
                 // Show error in payment form
                 confirm.handleCardConfirm();
               }
               else {
                 // The card action has been handled
-                CRM.payment.debugging(confirm.scriptName, 'card payment success');
+                CRM.payment.debugging(confirm.scriptName, 'handleCardPayment success');
                 confirm.handleCardConfirm();
               }
             });
@@ -53,14 +67,14 @@
 
         case 'manual':
           confirm.stripe.handleCardAction(response.payment_intent_client_secret)
-            .then(function (result) {
+            .then(function(result) {
               if (result.error) {
                 // Show error in payment form
                 confirm.handleCardConfirm();
               }
               else {
                 // The card action has been handled
-                CRM.payment.debugging(confirm.scriptName, 'card action success');
+                CRM.payment.debugging(confirm.scriptName, 'handleCardAction success');
                 confirm.handleCardConfirm();
               }
             });
@@ -68,35 +82,63 @@
       }
     },
 
+    /**
+     * Handle the card confirm (eg. 3dsecure) for paymentIntent / setupIntent
+     */
     handleCardConfirm: function() {
       CRM.payment.debugging(confirm.scriptName, 'handle card confirm');
-      confirm.swalFire({
-        title: ts('Please wait...'),
-        allowOutsideClick: false,
-        onBeforeOpen: function() {
-          Swal.showLoading();
-        }
-      }, '', false);
-      // Send paymentMethod.id to server
-      var url = CRM.url('civicrm/stripe/confirm-payment');
-      $.post(url, {
-        payment_intent_id: CRM.vars.stripe.paymentIntentID,
-        capture: true,
-        id: CRM.vars.stripe.id,
-        description: document.title,
-        csrfToken: CRM.vars.stripe.csrfToken
-      })
-        .done(function (result) {
-          confirm.swalClose();
-          // Handle server response (see Step 3)
-          confirm.handleServerResponse(result);
+
+      if (CRM.vars.stripe.hasOwnProperty('paymentIntentID')) {
+        // Send paymentMethod.id to server
+        CRM.api3('StripePaymentintent', 'Process', {
+          payment_intent_id: CRM.vars.stripe.paymentIntentID,
+          capture: true,
+          id: CRM.vars.stripe.id,
+          description: document.title,
+          csrfToken: CRM.vars.stripe.csrfToken
         })
-        .fail(function() {
+          .done(function(result) {
+            confirm.swalClose();
+            // Handle server response (see Step 3)
+            confirm.handleIntentServerResponse(result);
+          })
+          .fail(function() {
+            confirm.swalClose();
+          });
+      }
+      else if (CRM.vars.stripe.hasOwnProperty('setupIntentID')) {
+        if (CRM.vars.stripe.setupIntentNextAction.type === 'use_stripe_sdk') {
           confirm.swalClose();
-        });
+          confirm.stripe.confirmCardSetup(CRM.vars.stripe.setupIntentClientSecret)
+            .then(function(result) {
+              if (result.error) {
+                CRM.api3('StripePaymentintent', 'createorupdate', {
+                  stripe_intent_id: CRM.vars.stripe.setupIntentID,
+                  status: 'error',
+                  csrfToken: CRM.vars.stripe.csrfToken
+                });
+              }
+              else {
+                CRM.api3('StripePaymentintent', 'createorupdate', {
+                  stripe_intent_id: CRM.vars.stripe.setupIntentID,
+                  status: result.setupIntent.status,
+                  csrfToken: CRM.vars.stripe.csrfToken
+                });
+              }
+              confirm.handleIntentServerResponse(result);
+            });
+        }
+      }
+      else {
+        CRM.payment.debugging(confirm.scriptName, 'No paymentIntentID or setupIntentID.');
+        confirm.swalClose();
+      }
     },
 
-    checkAndLoad: function () {
+    /**
+     * Check and load Stripe scripts
+     */
+    checkAndLoad: function() {
       if (typeof Stripe === 'undefined') {
         if (confirm.stripeLoading) {
           return;
@@ -116,6 +158,7 @@
             if (confirm.stripe === null) {
               confirm.stripe = Stripe(CRM.vars.stripe.publishableKey);
             }
+            confirm.handleCardConfirm();
           })
           .fail(function() {
             confirm.stripeLoading = false;
@@ -164,18 +207,26 @@
     CRM.payment.debugging(confirm.scriptName, 'CRM.vars.stripe not defined! Not a Stripe processor?');
     return;
   }
-  switch (CRM.vars.stripe.paymentIntentStatus) {
+  // intentStatus is the same for paymentIntent/setupIntent
+  switch (CRM.vars.stripe.intentStatus) {
     case 'succeeded':
-    case 'cancelled':
-      CRM.payment.debugging(confirm.scriptName, 'paymentIntent: ' + CRM.vars.stripe.paymentIntentStatus);
+    case 'canceled':
+      CRM.payment.debugging(confirm.scriptName, 'paymentIntent: ' + CRM.vars.stripe.intentStatus);
       return;
   }
 
+  confirm.swalFire({
+    title: ts('Please wait...'),
+    allowOutsideClick: false,
+    onBeforeOpen: function() {
+      Swal.showLoading();
+    }
+  }, '', false);
+
+
   document.addEventListener('DOMContentLoaded', function() {
     CRM.payment.debugging(confirm.scriptName, 'DOMContentLoaded');
-
     confirm.checkAndLoad();
-    confirm.handleCardConfirm();
   });
 
 }(CRM.$, CRM.ts('com.drastikbydesign.stripe')));
