@@ -48,6 +48,13 @@ It's not advised that you use this API for anything else.
 This API is used by the client javascript integration and by third-party frontend integrations.
 Please contact [MJW Consulting](https://mjw.pt/stripe) if you require more information or are planning to use this API.
 
+Permissions: `access Ajax API` + `make online contributions`
+
+#### `StripePaymentintents.createorupdate`
+This API is used by the client javascript integration to create or update the `civicrm_stripe_paymentintent` table.
+
+Permissions: `access Ajax API` + `make online contributions`
+
 ## Scheduled Jobs
 
 * `Job.process_stripe` - this cancels uncaptured paymentIntents and removes successful ones from the local database cache after a period of time:

@@ -23,7 +23,7 @@ View/Download this extension in the [Extension Directory](https://civicrm.org/ex
 
 #### Required extensions
 
-* [MJWShared extension](https://civicrm.org/extensions/mjwshared) version 0.9.4.
+* [MJWShared extension](https://civicrm.org/extensions/mjwshared) version 0.9.10.
 * [SweetAlert extension](https://civicrm.org/extensions/sweetalert) version 1.4+.
 
 #### Recommended extensions

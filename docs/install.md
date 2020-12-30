@@ -18,6 +18,14 @@ Add a payment processor and enter your *Publishable* and *Secret* keys given by 
 The extension will show up in the extensions browser for automated installation.
 Otherwise, download and install as you would for any other CiviCRM extension.
 
+## Permissions
+
+To accept payments the user must have the following permissions as a minimum:
+* `access Ajax API`
+* `make online contributions`
+
+This applies to both unauthenticated (anonymous) and authenticated users.
+
 ### How to update Stripe API version
 More info on how to change: [Stripe: Upgrading your API version](https://stripe.com/docs/upgrades#how-can-i-upgrade-my-api).
 

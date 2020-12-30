@@ -10,9 +10,14 @@ Releases use the following numbering system:
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
 ## Release 6.6 (not yet released 2021-02-20)
+**Requires mjwshared (Payment Shared) 1.0**
 
 * Support for [Payment Request Button](https://stripe.com/docs/stripe-js/elements/payment-request-button) which provides Google Pay and Apple Pay support.
-  * To enable, you must set the "Country" in Stripe Settings and then the payment request button will replace the card element when the client browser supports it.
+    * To enable, you must set the "Country" in Stripe Settings and then the payment request button will replace the card element when the client browser supports it.
+* Collect billing name/email when possible and store in `civicrm_stripe_paymentintent.extra_data` table. This should help trace the donor when a payment does not complete.
+* Handle 3d-secure authentication on thankyou page for "setupIntents". This will happen when a delayed recurring contribution is created and the card issuer requests additional authentication.
+* Remove AJAX endpoint `civicrm/stripe/confirm-payment` and replace with `StripePaymentintent.Process` API call.
+* Add `StripePaymentintent.createorupdate` API which is used by the frontend javascript and requires "make online contributions" permission.
 
 ## Release 6.5.8
 
