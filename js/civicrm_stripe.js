@@ -396,6 +396,7 @@
     debugging('New Stripe ID: ' + CRM.vars.stripe.id + ' pubKey: ' + CRM.vars.stripe.publishableKey);
     stripe = Stripe(CRM.vars.stripe.publishableKey);
 
+    debugging('locale: ' + CRM.vars.stripe.locale);
     var stripeElements = stripe.elements({locale: CRM.vars.stripe.locale});
 
     // By default we load paymentRequest button if we can, fallback to card element
