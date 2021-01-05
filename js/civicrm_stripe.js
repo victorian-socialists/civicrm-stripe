@@ -314,7 +314,7 @@
     debugging('New Stripe ID: ' + CRM.vars.stripe.id + ' pubKey: ' + CRM.vars.stripe.publishableKey);
     stripe = Stripe(CRM.vars.stripe.publishableKey);
 
-    var elements = stripe.elements({ locale: CRM.vars.stripe.locale });
+    var stripeElements = stripe.elements({locale: CRM.vars.stripe.locale});
 
     var style = {
       base: {
@@ -334,7 +334,7 @@
     // Cleanup any classes leftover from previous switching payment processors
     getPaymentElements().card.removeClass();
     // Create an instance of the card Element.
-    card = elements.create('card', elementsCreateParams);
+    card = stripeElements.create('card', elementsCreateParams);
     card.mount('#card-element');
     debugging("created new card element", card);
 
