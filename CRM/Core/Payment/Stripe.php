@@ -386,7 +386,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'publishableKey' => CRM_Core_Payment_Stripe::getPublicKeyById($form->_paymentProcessor['id']),
       'jsDebug' => (boolean) \Civi::settings()->get('stripe_jsdebug'),
       'paymentProcessorTypeID' => $form->_paymentProcessor['payment_processor_type_id'],
-      'locale' => CRM_Core_I18n::getLocale(),
+      'locale' => CRM_Stripe_Api::mapCiviCRMLocaleToStripeLocale(),
       'apiVersion' => CRM_Stripe_Check::API_VERSION,
       'csrfToken' => class_exists('\Civi\Firewall\Firewall') ? \Civi\Firewall\Firewall::getCSRFToken() : NULL,
       'country' => \Civi::settings()->get('stripe_country'),

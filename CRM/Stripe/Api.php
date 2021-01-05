@@ -208,4 +208,37 @@ class CRM_Stripe_Api {
     $amount = round($amount, CRM_Utils_Money::getCurrencyPrecision($currency));
     return $amount;
   }
+
+  /**
+   * We have to map CiviCRM locales to a specific set of Stripe locales for elements to set the user language correctly.
+   * Reference: https://stripe.com/docs/js/appendix/supported_locales
+   * @param string $civiCRMLocale (eg. en_GB).
+   *
+   * @return string
+   */
+  public static function mapCiviCRMLocaleToStripeLocale($civiCRMLocale = '') {
+    if (empty($civiCRMLocale)) {
+      $civiCRMLocale = CRM_Core_I18n::getLocale();
+    }
+    $localeMap = [
+      'en_AU' => 'en',
+      'en_CA' => 'en',
+      'en_GB' => 'en-GB',
+      'en_US' => 'en',
+      'es_ES' => 'es',
+      'es_MX' => 'es-419',
+      'es_PR' => 'es-419',
+      'fr_FR' => 'fr',
+      'fr_CA' => 'fr-CA',
+      'pt_BR' => 'pt-BR',
+      'pt_PT' => 'pt',
+      'zh_CN' => 'zh',
+      'zh_HK' => 'zh-HK',
+      'zh_TW' => 'zh-TW'
+    ];
+    if (array_key_exists($civiCRMLocale, $localeMap)) {
+      return $localeMap[$civiCRMLocale];
+    }
+    return 'auto';
+  }
 }
