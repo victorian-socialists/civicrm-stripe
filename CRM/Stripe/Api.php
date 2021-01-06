@@ -239,6 +239,9 @@ class CRM_Stripe_Api {
     if (array_key_exists($civiCRMLocale, $localeMap)) {
       return $localeMap[$civiCRMLocale];
     }
-    return 'auto';
+    // Most stripe locale codes are two characters which match the first two chars
+    //   of the CiviCRM locale. If it doesn't match the Stripe element will fallback
+    //   to "auto"
+    return substr($civiCRMLocale,0, 2);
   }
 }
