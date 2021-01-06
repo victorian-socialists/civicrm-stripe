@@ -9,6 +9,10 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
+## Release 6.5.6 (not yet released)
+
+* Fix [#126](https://lab.civicrm.org/extensions/stripe/-/issues/126) setting user locale for stripe elements.
+
 ## Release 6.5.5
 **Requires mjwshared (Payment Shared) 0.9.9**
 
