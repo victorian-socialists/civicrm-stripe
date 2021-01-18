@@ -607,7 +607,7 @@
     var submit = null;
     if (CRM.payment.getIsDrupalWebform()) {
       submit = form.querySelectorAll('[type="submit"].webform-submit');
-      if (!submit) {
+      if (submit.length === 0) {
         // drupal 8 webform
         submit = form.querySelectorAll('[type="submit"].webform-button--submit');
       }
