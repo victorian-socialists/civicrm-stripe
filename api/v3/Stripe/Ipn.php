@@ -45,79 +45,51 @@ function _civicrm_api3_stripe_Ipn_spec(&$spec) {
  * @throws \CiviCRM_API3_Exception
  */
 function civicrm_api3_stripe_Ipn($params) {
-  $object = NULL;
-  $ppid = NULL;
+  $stripeObject = NULL;
+  $paymentProcessorID = NULL;
+
   if (array_key_exists('id', $params)) {
+    // Read from civicrm SystemLog
     $data = civicrm_api3('SystemLog', 'getsingle', ['id' => $params['id'], 'return' => ['message', 'context']]);
     if (empty($data)) {
       throw new API_Exception('Failed to find that entry in the system log', 3234);
     }
-    $object = json_decode($data['context']);
-    if (preg_match('/processor_id=([0-9]+)$/', $object['message'], $matches)) {
-      $ppid = $matches[1];
+    $stripeObject = json_decode($data['context']);
+    if (preg_match('/processor_id=([0-9]+)$/', $stripeObject['message'], $matches)) {
+      $paymentProcessorID = $matches[1];
     }
     else {
       throw new API_Exception('Failed to find payment processor id in system log', 3235);
     }
   }
   elseif (array_key_exists('evtid', $params)) {
+    // Read directly from Stripe using event_id
     if (!array_key_exists('ppid', $params)) {
       throw new API_Exception('Please pass the payment processor id (ppid) if using evtid.', 3236);
     }
-    $ppid = $params['ppid'];
-    $paymentProcessor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $ppid]));
+    $paymentProcessorID = $params['ppid'];
+    $paymentProcessor = \Civi\Payment\System::singleton()->getById($paymentProcessorID);
     $paymentProcessor->setAPIParams();
-
-    $object = \Stripe\Event::retrieve($params['evtid']);
+    $stripeObject = \Stripe\Event::retrieve($params['evtid']);
   }
 
-  // See if we've already processed the IPN (do we have a contribution not in pending state?)
-  if ($object->data->object->object === 'charge') {
-    // For a charge event we get the ID here
-    $trxnID = $object->data->object->id;
+  // By default, set emailReceipt to NULL so the default receipt setting
+  // will kick in.
+  $emailReceipt = NULL;
+  if ($params['suppressreceipt'] == 1) {
+    // Override, do not send receipt.
+    $emailReceipt = 0;
   }
-  else {
-    // I'm not sure if this is still used for any events?
-    $trxnID = $object->data->object->charge;
-  }
-  if (empty($trxnID)) {
-    throw new API_Exception('Could not get Charge ID from event.');
-  }
+
   try {
-    $contribution = civicrm_api3('Contribution', 'getsingle', [
-      'trxn_id' => $trxnID,
-    ]);
-    if ($contribution['contribution_status_id'] !== CRM_Core_PseudoConstant::getKey(
-      'CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending')
-    ) {
-      return civicrm_api3_create_error("Ipn already processed.");
-    }
-  }
-  catch (Exception $e) {
-    // No existing contribution so we process IPN
+    $processPaymentNotificationResult = $paymentProcessor::processPaymentNotification(
+      $paymentProcessorID,
+      json_encode($stripeObject),
+      FALSE,
+      $emailReceipt);
+  } catch (Throwable $e) {
+    return civicrm_api3_create_error($e->getMessage());
   }
 
-  if (class_exists('CRM_Core_Payment_StripeIPN')) {
-    // By default, set emailReceipt to NULL so the default receipt setting
-    // will kick in.
-    $emailReceipt = NULL;
-    if ($params['suppressreceipt'] == 1) {
-      // Override, do not send receipt.
-      $emailReceipt = 0;
-    }
-
-    try {
-      $paymentProcessor->processPaymentNotification(
-        $ppid,
-        json_encode($object),
-        FALSE,
-        $emailReceipt);
-    } catch(Throwable $e) {
-      return civicrm_api3_create_error($e->getMessage());
-    }
-  }
-  else {
-    trigger_error("The api depends on CRM_Core_Payment_StripeIPN");
-  }
-  return civicrm_api3_create_success([]);
+  return civicrm_api3_create_success($processPaymentNotificationResult, $params);
 }
