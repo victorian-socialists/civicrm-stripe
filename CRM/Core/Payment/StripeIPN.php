@@ -164,17 +164,120 @@ class CRM_Core_Payment_StripeIPN {
   }
 
   /**
+   * Get a unique identifier string based on webhook data.
+   *
+   * @return string
+   */
+  private function getWebhookUniqueIdentifier() {
+    return "{$this->charge_id}:{$this->invoice_id}:{$this->subscription_id}";
+  }
+
+  /**
+   * When CiviCRM receives a Stripe webhook call this method (via handlePaymentNotification()).
+   * This checks the webhook and either queues or triggers processing (depending on existing webhooks in queue)
+   *
    * @return bool
    * @throws \CRM_Core_Exception
    * @throws \CiviCRM_API3_Exception
    * @throws \Stripe\Exception\UnknownApiErrorException
    */
-  public function main() {
-    // Return 200 OK for any events that we don't handle
+  public function onReceiveWebhook() {
     if (!in_array($this->eventType, CRM_Stripe_Webhook::getDefaultEnabledEvents())) {
+      // We don't handle this event, return 200 OK so Stripe does not retry.
       return TRUE;
     }
 
+    $uniqueIdentifier = $this->getWebhookUniqueIdentifier();
+
+    // Get all received webhooks with matching identifier which have not been processed
+    // This returns all webhooks that match the uniqueIdentifier above and have not been processed.
+    // For example this would match both invoice.finalized and invoice.payment_succeeded events which must be
+    // processed sequentially and not simultaneously.
+    $paymentProcessorWebhooks = \Civi\Api4\PaymentprocessorWebhook::get()
+      ->setCheckPermissions(FALSE) // Replace with ::update(FALSE) when minversion = 5.29
+      ->addWhere('payment_processor_id', '=', $this->_paymentProcessor->getID())
+      ->addWhere('identifier', '=', $uniqueIdentifier)
+      ->addWhere('processed_date', 'IS NULL')
+      ->execute();
+    $processWebhook = FALSE;
+    if (empty($paymentProcessorWebhooks->rowCount)) {
+      // We have not received this webhook before. Record and process it.
+      $processWebhook = TRUE;
+    }
+    else {
+      // We have one or more webhooks with matching identifier
+      /** @var \CRM_Mjwshared_BAO_PaymentprocessorWebhook $paymentProcessorWebhook */
+      foreach ($paymentProcessorWebhooks as $paymentProcessorWebhook) {
+        // Does the eventType match our webhook?
+        if ($paymentProcessorWebhook->trigger === $this->eventType) {
+          // Yes, We have already recorded this webhook and it is awaiting processing.
+          // Exit
+          return TRUE;
+        }
+      }
+      // We have recorded another webhook with matching identifier but different eventType.
+      // There is already a recorded webhook with matching identifier that has not yet been processed.
+      // So we will record this webhook but will not process now (it will be processed later by the scheduled job).
+    }
+
+    \Civi\Api4\PaymentprocessorWebhook::create()
+      ->setCheckPermissions(FALSE) // Replace with ::update(FALSE) when minversion = 5.29
+      ->addValue('payment_processor_id', $this->_paymentProcessor->getID())
+      ->addValue('trigger', $this->eventType)
+      ->addValue('identifier', $uniqueIdentifier)
+      ->addValue('event_id', $this->event_id)
+      ->execute();
+
+    if (!$processWebhook) {
+      return TRUE;
+    }
+
+    return $this->processWebhook();
+  }
+
+  /**
+   * Process the given webhook
+   *
+   * @return bool
+   * @throws \API_Exception
+   * @throws \Civi\API\Exception\UnauthorizedException
+   */
+  public function processWebhook() {
+    try {
+      $success = $this->processEventType();
+    }
+    catch (Exception $e) {
+      $success = FALSE;
+      \Civi::log()->error('StripeIPN: processWebhook failed. ' . $e->getMessage());
+    }
+
+    $uniqueIdentifier = $this->getWebhookUniqueIdentifier();
+
+    // Record that we have processed this webhook (success or error)
+    // If for some reason we ended up with multiple webhooks with the same identifier and same eventType this would
+    // update all of them as "processed". That is ok because we don't need to process the "same" webhook multiple
+    // times. Even if they have different event IDs but the same identifier/eventType.
+    \Civi\Api4\PaymentprocessorWebhook::update()
+      ->setCheckPermissions(FALSE) // Replace with ::update(FALSE) when minversion = 5.29
+      ->addWhere('identifier', '=', $uniqueIdentifier)
+      ->addWhere('trigger', '=', $this->eventType)
+      ->addValue('status', $success ? 'success' : 'error')
+      ->addValue('processed_date', 'now')
+      ->execute();
+
+    return $success;
+  }
+
+  /**
+   * Process the received event in CiviCRM
+   *
+   * @return bool
+   * @throws \CRM_Core_Exception
+   * @throws \CiviCRM_API3_Exception
+   * @throws \Civi\Payment\Exception\PaymentProcessorException
+   * @throws \Stripe\Exception\ApiErrorException
+   */
+  private function processEventType() {
     $pendingContributionStatusID = (int) CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending');
     $failedContributionStatusID = (int) CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Failed');
     $statusesAllowedToComplete = [$pendingContributionStatusID, $failedContributionStatusID];
@@ -382,7 +485,8 @@ class CRM_Core_Payment_StripeIPN {
 
   /**
    * Create the next contribution for a recurring contribution
-   * This happens when Stripe generates a new invoice and notifies us (normally by invoice.finalized but invoice.payment_succeeded sometimes arrives first).
+   * This happens when Stripe generates a new invoice and notifies us (normally by invoice.finalized but
+   * invoice.payment_succeeded sometimes arrives first).
    *
    * @return bool
    * @throws \CiviCRM_API3_Exception
@@ -476,12 +580,13 @@ class CRM_Core_Payment_StripeIPN {
   /**
    * A) A one-off contribution will have trxn_id == stripe.charge_id
    * B) A contribution linked to a recur (stripe subscription):
-   *   1. May have the trxn_id == stripe.subscription_id if the invoice was not generated at the time the contribution was created
+   *   1. May have the trxn_id == stripe.subscription_id if the invoice was not generated at the time the contribution
+   * was created
    *     (Eg. the recur was setup with a future recurring start date).
    *     This will be updated to trxn_id == stripe.invoice_id when a suitable IPN is received
    *     @todo: Which IPN events will update this?
-   *   2. May have the trxn_id == stripe.invoice_id if the invoice was generated at the time the contribution was created
-   *     OR the contribution has been updated by the IPN when the invoice was generated.
+   *   2. May have the trxn_id == stripe.invoice_id if the invoice was generated at the time the contribution was
+   *   created OR the contribution has been updated by the IPN when the invoice was generated.
    *
    * @return bool
    * @throws \Civi\Payment\Exception\PaymentProcessorException

@@ -1116,7 +1116,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   public function handlePaymentNotification() {
     $rawData = file_get_contents("php://input");
     $ipnClass = new CRM_Core_Payment_StripeIPN($rawData);
-    if ($ipnClass->main()) {
+    if ($ipnClass->onReceiveWebhook()) {
       http_response_code(200);
     }
   }
@@ -1143,7 +1143,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     if (isset($emailReceipt)) {
       $ipnClass->setSendEmailReceipt($emailReceipt);
     }
-    return $ipnClass->main();
+    return $ipnClass->processWebhook();
   }
 
   public function getText($context, $params) {

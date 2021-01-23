@@ -109,7 +109,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     // CRM_Core_Payment::handlePaymentMethod
     $_GET['processor_id'] = $this->paymentProcessorID;
     $ipnClass = new CRM_Core_Payment_StripeIPN($data, $verify);
-    $ipnClass->main();
+    $ipnClass->processWebhook();
   }
 
   /**
