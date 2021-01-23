@@ -142,9 +142,9 @@ function civicrm_api3_stripe_paymentintent_process($params) {
       _civicrm_api3_stripe_paymentintent_returnInvalid();
     }
   }
-  $paymentMethodID = CRM_Utils_Type::validate($params['payment_method_id'], 'String');
-  $paymentIntentID = CRM_Utils_Type::validate($params['payment_intent_id'], 'String');
-  $capture = CRM_Utils_Type::validate($params['capture'], 'Boolean', FALSE);
+  $paymentMethodID = CRM_Utils_Type::validate($params['payment_method_id'] ?? '', 'String');
+  $paymentIntentID = CRM_Utils_Type::validate($params['payment_intent_id'] ?? '', 'String');
+  $capture = CRM_Utils_Type::validate($params['capture'] ?? NULL, 'Boolean', FALSE);
   $amount = CRM_Utils_Type::validate($params['amount'], 'String');
   // $capture is normally true if we have already created the intent and just need to get extra
   //   authentication from the user (eg. on the confirmation page). So we don't need the amount
