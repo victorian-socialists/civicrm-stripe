@@ -66,7 +66,7 @@
       return;
     }
 
-    var submitButtons = getBillingSubmit();
+    var submitButtons = CRM.payment.getBillingSubmit();
 
     // Load Stripe onto the form.
     var cardElement = document.getElementById('card-element');
@@ -386,7 +386,7 @@
     paymentData.paymentRequest = null;
 
     var oldPaymentProcessorID = paymentProcessorID;
-    paymentProcessorID = getPaymentProcessorSelectorValue();
+    paymentProcessorID = CRM.payment.getPaymentProcessorSelectorValue();
     debugging('payment processor old: ' + oldPaymentProcessorID + ' new: ' + paymentProcessorID + ' id: ' + CRM.vars.stripe.id);
     if ((paymentProcessorID !== null) && (paymentProcessorID !== parseInt(CRM.vars.stripe.id))) {
       debugging('not stripe');
@@ -405,7 +405,7 @@
     }
 
     setBillingFieldsRequiredForJQueryValidate();
-    submitButtons = getBillingSubmit();
+    submitButtons = CRM.payment.getBillingSubmit();
 
     // If another submit button on the form is pressed (eg. apply discount)
     //  add a flag that we can set to stop payment submission
@@ -827,24 +827,6 @@
     return false;
   }
 
-  function getBillingSubmit() {
-    var submit = null;
-    if (CRM.payment.getIsDrupalWebform()) {
-      submit = form.querySelectorAll('[type="submit"].webform-submit');
-      if (submit.length === 0) {
-        // drupal 8 webform
-        submit = form.querySelectorAll('[type="submit"].webform-button--submit');
-      }
-    }
-    else {
-      submit = form.querySelectorAll('[type="submit"].validate');
-    }
-    if (submit.length === 0) {
-      debugging('No submit button found!');
-    }
-    return submit;
-  }
-
   function cardElementChanged(event) {
     if (event.empty) {
       $('div#card-errors').hide();
@@ -947,32 +929,6 @@
     hiddenInput.setAttribute('id', 'action');
     hiddenInput.setAttribute('value', submitAction);
     form.appendChild(hiddenInput);
-  }
-
-  /**
-   * Get the selected payment processor on the form
-   * @returns {null|number}
-   */
-  function getPaymentProcessorSelectorValue() {
-    if ((typeof form === 'undefined') || (!form)) {
-      form = CRM.payment.getBillingForm();
-      if (!form) {
-        return null;
-      }
-    }
-    // Frontend radio selector
-    var paymentProcessorSelected = form.querySelector('input[name="payment_processor_id"]:checked');
-    if (paymentProcessorSelected !== null) {
-      return parseInt(paymentProcessorSelected.value);
-    }
-    else {
-      // Backend select dropdown
-      paymentProcessorSelected = form.querySelector('select[name="payment_processor_id"]');
-      if (paymentProcessorSelected !== null) {
-        return parseInt(paymentProcessorSelected.value);
-      }
-    }
-    return null;
   }
 
   /**
