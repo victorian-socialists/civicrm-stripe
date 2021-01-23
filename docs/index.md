@@ -31,7 +31,7 @@ View/Download this extension in the [Extension Directory](https://civicrm.org/ex
 * [Firewall extension](https://civicrm.org/extensions/firewall) version 1.1+.
 * [contributiontransactlegacy extension](https://civicrm.org/extensions/contribution-transact-api) version 1.3+.
 
-**Please ensure that you are running the ProcessStripe scheduled job every hour or you will have issues with failed/uncaptured payments appearing on customer credit cards and blocking their balance for up to a week!**
+**Please ensure that you are running the "Stripe: Cleanup" scheduled job every hour or you will have issues with failed/uncaptured payments appearing on customer credit cards and blocking their balance for up to a week!**
 
 ## Troubleshooting
 Under *Administer->CiviContribute->Stripe Settings* you can find a setting:
