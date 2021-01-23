@@ -680,6 +680,10 @@
 
   function createElementPaymentRequest(stripeElements) {
     debugging('try to create paymentRequest element');
+    if (CRM.payment.supportsRecur() || CRM.payment.isEventAdditionalParticipants()) {
+      debugging('paymentRequest element is not supported on this form');
+      return false;
+    }
     var paymentRequest = null;
     try {
       paymentRequest = stripe.paymentRequest({
