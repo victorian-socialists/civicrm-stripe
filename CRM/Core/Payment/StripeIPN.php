@@ -371,11 +371,12 @@ class CRM_Core_Payment_StripeIPN {
           return TRUE;
         }
 
+        // The Stripe "plan" has been changed. Update the following information within CiviCRM:
+        // Amount, frequency_unit, frequency_interval
         civicrm_api3('ContributionRecur', 'create', [
           'id' => $this->contribution_recur_id,
           'amount' => $this->plan_amount,
           'auto_renew' => 1,
-          'created_date' => $this->plan_start,
           'frequency_unit' => $this->frequency_unit,
           'frequency_interval' => $this->frequency_interval,
         ]);
