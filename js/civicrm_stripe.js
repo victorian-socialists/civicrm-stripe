@@ -131,6 +131,7 @@
     }
     triggerEvent('crmBillingFormNotValid');
     if (notify) {
+      swalClose();
       swalFire({
         icon: 'error',
         text: errorMessage,
@@ -233,7 +234,7 @@
             }
           }, '', false);
           CRM.api3('StripePaymentintent', 'Process', {
-            payment_method_id: result.paymentMethod.id,
+            payment_method_id: createPaymentMethodResult.paymentMethod.id,
             amount: CRM.payment.getTotalAmount().toFixed(2),
             currency: CRM.payment.getCurrency(CRM.vars.stripe.currency),
             id: CRM.vars.stripe.id,
@@ -241,14 +242,43 @@
             csrfToken: CRM.vars.stripe.csrfToken,
             extra_data: CRM.payment.getBillingEmail() + CRM.payment.getBillingName()
           })
-            .done(function (result) {
-              // Handle server response (see Step 3)
+            .done(function (paymentIntentProcessResponse) {
               swalClose();
-              handleServerResponse(result);
+              debugging('StripePaymentintent.Process done');
+              if (paymentIntentProcessResponse.is_error) {
+                // Triggered for api3_create_error or Exception
+                displayError(paymentIntentProcessResponse.error_message, true);
+              }
+              else {
+                paymentIntentProcessResponse = paymentIntentProcessResponse.values;
+                if (paymentIntentProcessResponse.requires_action) {
+                  // Use Stripe.js to handle a pending card action (eg. 3d-secure)
+                  paymentData.clientSecret = paymentIntentProcessResponse.paymentIntentClientSecret;
+                  stripe.handleCardAction(paymentData.clientSecret)
+                    .then(function(cardActionResult) {
+                      if (cardActionResult.error) {
+                        // Show error in payment form
+                        displayError(cardActionResult.error.message, true);
+                      } else {
+                        // The card action has been handled
+                        // The PaymentIntent can be confirmed again on the server
+                        successHandler('paymentIntentID', cardActionResult.paymentIntent);
+                      }
+                    });
+                }
+                else {
+                  // All good, we can submit the form
+                  successHandler('paymentIntentID', paymentIntentProcessResponse.paymentIntent);
+                }
+              }
             })
-            .fail(function() {
-              swalClose();
-              displayError('Unknown error', true);
+            .fail(function(object) {
+              // Triggered when http code !== 200 (eg. 400 Bad request)
+              var error = 'Unknown error';
+              if (object.hasOwnProperty('statusText')) {
+                error = object.statusText;
+              }
+              displayError(error, true);
             });
         }
       }
@@ -274,52 +304,29 @@
       id: CRM.vars.stripe.id,
       description: document.title,
       csrfToken: CRM.vars.stripe.csrfToken
-      //metadata: {integration_check: accept_a_payment}
     })
-      .done(function(result) {
-        // Handle server response (see Step 3)
+      .done(function(paymentIntentProcessResponse) {
         swalClose();
-        // Trigger the paymentRequest dialog
-        paymentData.clientSecret = result.values.payment_intent_client_secret;
-        paymentData.paymentRequest.show();
-        // From here the on 'paymentmethod' of the paymentRequest handles completion/failure
+        debugging('StripePaymentintent.Process done');
+        if (paymentIntentProcessResponse.is_error) {
+          // Triggered for api3_create_error or Exception
+          displayError(paymentIntentProcessResponse.error_message, true);
+        }
+        else {
+          paymentIntentProcessResponse = paymentIntentProcessResponse.values;
+          // Trigger the paymentRequest dialog
+          paymentData.clientSecret = paymentIntentProcessResponse.paymentIntentClientSecret;
+          paymentData.paymentRequest.show();
+          // From here the on 'paymentmethod' of the paymentRequest handles completion/failure
+        }
       })
-      .fail(function(result) {
+      .fail(function(object) {
+        // Triggered when http code !== 200 (eg. 400 Bad request)
         var error = 'Unknown error';
-        if (result.hasOwnProperty('statusText')) {
-          error = result.statusText;
+        if (object.hasOwnProperty('statusText')) {
+          error = object.statusText;
         }
-        swalClose();
         displayError(error, true);
-      });
-  }
-
-  function handleServerResponse(result) {
-    debugging('handleServerResponse');
-    if (result.error) {
-      // Show error from server on payment form
-      displayError(result.error.message, true);
-    } else if (result.requires_action) {
-      // Use Stripe.js to handle required card action
-      handleAction(result);
-    } else {
-      // All good, we can submit the form
-      successHandler('paymentIntentID', result.paymentIntent);
-    }
-  }
-
-  function handleAction(result) {
-    paymentData.clientSecret = result.payment_intent_client_secret;
-    stripe.handleCardAction(paymentData.clientSecret)
-      .then(function(cardActionResult) {
-        if (cardActionResult.error) {
-          // Show error in payment form
-          displayError(cardActionResult.error.message, true);
-        } else {
-          // The card action has been handled
-          // The PaymentIntent can be confirmed again on the server
-          successHandler('paymentIntentID', cardActionResult.paymentIntent);
-        }
       });
   }
 

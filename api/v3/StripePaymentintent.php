@@ -215,7 +215,7 @@ function civicrm_api3_stripe_paymentintent_process($params) {
       elseif ($e instanceof \Stripe\Exception\InvalidRequestException) {
         $message = 'Invalid request';
       }
-      return civicrm_api3_create_error(['message' => $message]);
+      return civicrm_api3_create_error($message);
     }
   }
 
@@ -236,7 +236,7 @@ function civicrm_api3_stripe_paymentintent_process($params) {
     // Tell the client to handle the action
     return civicrm_api3_create_success([
       'requires_action' => true,
-      'paymentintent_client_secret' => $intent->client_secret,
+      'paymentIntentClientSecret' => $intent->client_secret,
     ]);
   }
   elseif (($intent->status === 'requires_capture') || ($intent->status === 'requires_confirmation')) {
@@ -257,7 +257,7 @@ function civicrm_api3_stripe_paymentintent_process($params) {
   elseif ($intent->status === 'requires_payment_method') {
     return civicrm_api3_create_success([
       'requires_payment_method' => true,
-      'paymentintent_client_secret' => $intent->client_secret,
+      'paymentIntentClientSecret' => $intent->client_secret,
     ]);
   }
   else {

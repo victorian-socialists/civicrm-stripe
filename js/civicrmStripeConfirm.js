@@ -51,7 +51,7 @@
     handlePaymentIntentAction: function(response) {
       switch (CRM.vars.stripe.paymentIntentMethod) {
         case 'automatic':
-          confirm.stripe.handleCardPayment(response.payment_intent_client_secret)
+          confirm.stripe.handleCardPayment(response.paymentIntentClientSecret)
             .then(function(result) {
               if (result.error) {
                 // Show error in payment form
@@ -66,7 +66,7 @@
           break;
 
         case 'manual':
-          confirm.stripe.handleCardAction(response.payment_intent_client_secret)
+          confirm.stripe.handleCardAction(response.paymentIntentClientSecret)
             .then(function(result) {
               if (result.error) {
                 // Show error in payment form
