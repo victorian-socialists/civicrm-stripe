@@ -199,7 +199,7 @@
         // For recur, additional participants we do NOT know the final amount so must create a paymentMethod and only create the paymentIntent
         //   once the form is finally submitted.
         // We should never get here with amount=0 as we should be doing a "nonStripeSubmit()" instead. This may become needed when we save cards
-        if (CRM.payment.getIsRecur() || CRM.payment.isEvenAdditionalParticipants() || (CRM.payment.getTotalAmount() === 0.0)) {
+        if (CRM.payment.getIsRecur() || CRM.payment.isEventAdditionalParticipants() || (CRM.payment.getTotalAmount() === 0.0)) {
           CRM.api3('StripePaymentintent', 'createorupdate', {
             stripe_intent_id: createPaymentMethodResult.paymentMethod.id,
             description: document.title,
