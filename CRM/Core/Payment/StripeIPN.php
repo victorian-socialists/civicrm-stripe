@@ -41,7 +41,7 @@ class CRM_Core_Payment_StripeIPN {
   protected $is_email_receipt = NULL;
 
   // Properties of the event.
-  protected $event_type = NULL;
+  protected $eventType = NULL;
   protected $subscription_id = NULL;
   protected $customer_id = NULL;
   protected $charge_id = NULL;
@@ -116,7 +116,7 @@ class CRM_Core_Payment_StripeIPN {
     }
 
     $this->event_id = $data->id;
-    $this->event_type = $data->type;
+    $this->eventType = $data->type;
 
     // Now re-retrieve the data from Stripe to ensure it's legit.
     // Special case if this is the test webhook
@@ -171,7 +171,7 @@ class CRM_Core_Payment_StripeIPN {
    */
   public function main() {
     // Return 200 OK for any events that we don't handle
-    if (!in_array($this->event_type, CRM_Stripe_Webhook::getDefaultEnabledEvents())) {
+    if (!in_array($this->eventType, CRM_Stripe_Webhook::getDefaultEnabledEvents())) {
       return TRUE;
     }
 
@@ -180,7 +180,7 @@ class CRM_Core_Payment_StripeIPN {
     $statusesAllowedToComplete = [$pendingContributionStatusID, $failedContributionStatusID];
 
     // NOTE: If you add an event here make sure you add it to the webhook or it will never be received!
-    switch($this->event_type) {
+    switch($this->eventType) {
       case 'invoice.finalized':
         // An invoice has been created and finalized (ready for payment)
         // This usually happens automatically through a Stripe subscription
