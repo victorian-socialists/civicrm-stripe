@@ -33,8 +33,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    */
   public function __construct($mode, $paymentProcessor) {
     $this->_paymentProcessor = $paymentProcessor;
-    // @todo Remove once we drop support for CiviCRM < 5.27
-    $this->_processorName = E::SHORT_NAME;
   }
 
   /**
@@ -1075,18 +1073,11 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   public function doCancelRecurring(\Civi\Payment\PropertyBag $propertyBag) {
     // By default we always notify the processor and we don't give the user the option
     // because supportsCancelRecurringNotifyOptional() = FALSE
-    // @fixme setIsNotifyProcessorOnCancelRecur was added in 5.27 - remove method_exists once minVer is 5.27
-    if (method_exists($propertyBag, 'setIsNotifyProcessorOnCancelRecur')) {
-      if (!$propertyBag->has('isNotifyProcessorOnCancelRecur')) {
-        // If isNotifyProcessorOnCancelRecur is NOT set then we set our default
-        $propertyBag->setIsNotifyProcessorOnCancelRecur(TRUE);
-      }
-      $notifyProcessor = $propertyBag->getIsNotifyProcessorOnCancelRecur();
+    if (!$propertyBag->has('isNotifyProcessorOnCancelRecur')) {
+      // If isNotifyProcessorOnCancelRecur is NOT set then we set our default
+      $propertyBag->setIsNotifyProcessorOnCancelRecur(TRUE);
     }
-    else {
-      // CiviCRM < 5.27
-      $notifyProcessor = (boolean) CRM_Utils_Request::retrieveValue('send_cancel_request', 'Boolean', TRUE, FALSE, 'POST');
-    }
+    $notifyProcessor = $propertyBag->getIsNotifyProcessorOnCancelRecur();
 
     if (!$notifyProcessor) {
       return ['message' => E::ts('Successfully cancelled the subscription in CiviCRM ONLY.')];
@@ -1113,46 +1104,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     }
 
     return ['message' => E::ts('Successfully cancelled the subscription at Stripe.')];
-  }
-
-  /**
-   * Attempt to cancel the subscription.
-   * @deprecated Remove when min CiviCRM version is 5.25
-   *
-   * @see supportsCancelRecurring()
-   *
-   * @param string $message
-   * @param array|\Civi\Payment\PropertyBag $params
-   *
-   * @return bool
-   * @throws \CiviCRM_API3_Exception
-   * @throws \Civi\Payment\Exception\PaymentProcessorException
-   */
-  public function cancelSubscription(&$message = '', $params = []) {
-    $propertyBag = \Civi\Payment\PropertyBag::cast($params);
-
-    // Fix Unknown property 'subscriptionId' (for < 5.25)
-    // @see https://lab.civicrm.org/extensions/stripe/-/issues/234
-    if (version_compare(CRM_Utils_System::version(), '5.25', '<')) {
-      if (isset($params['subscriptionId'])) {
-        $propertyBag->setRecurProcessorID($params['subscriptionId']);
-      }
-    }
-
-    if (!$propertyBag->has('recurProcessorID')) {
-      throw new \Civi\Payment\Exception\PaymentProcessorException("cancelSubscription requires the recurProcessorID");
-    }
-
-    // contributionRecurID is set when doCancelRecurring is called directly (from 5.25)
-    if (!$propertyBag->has('contributionRecurID')) {
-      $contrib_recur = civicrm_api3('ContributionRecur', 'getsingle', [
-        'trxn_id' => $propertyBag->getRecurProcessorID(),
-      ]);
-      $propertyBag->setContributionRecurID($contrib_recur['id']);
-    }
-
-    $message = $this->doCancelRecurring($propertyBag)['message'];
-    return TRUE;
   }
 
   /**
