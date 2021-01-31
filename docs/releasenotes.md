@@ -20,6 +20,7 @@ Releases use the following numbering system:
 * Add `StripePaymentintent.createorupdate` API which is used by the frontend javascript and requires "make online contributions" permission.
 * Simplify Stripe.Ipn API.
 * Fully remove support for CiviCRM older than 5.28.
+* Use new PaymentProcessorWebhook entity to track/process webhooks and avoid simultaneous processing of events.
 
 ## Release 6.5.8
 
