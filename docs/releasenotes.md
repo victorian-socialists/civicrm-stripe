@@ -18,6 +18,8 @@ Releases use the following numbering system:
 * Handle 3d-secure authentication on thankyou page for "setupIntents". This will happen when a delayed recurring contribution is created and the card issuer requests additional authentication.
 * Remove AJAX endpoint `civicrm/stripe/confirm-payment` and replace with `StripePaymentintent.Process` API call.
 * Add `StripePaymentintent.createorupdate` API which is used by the frontend javascript and requires "make online contributions" permission.
+* Simplify Stripe.Ipn API.
+* Fully remove support for CiviCRM older than 5.28.
 
 ## Release 6.5.8
 
