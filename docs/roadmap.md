@@ -35,18 +35,6 @@ confirm and map Stripe customer IDs to CiviCRM contacts.
 
 This would require funding for approximately 16 hours work.
 
-## Stripe Connect
-
-See https://stripe.com/connect
-
-## Payment Requests (Google / Apple Pay)
-
-See https://lab.civicrm.org/extensions/stripe/-/issues/81
-
-## Stripe ACH/EFT
-
-See https://civicrm.org/make-it-happen/stripe-ach-payments
-
 ## Card on File
 
 Stripe supports saving cards and other payment methods. These can be retrieved, re-used and updated.
@@ -63,5 +51,39 @@ We would like to provide support for re-using saved cards in CiviCRM.
 
 This would require funding for approximately 24 hours work.
 
+## Payment Methods
+
+## Stripe Connect
+
+See https://stripe.com/connect
+
+## Payment Requests (Google / Apple Pay)
+
+See https://lab.civicrm.org/extensions/stripe/-/issues/81
+
+## Stripe ACH/EFT
+
+See https://civicrm.org/make-it-happen/stripe-ach-payments
+
+## Bancontact
+
+See https://stripe.com/docs/payments/bancontact
+
+This is a "Bank Redirect" type of payment.
+
+### Implementation
+
+1. Create a paymentIntent of type "bancontact" and return the client secret.
+2. Collect payment method details (name) on the client form.
+3. Handle redirect to bancontact to make payment and return to CiviCRM.
+4. Handle payment_intent.succeeded webhook to confirm payment.
+
+### Estimate
+
+20 hours. This represents approximately 12 hours for the generic "Bank Redirect" functionality
+in the Stripe extension and then 8 hours for the specific payment method "Bancontact".
+
+Adding additional payment methods such as Sofort would then require approximately 8 hours each
+to implement.
 
 
