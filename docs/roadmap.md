@@ -55,19 +55,19 @@ This would require funding for approximately 24 hours work.
 
 ## Stripe Connect
 
-See https://stripe.com/connect
+See [Stripe Connect](https://stripe.com/connect).
 
 ## Payment Requests (Google / Apple Pay)
 
-See https://lab.civicrm.org/extensions/stripe/-/issues/81
+See [Stripe#81](https://lab.civicrm.org/extensions/stripe/-/issues/81).
 
-## Stripe ACH/EFT
+## Stripe ACH/EFT - partially funded
 
-See https://civicrm.org/make-it-happen/stripe-ach-payments
+See [Make it Happen](https://civicrm.org/make-it-happen/stripe-ach-payments) campaign on CiviCRM.org.
 
 ## Bancontact
 
-See https://stripe.com/docs/payments/bancontact
+See [Stripe documentation - bancontact](https://stripe.com/docs/payments/bancontact)
 
 This is a "Bank Redirect" type of payment.
 
@@ -80,7 +80,7 @@ This is a "Bank Redirect" type of payment.
 
 ### Estimate
 
-20 hours. This represents approximately 12 hours for the generic "Bank Redirect" functionality
+20 hours. This represents approximately 12 hours for the generic [Bank Redirect](https://stripe.com/docs/payments/bank-redirects) functionality
 in the Stripe extension and then 8 hours for the specific payment method "Bancontact".
 
 Adding additional payment methods such as Sofort would then require approximately 8 hours each
