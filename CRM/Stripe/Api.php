@@ -182,12 +182,6 @@ class CRM_Stripe_Api {
 
       case 'id':
         return (string) $stripeObject->id;
-
-      case 'previous_plan_id':
-        if (preg_match('/\.updated$/', $stripeObject->type)) {
-          return (string) $stripeObject->data->previous_attributes->plan->id;
-        }
-        break;
     }
     return NULL;
   }

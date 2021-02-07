@@ -11,7 +11,7 @@ Releases use the following numbering system:
 
 ## Release 6.5.7 (not yet released 2021-01-23)
 
-* Don't change 'created_date' when subscription is updated.
+* Remove handling for `customer.subscription.updated` webhooks - they were not working and could lead to broken recurring contributions.
 * Rename ProcessStripe job to "Stripe: Cleanup".
 
 ## Release 6.5.6

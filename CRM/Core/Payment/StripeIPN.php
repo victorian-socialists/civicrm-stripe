@@ -362,24 +362,7 @@ class CRM_Core_Payment_StripeIPN {
         return TRUE;
 
       case 'customer.subscription.updated':
-        if (!$this->getSubscriptionDetails()) {
-          // Not matched with an existing subscription in CiviCRM
-          return TRUE;
-        }
-        if (empty($this->previous_plan_id)) {
-          // Not a plan change...don't care.
-          return TRUE;
-        }
-
-        // The Stripe "plan" has been changed. Update the following information within CiviCRM:
-        // Amount, frequency_unit, frequency_interval
-        civicrm_api3('ContributionRecur', 'create', [
-          'id' => $this->contribution_recur_id,
-          'amount' => $this->plan_amount,
-          'auto_renew' => 1,
-          'frequency_unit' => $this->frequency_unit,
-          'frequency_interval' => $this->frequency_interval,
-        ]);
+        // Subscription is updated. This used to be "implemented" but didn't work
         return TRUE;
 
       case 'customer.subscription.deleted':
@@ -483,7 +466,6 @@ class CRM_Core_Payment_StripeIPN {
       }
       return FALSE;
     }
-    $this->previous_plan_id = CRM_Stripe_Api::getParam('previous_plan_id', $this->_inputParameters);
     $this->plan_amount = $this->retrieve('plan_amount', 'String', FALSE);
     $this->frequency_interval = $this->retrieve('frequency_interval', 'String', FALSE);
     $this->frequency_unit = $this->retrieve('frequency_unit', 'String', FALSE);

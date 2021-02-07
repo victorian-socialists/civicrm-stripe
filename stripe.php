@@ -10,7 +10,7 @@
  */
 
 require_once 'stripe.civix.php';
-require_once __DIR__.'/vendor/autoload.php';
+require_once __DIR__ . '/vendor/autoload.php';
 
 use CRM_Stripe_ExtensionUtil as E;
 
