@@ -11,6 +11,13 @@
 
 class CRM_Stripe_Api {
 
+  /**
+   * @param string $name
+   * @param \Stripe\StripeObject $stripeObject
+   *
+   * @return bool|float|int|string|null
+   * @throws \Stripe\Exception\ApiErrorException
+   */
   public static function getObjectParam($name, $stripeObject) {
     switch ($stripeObject->object) {
       case 'charge':
@@ -163,27 +170,6 @@ class CRM_Stripe_Api {
    */
   private static function formatDate($stripeTimestamp) {
     return $stripeTimestamp ? date('YmdHis', $stripeTimestamp) : NULL;
-  }
-
-  /**
-   * @param string $name
-   * @param \Stripe\StripeObject $stripeObject
-   *
-   * @return string|null
-   */
-  public static function getParam($name, $stripeObject) {
-    // Common parameters
-    switch ($name) {
-      case 'customer_id':
-        return (string) $stripeObject->customer;
-
-      case 'event_type':
-        return (string) $stripeObject->type;
-
-      case 'id':
-        return (string) $stripeObject->id;
-    }
-    return NULL;
   }
 
   /**

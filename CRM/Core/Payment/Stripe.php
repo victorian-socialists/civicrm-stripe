@@ -1114,11 +1114,19 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @throws \Stripe\Exception\UnknownApiErrorException
    */
   public function handlePaymentNotification() {
+    // Set default http response to 200
+    http_response_code(200);
     $rawData = file_get_contents("php://input");
-    $ipnClass = new CRM_Core_Payment_StripeIPN($rawData);
-    if ($ipnClass->onReceiveWebhook()) {
-      http_response_code(200);
-    }
+    $event = json_decode($rawData);
+    $ipnClass = new CRM_Core_Payment_StripeIPN();
+    $ipnClass->setEventID($event->id);
+    if (!$ipnClass->setEventType($event->type)) {
+      // We don't handle this event
+      return;
+    };
+    $ipnClass->setVerifyData(TRUE);
+    $ipnClass->setPaymentProcessor(CRM_Utils_Request::retrieveValue('processor_id', 'Positive', NULL, FALSE, 'GET'));
+    $ipnClass->onReceiveWebhook();
   }
 
   /**
@@ -1132,13 +1140,26 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    *   Override setting of email receipt if set to 0, 1
    *
    * @return bool
-   * @throws \CRM_Core_Exception
-   * @throws \CiviCRM_API3_Exception
-   * @throws \Stripe\Exception\UnknownApiErrorException
+   * @throws \API_Exception
+   * @throws \Civi\API\Exception\UnauthorizedException
+   * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
   public static function processPaymentNotification($paymentProcessorID, $rawData, $verifyRequest = TRUE, $emailReceipt = NULL) {
-    $_GET['processor_id'] = $paymentProcessorID;
-    $ipnClass = new CRM_Core_Payment_StripeIPN($rawData, $verifyRequest);
+    // Set default http response to 200
+    http_response_code(200);
+
+    $event = json_decode($rawData);
+    $ipnClass = new CRM_Core_Payment_StripeIPN();
+    $ipnClass->setEventID($event->id);
+    if (!$ipnClass->setEventType($event->type)) {
+      // We don't handle this event
+      return FALSE;
+    };
+    $ipnClass->setVerifyData($verifyRequest);
+    if (!$verifyRequest) {
+      $ipnClass->setData($event->data);
+    }
+    $ipnClass->setPaymentProcessor($paymentProcessorID);
     $ipnClass->setExceptionMode(FALSE);
     if (isset($emailReceipt)) {
       $ipnClass->setSendEmailReceipt($emailReceipt);
@@ -1146,6 +1167,29 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     return $ipnClass->processWebhook();
   }
 
+  /**
+   * Get help text information (help, description, etc.) about this payment,
+   * to display to the user.
+   *
+   * @param string $context
+   *   Context of the text.
+   *   Only explicitly supported contexts are handled without error.
+   *   Currently supported:
+   *   - contributionPageRecurringHelp (params: is_recur_installments, is_email_receipt)
+   *   - contributionPageContinueText (params: amount, is_payment_to_existing)
+   *   - cancelRecurDetailText:
+   *     params:
+   *       mode, amount, currency, frequency_interval, frequency_unit,
+   *       installments, {membershipType|only if mode=auto_renew},
+   *       selfService (bool) - TRUE if user doesn't have "edit contributions" permission.
+   *         ie. they are accessing via a "self-service" link from an email receipt or similar.
+   *   - cancelRecurNotSupportedText
+   *
+   * @param array $params
+   *   Parameters for the field, context specific.
+   *
+   * @return string
+   */
   public function getText($context, $params) {
     $text = parent::getText($context, $params);
 
