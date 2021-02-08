@@ -206,10 +206,6 @@ function civicrm_api3_stripe_Listevents($params) {
   $processor->setAPIParams();
 
   $data_list = \Stripe\Event::all($args);
-  if (array_key_exists('error', $data_list)) {
-    $err = $data_list['error'];
-    throw new API_Exception(/*errorMessage*/ "Stripe returned an error: " . $err->message, /*errorCode*/ $err->type);
-  }
   $out = $data_list;
   if ($params['output'] == 'brief') {
     $out = [];

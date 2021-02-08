@@ -48,6 +48,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     $payment_extra_params = [
       'is_recur' => 1,
       'contributionRecurID' => $this->contributionRecurID,
+      'contributionID' => $this->contributionID,
       'frequency_unit' => $this->frequency_unit,
       'frequency_interval' => $this->frequency_interval,
       'installments' => $this->installments,
@@ -55,7 +56,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     $this->doPayment($payment_extra_params);
 
     // Ensure contribution status is set to pending.
-    $status_id = civicrm_api3('Contribution', 'getvalue', [ 'id' => $this->contributionID, 'return' => 'contribution_status_id' ]);
+    $status_id = civicrm_api3('Contribution', 'getvalue', ['id' => $this->contributionID, 'return' => 'contribution_status_id']);
     $this->assertEquals(2, $status_id);
 
     // Now check to see if an event was triggered and if so, process it.
@@ -64,7 +65,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       $this->ipn($payment_object);
     }
     // Ensure Contribution status is updated to complete.
-    $status_id = civicrm_api3('Contribution', 'getvalue', [ 'id' => $this->contributionID, 'return' => 'contribution_status_id' ]);
+    $status_id = civicrm_api3('Contribution', 'getvalue', ['id' => $this->contributionID, 'return' => 'contribution_status_id']);
     $this->assertEquals(1, $status_id);
 
   }
@@ -90,25 +91,35 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     // Now try to retrieve this transaction.
     // Give it a few seconds to be processed...
     sleep(5);
-    $transactions = civicrm_api3('Stripe', 'listevents', $params );
+    $transactions = civicrm_api3('Stripe', 'listevents', $params);
     foreach($transactions['values']['data'] as $transaction) {
       if ($transaction->data->object->$property == $this->processorID) {
         return $transaction;
       }
     }
     return NULL;
-
   }
 
   /**
    * Run the webhook/ipn
    *
    */
-  public function ipn($data, $verify = TRUE) {
-    // The $_GET['processor_id'] value is normally set by
-    // CRM_Core_Payment::handlePaymentMethod
-    $_GET['processor_id'] = $this->paymentProcessorID;
-    $ipnClass = new CRM_Core_Payment_StripeIPN($data, $verify);
+  public function ipn($event, $verifyRequest = TRUE) {
+    $ipnClass = new CRM_Core_Payment_StripeIPN();
+    $ipnClass->setEventID($event->id);
+    if (!$ipnClass->setEventType($event->type)) {
+      // We don't handle this event
+      return FALSE;
+    };
+    $ipnClass->setVerifyData($verifyRequest);
+    if (!$verifyRequest) {
+      $ipnClass->setData($event->data);
+    }
+    $ipnClass->setPaymentProcessor($this->paymentProcessorID);
+    $ipnClass->setExceptionMode(FALSE);
+    if (isset($emailReceipt)) {
+      $ipnClass->setSendEmailReceipt($emailReceipt);
+    }
     $ipnClass->processWebhook();
   }
 
