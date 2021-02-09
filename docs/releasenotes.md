@@ -9,7 +9,7 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
-## Release 6.5.7 (not yet released 2021-01-23)
+## Release 6.5.7
 
 * Remove handling for `customer.subscription.updated` webhooks - they were not working and could lead to broken recurring contributions.
 * Rename ProcessStripe job to "Stripe: Cleanup".
