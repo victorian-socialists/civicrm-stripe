@@ -35,7 +35,7 @@ confirm and map Stripe customer IDs to CiviCRM contacts.
 
 This would require funding for approximately 16 hours work.
 
-## Card on File
+## Card on File / Updating card details
 
 See: https://lab.civicrm.org/extensions/stripe/-/issues/64
 
@@ -44,16 +44,38 @@ We would like to provide support for re-using saved cards in CiviCRM.
 
 ### Specification
 
-1. Develop a method to deduplicate payment methods (see eg. https://github.com/stripe/stripe-payments-demo/issues/45).
-  Cards are duplicated by default and we need to clean this up before we can provide a UI to retrieve cards in CiviCRM.
-2. Build a UI to allow for selection of cards to use for making payment.
-3. Integrate card-selection UI into payment flow (so for example a form validation failure will remember the card you just entered and verified).
+#### 1. Allow users to update card details (edit current or add new)
+
+Implement API to retrieve all cards for customer and build UI to display cards.
+* Stripe API to list cards: https://stripe.com/docs/api/cards/list
+
+Implement API and UI to update card details.
+* Use stripe card element with SetupIntent: https://support.stripe.com/questions/update-card-details-with-a-setupintent
+
+Add form to CiviCRM specifically for card updates.
+
+#### 2. Allow admin to update card details
+
+Extend above to work on admin as well. Will be more complex and won't work as well because of card
+security requiremetns (eg. 3dsecure).
+
+Administrators can do it through the stripe portal currently so user self-service
+is probably a priority for civi?
+
+#### 3. Integrate card-selection UI into payment flow
+
+(so for example a form validation failure will remember the card you just entered and verified).
+
+#### 4. Develop a method to deduplicate payment methods
+
+See: eg. https://github.com/stripe/stripe-payments-demo/issues/45).
+Cards are duplicated by default and we need to clean this up before we can provide a UI to retrieve cards in CiviCRM.
 
 ### Estimate
 
-This would require funding for approximately 24 hours work.
+Approximately 24-30 hours.
 
-## Payment Methods
+# Payment Methods
 
 ## Stripe Connect
 
