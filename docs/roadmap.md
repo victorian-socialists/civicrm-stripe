@@ -124,10 +124,12 @@ information to update the recurring contribution in CiviCRM.
 #### CiviCRM -> Stripe
 
 CiviCRM has native forms for updating the subscription in CiviCRM. The parameters to support are:
+
 * Amount.
 * Schedule (frequency unit/interval).
 
 To setup a subscription in Stripe there are 3 objects involved:
+
 * Subscription - one or more "plans" that make up a subscription.
 * Plan - A payment plan (eg. once a month).
 * Product - one or more "products" that are included in a plan.
