@@ -37,6 +37,8 @@ This would require funding for approximately 16 hours work.
 
 ## Card on File
 
+See: https://lab.civicrm.org/extensions/stripe/-/issues/64
+
 Stripe supports saving cards and other payment methods. These can be retrieved, re-used and updated.
 We would like to provide support for re-using saved cards in CiviCRM.
 
@@ -86,4 +88,37 @@ in the Stripe extension and then 8 hours for the specific payment method "Bancon
 Adding additional payment methods such as Sofort would then require approximately 8 hours each
 to implement.
 
+## Update Subscription
 
+See: https://lab.civicrm.org/extensions/stripe/-/issues/18
+
+#### Stripe -> CiviCRM
+
+The actual amount is taken and processed via Stripe so the sync from Stripe -> CiviCRM is *information only*.
+
+This requires handling the `customer.subscription.updated` webhook and extracting the required
+information to update the recurring contribution in CiviCRM.
+
+#### CiviCRM -> Stripe
+
+CiviCRM has native forms for updating the subscription in CiviCRM. The parameters to support are:
+* Amount.
+* Schedule (frequency unit/interval).
+
+To setup a subscription in Stripe there are 3 objects involved:
+* Subscription - one or more "plans" that make up a subscription.
+* Plan - A payment plan (eg. once a month).
+* Product - one or more "products" that are included in a plan.
+
+Currently we create a product, add it to a plan and add that plan to a subscription. Then we link the
+subscription to CiviCRM via the Stripe subscription ID.
+
+We create plans based on the frequency interval, unit, amount + currency and re-use existing ones if we have already created them:
+
+```php
+$planId = "every-{$params['recurFrequencyInterval']}-{$params['recurFrequencyUnit']}-{$amount}-" . strtolower($currency);
+```
+
+### Estimate
+
+Approximately 12-16 hours.
