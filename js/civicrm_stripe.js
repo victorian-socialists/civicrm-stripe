@@ -654,28 +654,31 @@
   }
 
   function resetBillingFieldsRequiredForJQueryValidate() {
-    // The "name" parameter on a set of checkboxes where at least one must be checked must be the same or validation will require all of them!
-    // (But we have to reset this back before we submit otherwise the submission has no data (that's a Civi issue I think).
-    $('div#priceset input[type="checkbox"], fieldset.crm-profile input[type="checkbox"]').each(function() {
-      CRM.$(this).attr('name', CRM.$(this).attr('name') + '[' + CRM.$(this).attr('id').split('_').pop() + ']');
-      CRM.$(this).removeAttr('required');
-      CRM.$(this).removeClass('required');
-      CRM.$(this).removeAttr('aria-required');
+    // The "name" parameter on a group of checkboxes where at least one must be checked must be the same or validation will require all of them!
+    // Reset the name of the checkboxes before submitting otherwise CiviCRM will not get the checkbox values.
+    $('div#priceset input[type="checkbox"], fieldset.crm-profile input[type="checkbox"], #on-behalf-block input[type="checkbox"]').each(function() {
+      if ($(this).attr('data-name') !== undefined) {
+        $(this).attr('name', $(this).attr('data-name'));
+      }
     });
   }
 
   function setBillingFieldsRequiredForJQueryValidate() {
-    // Work around https://github.com/civicrm/civicrm-core/compare/master...mattwire:stripe_147
-    // The main billing fields do not get set to required so don't get checked by jquery validateform.
-    // This also applies to any radio button in billing/profiles so we flag every element with a crm-marker
-    // See also https://github.com/civicrm/civicrm-core/pull/16488 for a core fix
+    // CustomField checkboxes in profiles do not get the "required" class.
+    // This should be fixed in CRM_Core_BAO_CustomField::addQuickFormElement but requires that the "name" is fixed as well.
     $('div.label span.crm-marker').each(function() {
-      $(this).closest('div').next('div').find('input').addClass('required');
+      $(this).closest('div').next('div').find('input[type="checkbox"]').addClass('required');
     });
+
     // The "name" parameter on a set of checkboxes where at least one must be checked must be the same or validation will require all of them!
-    // (But we have to reset this back before we submit otherwise the submission has no data (that's a Civi issue I think).
-    $('div#priceset input[type="checkbox"], fieldset.crm-profile input[type="checkbox"]').each(function() {
-      $(this).attr('name', $(this).attr('name').split('[').shift());
+    // Checkboxes for custom fields are added as quickform "advcheckbox" which seems to require a unique name for each checkbox. But that breaks
+    //   jQuery validation because each checkbox in a required group must have the same name.
+    // We store the original name and then change it. resetBillingFieldsRequiredForJQueryValidate() must be called before submit.
+    // Most checkboxes get names like: "custom_63[1]" but "onbehalf" checkboxes get "onbehalf[custom_63][1]". We change them to "custom_63" and "onbehalf[custom_63]".
+    $('div#priceset input[type="checkbox"], fieldset.crm-profile input[type="checkbox"], #on-behalf-block input[type="checkbox"]').each(function() {
+      var name = $(this).attr('name');
+      $(this).attr('data-name', name);
+      $(this).attr('name', name.replace('[' + name.split('[').pop(), ''));
     });
 
     // @todo remove once min version is 5.28 (https://github.com/civicrm/civicrm-core/pull/17672)
