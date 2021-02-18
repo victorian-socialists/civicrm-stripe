@@ -190,20 +190,32 @@ class CRM_Core_Payment_StripeIPN {
       ->addWhere('identifier', '=', $uniqueIdentifier)
       ->addWhere('processed_date', 'IS NULL')
       ->execute();
-    $processWebhook = FALSE;
+
+    // Set default to "process immediately". This will get changed to FALSE if we already
+    //   have a pending webhook in the queue or the webhook is flagged for delayed processing.
+    $processWebhook = TRUE;
+
     if (empty($paymentProcessorWebhooks->rowCount)) {
-      // We have not received this webhook before. Record and process it.
-      $processWebhook = TRUE;
+      // We have not received this webhook before.
+      // Some webhooks we always add to the queue and do not process immediately (eg. invoice.finalized)
+      if (in_array($this->eventType, CRM_Stripe_Webhook::getDelayProcessingEvents())) {
+        // Process the webhook immediately.
+        $processWebhook = FALSE;
+      }
     }
     else {
       // We have one or more webhooks with matching identifier
-      /** @var \CRM_Mjwshared_BAO_PaymentprocessorWebhook $paymentProcessorWebhook */
       foreach ($paymentProcessorWebhooks as $paymentProcessorWebhook) {
         // Does the eventType match our webhook?
-        if ($paymentProcessorWebhook->trigger === $this->eventType) {
-          // Yes, We have already recorded this webhook and it is awaiting processing.
+        if ($paymentProcessorWebhook['trigger'] === $this->eventType) {
+          // We have already recorded a webhook with a matching event type and it is awaiting processing.
           // Exit
           return TRUE;
+        }
+        if (!in_array($paymentProcessorWebhook['trigger'], CRM_Stripe_Webhook::getDelayProcessingEvents())) {
+          // There is a webhook that is already in the queue not flagged for delayed processing.
+          //   So we cannot process the current webhook immediately and must add it to the queue instead.
+          $processWebhook = FALSE;
         }
       }
       // We have recorded another webhook with matching identifier but different eventType.

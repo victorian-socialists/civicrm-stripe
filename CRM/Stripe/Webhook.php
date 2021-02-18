@@ -227,6 +227,7 @@ class CRM_Stripe_Webhook {
 
   /**
    * List of webhooks we currently handle
+   *
    * @return array
    */
   public static function getDefaultEnabledEvents() {
@@ -242,6 +243,23 @@ class CRM_Stripe_Webhook {
       'charge.captured',
       'customer.subscription.updated',
       'customer.subscription.deleted',
+    ];
+  }
+
+  /**
+   * List of webhooks that we do NOT process immediately.
+   *
+   * @return array
+   */
+  public static function getDelayProcessingEvents() {
+    return [
+      // This event does not need processing in real-time because it will be received simultaneously with
+      //   `invoice.payment_succeeded` if start date is "now".
+      // If starting a subscription on a specific date we only receive this event until the date the invoice is
+      // actually due for payment.
+      // If we allow it to process whichever gets in first (invoice.finalized or invoice.payment_succeeded) we will get
+      //   delays in completing payments/sending receipts until the scheduled job is run.
+      'invoice.finalized'
     ];
   }
 
