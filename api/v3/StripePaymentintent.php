@@ -49,6 +49,15 @@ function civicrm_api3_stripe_paymentintent_createorupdate($params) {
 }
 
 /**
+ * StripePaymentintent.delete API specification
+ *
+ * @param array $spec description of fields supported by this API call
+ */
+function _civicrm_api3_stripe_paymentintent_delete_spec(&$spec) {
+  $spec['payment_processor_id.domain_id']['api.default'] = \CRM_Core_Config::domainID();
+}
+
+/**
  * StripePaymentintent.delete API
  *
  * @param array $params
@@ -60,6 +69,15 @@ function civicrm_api3_stripe_paymentintent_createorupdate($params) {
  */
 function civicrm_api3_stripe_paymentintent_delete($params) {
   return _civicrm_api3_basic_delete('CRM_Stripe_BAO_StripePaymentintent', $params);
+}
+
+/**
+ * StripePaymentintent.get API specification
+ *
+ * @param array $spec description of fields supported by this API call
+ */
+function _civicrm_api3_stripe_paymentintent_get_spec(&$spec) {
+  $spec['payment_processor_id.domain_id']['api.default'] = \CRM_Core_Config::domainID();
 }
 
 /**
