@@ -9,6 +9,10 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
+## Release 6.5.8
+
+* Fix [#298](https://lab.civicrm.org/extensions/stripe/-/issues/298) jQuery validation on checkboxes in 'On behalf of' profiles.
+
 ## Release 6.5.7
 
 * Remove handling for `customer.subscription.updated` webhooks - they were not working and could lead to broken recurring contributions.
