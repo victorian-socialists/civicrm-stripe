@@ -275,7 +275,8 @@
             .fail(function(object) {
               // Triggered when http code !== 200 (eg. 400 Bad request)
               var error = 'Unknown error';
-              if (object.hasOwnProperty('statusText')) {
+              if (object.hasOwnProperty('statusText') && (object.statusText !== 'OK')) {
+                // A PHP exit can return 200 "OK" but we don't want to display "OK" as the error!
                 error = object.statusText;
               }
               displayError(error, true);
