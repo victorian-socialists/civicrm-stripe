@@ -21,6 +21,7 @@ Releases use the following numbering system:
 * Simplify Stripe.Ipn API.
 * Fully remove support for CiviCRM older than 5.28.
 * Use new PaymentProcessorWebhook entity to track/process webhooks and avoid simultaneous processing of events.
+* Fixes to processing `invoice.payment_failed` IPN event (also triggered during 3d secure verification).
 
 ## Release 6.5.8
 
