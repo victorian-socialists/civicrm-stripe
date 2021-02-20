@@ -102,8 +102,11 @@ class CRM_Stripe_Api {
             return (string) $stripeObject->customer;
 
           case 'failure_message':
-            $stripeCharge = \Stripe\Charge::retrieve($stripeObject->charge);
-            return (string) $stripeCharge->failure_message;
+            if (!empty($stripeObject->charge)) {
+              $stripeCharge = \Stripe\Charge::retrieve($stripeObject->charge);
+              return (string) $stripeCharge->failure_message;
+            }
+            return '';
 
         }
         break;

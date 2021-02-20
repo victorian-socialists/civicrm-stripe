@@ -9,6 +9,8 @@
  +--------------------------------------------------------------------+
  */
 
+use Civi\Api4\PaymentprocessorWebhook;
+
 /**
  * Class CRM_Core_Payment_StripeIPN
  */
@@ -184,7 +186,7 @@ class CRM_Core_Payment_StripeIPN {
     // This returns all webhooks that match the uniqueIdentifier above and have not been processed.
     // For example this would match both invoice.finalized and invoice.payment_succeeded events which must be
     // processed sequentially and not simultaneously.
-    $paymentProcessorWebhooks = \Civi\Api4\PaymentprocessorWebhook::get()
+    $paymentProcessorWebhooks = PaymentprocessorWebhook::get()
       ->setCheckPermissions(FALSE) // Replace with ::update(FALSE) when minversion = 5.29
       ->addWhere('payment_processor_id', '=', $this->_paymentProcessor->getID())
       ->addWhere('identifier', '=', $uniqueIdentifier)
@@ -223,7 +225,7 @@ class CRM_Core_Payment_StripeIPN {
       // So we will record this webhook but will not process now (it will be processed later by the scheduled job).
     }
 
-    \Civi\Api4\PaymentprocessorWebhook::create()
+    PaymentprocessorWebhook::create()
       ->setCheckPermissions(FALSE) // Replace with ::update(FALSE) when minversion = 5.29
       ->addValue('payment_processor_id', $this->_paymentProcessor->getID())
       ->addValue('trigger', $this->eventType)
@@ -252,7 +254,7 @@ class CRM_Core_Payment_StripeIPN {
     }
     catch (Exception $e) {
       $success = FALSE;
-      \Civi::log()->error('StripeIPN: processWebhook failed. ' . $e->getMessage());
+      \Civi::log()->error("StripeIPN: processEventType failed. EventID: {$this->eventID} : " . $e->getMessage());
     }
 
     $uniqueIdentifier = $this->getWebhookUniqueIdentifier();
@@ -261,7 +263,7 @@ class CRM_Core_Payment_StripeIPN {
     // If for some reason we ended up with multiple webhooks with the same identifier and same eventType this would
     // update all of them as "processed". That is ok because we don't need to process the "same" webhook multiple
     // times. Even if they have different event IDs but the same identifier/eventType.
-    \Civi\Api4\PaymentprocessorWebhook::update()
+    PaymentprocessorWebhook::update()
       ->setCheckPermissions(FALSE) // Replace with ::update(FALSE) when minversion = 5.29
       ->addWhere('identifier', '=', $uniqueIdentifier)
       ->addWhere('trigger', '=', $this->eventType)
@@ -535,7 +537,7 @@ class CRM_Core_Payment_StripeIPN {
     $this->receive_date = $this->retrieve('receive_date', 'String', FALSE);
     $this->amount = $this->retrieve('amount', 'String', FALSE);
 
-    if (($this->getData()->object->object !== 'charge') && ($this->charge_id !== NULL)) {
+    if (($this->getData()->object->object !== 'charge') && (!empty($this->charge_id))) {
       $charge = $this->_paymentProcessor->stripeClient->charges->retrieve($this->charge_id);
       $balanceTransactionID = CRM_Stripe_Api::getObjectParam('balance_transaction', $charge);
     }
@@ -601,15 +603,15 @@ class CRM_Core_Payment_StripeIPN {
     ];
 
     // A) One-off contribution
-    if ($this->charge_id) {
+    if (!empty($this->charge_id)) {
       $paymentParams['trxn_id'] = $this->charge_id;
+      $contribution = civicrm_api3('Mjwpayment', 'get_contribution', $paymentParams);
     }
-    $contribution = civicrm_api3('Mjwpayment', 'get_contribution', $paymentParams);
 
     // B2) Contribution linked to subscription and we have invoice_id
     if (!$contribution['count']) {
       unset($paymentParams['trxn_id']);
-      if ($this->invoice_id) {
+      if (!empty($this->invoice_id)) {
         $paymentParams['order_reference'] = $this->invoice_id;
         $contribution = civicrm_api3('Mjwpayment', 'get_contribution', $paymentParams);
       }
@@ -618,7 +620,7 @@ class CRM_Core_Payment_StripeIPN {
     // B1) Contribution linked to subscription and we have subscription_id
     if (!$contribution['count']) {
       unset($paymentParams['trxn_id']);
-      if ($this->subscription_id) {
+      if (!empty($this->subscription_id)) {
         $paymentParams['order_reference'] = $this->subscription_id;
         $contribution = civicrm_api3('Mjwpayment', 'get_contribution', $paymentParams);
       }
