@@ -16,6 +16,8 @@
  * https://stripe.com/docs/api#events
  */
 
+use CRM_Stripe_ExtensionUtil as E;
+
 /**
  * Stripe.ListEvents API specification
  *
@@ -28,9 +30,11 @@ function _civicrm_api3_stripe_ListEvents_spec(&$spec) {
   $spec['type']['title'] = ts("Limit to the given Stripe events type, defaults to invoice.payment_succeeded.");
   $spec['type']['api.default'] = 'invoice.payment_succeeded';
   $spec['limit']['title'] = ts("Limit number of results returned (100 is max)");
-  $spec['starting_after']['title'] = ts("Only return results after this event id.");
+  $spec['starting_after']['title'] = ts("Only return results after this id.");
   $spec['output']['api.default'] = 'brief';
   $spec['output']['title'] = ts("How to format the output, brief or raw. Defaults to brief.");
+  $spec['source']['api.default'] = 'stripe';
+  $spec['source']['title'] = ts("List events via the Stripe API (default: stripe) or via the CiviCRM System Log (systemlog).");
 }
 
 /**
@@ -139,6 +143,7 @@ function civicrm_api3_stripe_ProcessParams($params) {
   $limit = NULL;
   $starting_after = NULL;
   $sk = NULL;
+  $source = 'stripe';
 
   if (array_key_exists('created', $params) ) {
     $created = $params['created'];
@@ -168,7 +173,15 @@ function civicrm_api3_stripe_ProcessParams($params) {
       throw new API_Exception("Created can only be passed in programatically as an array", 1237);
     }
   }
-  return ['type' => $type, 'created' => $created, 'limit' => $limit, 'starting_after' => $starting_after];
+
+  if (array_key_exists('source', $params)) {
+    $allowed = [ 'stripe', 'systemlog' ];
+    if (!in_array($params['source'], $allowed)) {
+      throw new API_Exception(E::ts("Source can only be set to %1 or %2.", [ 1 => 'stripe', 2 => 'systemlog' ]), 1238);
+    }
+    $source = $params['source'];
+  }
+  return ['type' => $type, 'created' => $created, 'limit' => $limit, 'starting_after' => $starting_after, 'source' => $source ];
 }
 
 /**
@@ -187,6 +200,7 @@ function civicrm_api3_stripe_Listevents($params) {
   $created = $parsed['created'];
   $limit = $parsed['limit'];
   $starting_after = $parsed['starting_after'];
+  $source = $parsed['source'];
 
   $args = [];
   if ($type) {
@@ -202,14 +216,27 @@ function civicrm_api3_stripe_Listevents($params) {
     $args['starting_after'] = $starting_after;
   }
 
-  $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $params['ppid']]));
-  $processor->setAPIParams();
-
-  $data_list = \Stripe\Event::all($args);
+  if ($source == 'stripe') {
+    $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $params['ppid']]));
+    $processor->setAPIParams();
+    $data_list = \Stripe\Event::all($args);
+  }
+  else {
+    $sql = "SELECT context FROM civicrm_system_log WHERE context LIKE %0 ORDER BY timestamp DESC limit %1";
+    $sql_params = [ 0 => [ '%' . $type . '%', 'String' ], 1 => [ $limit, 'Integer' ] ];
+    $dao = CRM_Core_DAO::executeQuery($sql, $sql_params);
+    $data_list = [ 'data' => [] ];
+    $associative = FALSE;
+    while($dao->fetch()) {
+      $data_list['data'][] = json_decode($dao->context, $associative);
+    }
+  }
   $out = $data_list;
   if ($params['output'] == 'brief') {
     $out = [];
     foreach($data_list['data'] as $data) {
+      $data = (array) $data;
+      $data['data'] = (array) $data['data'];
       $item = [
         'id' => $data['id'],
         'created' => date('Y-m-d H:i:s', $data['created']),
