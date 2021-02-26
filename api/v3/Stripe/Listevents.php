@@ -35,6 +35,8 @@ function _civicrm_api3_stripe_ListEvents_spec(&$spec) {
   $spec['output']['title'] = ts("How to format the output, brief or raw. Defaults to brief.");
   $spec['source']['api.default'] = 'stripe';
   $spec['source']['title'] = ts("List events via the Stripe API (default: stripe) or via the CiviCRM System Log (systemlog).");
+  $spec['filter_processed']['title'] = ts("If set to 1, filter out all transactions that have been processed already.");
+  $spec['filter_processed']['type'] = CRM_Utils_Type::T_INT;
 }
 
 /**
@@ -144,6 +146,7 @@ function civicrm_api3_stripe_ProcessParams($params) {
   $starting_after = NULL;
   $sk = NULL;
   $source = 'stripe';
+  $filter_processed = 0;
 
   if (array_key_exists('created', $params) ) {
     $created = $params['created'];
@@ -181,7 +184,23 @@ function civicrm_api3_stripe_ProcessParams($params) {
     }
     $source = $params['source'];
   }
-  return ['type' => $type, 'created' => $created, 'limit' => $limit, 'starting_after' => $starting_after, 'source' => $source ];
+
+  if (array_key_exists('filter_processed', $params)) {
+    $allowed = [ 0, 1 ];
+    if (!in_array($params['filter_processed'], $allowed)) {
+      throw new API_Exception(E::ts("Filter processed can only be set to 0 or 1."), 1230);
+    }
+    $filter_processed = $params['filter_processed'];
+
+  }
+  return [
+    'type' => $type,
+    'created' => $created,
+    'limit' => $limit,
+    'starting_after' => $starting_after,
+    'source' => $source,
+    'filter_processed' => $filter_processed
+  ];
 }
 
 /**
@@ -201,6 +220,7 @@ function civicrm_api3_stripe_Listevents($params) {
   $limit = $parsed['limit'];
   $starting_after = $parsed['starting_after'];
   $source = $parsed['source'];
+  $filter_processed = $parsed['filter_processed'];
 
   $args = [];
   if ($type) {
@@ -222,21 +242,25 @@ function civicrm_api3_stripe_Listevents($params) {
     $data_list = \Stripe\Event::all($args);
   }
   else {
-    $sql = "SELECT context FROM civicrm_system_log WHERE context LIKE %0 ORDER BY timestamp DESC limit %1";
+    // The evtid_ part is a crude way to filter for Stripe events.
+    $sql = 'SELECT context FROM civicrm_system_log WHERE context LIKE \'{"id":"evt%\' AND context LIKE %0 ORDER BY timestamp DESC limit %1';
     $sql_params = [ 0 => [ '%' . $type . '%', 'String' ], 1 => [ $limit, 'Integer' ] ];
     $dao = CRM_Core_DAO::executeQuery($sql, $sql_params);
     $data_list = [ 'data' => [] ];
-    $associative = FALSE;
     while($dao->fetch()) {
-      $data_list['data'][] = json_decode($dao->context, $associative);
+      // This is silly. The stripe library converts everything to an array when they
+      // call json_decode, but then seems to somehow rebuild the ['objects'] layer
+      // as actual objects. To try to mimic the same results, we don't covert the entire
+      // json string to an array, only the data index, leaving the rest as objects.
+      $data = (array) json_decode($dao->context);
+      $data['data'] = (array) $data['data'];
+      $data_list['data'][] = $data;
     }
   }
   $out = $data_list;
   if ($params['output'] == 'brief') {
     $out = [];
     foreach($data_list['data'] as $data) {
-      $data = (array) $data;
-      $data['data'] = (array) $data['data'];
       $item = [
         'id' => $data['id'],
         'created' => date('Y-m-d H:i:s', $data['created']),
@@ -294,6 +318,10 @@ function civicrm_api3_stripe_Listevents($params) {
           $status_id = $contribution['contribution_status_id'];
           $item['contribution_status_id'] = CRM_Core_PseudoConstant::getName('CRM_Contribute_BAO_Contribution', 'contribution_status_id', $status_id);
           if ($contribution['contribution_status_id'] == 1) {
+            if ($filter_processed == 1) {
+              // Woops. All this for nothing. We will filter this one out.
+              continue;
+            }
             $item['processed'] = 'yes';
           }
         }
