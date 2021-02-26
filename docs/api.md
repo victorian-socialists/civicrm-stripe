@@ -10,6 +10,9 @@ The api commands are:
   * `output` - What information to show. Defaults to 'brief' which provides a summary. Alternatively use raw to get the raw JSON returned by Stripe.
   * `limit` - Limit number of results returned (100 is max, 10 is default).
   * `starting_after` - Only return results after this event id. This can be used for paging purposes - if you want to retreive more than 100 results.
+  * `source` - By default, source is set to "stripe" and limited to events reported by Stripe in the last 30 days. If instead you specify "systemlog" you can query the `civicrm_system_log` table for events, which potentially go back farther then 30 days.
+  * `subscription` - If you specify a subscription id, results will be limited to events tied to the given subscription id. Furthermore, both the `civicrm_system_log` table will be queried and the results will be supplemented by a list of expected charges based on querying Stripe, allowing you to easily find missing charges for a given subscription.
+  * `filter_processed` - Set to 1 if you want to filter out results for contributions that have been properly processed by CiviCRM already.
 
 * `Populatelog`: If you are running a version of CiviCRM that supports the SystemLog - then this API call will populate your SystemLog with all of your past Stripe Events. You can safely re-run and not create duplicates. With a populated SystemLog - you can selectively replay events that may have caused errors the first time or otherwise not been properly recorded. Parameters:
   * `ppid` - Use the given Payment Processor ID. By default, uses the saved, live Stripe payment processor and throws an error if there is more than one.
