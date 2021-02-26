@@ -33,10 +33,10 @@ function _civicrm_api3_stripe_ListEvents_spec(&$spec) {
   $spec['starting_after']['title'] = ts("Only return results after this id.");
   $spec['output']['api.default'] = 'brief';
   $spec['output']['title'] = ts("How to format the output, brief or raw. Defaults to brief.");
-  $spec['source']['api.default'] = 'stripe';
   $spec['source']['title'] = ts("List events via the Stripe API (default: stripe) or via the CiviCRM System Log (systemlog).");
   $spec['filter_processed']['title'] = ts("If set to 1, filter out all transactions that have been processed already.");
   $spec['filter_processed']['type'] = CRM_Utils_Type::T_INT;
+  $spec['subscription']['title'] = ts("Pass a Stripe subscription id to filter results to charges to that subscription id.");
 }
 
 /**
@@ -132,7 +132,7 @@ function civicrm_api3_stripe_VerifyEventType($eventType) {
 }
 
 /**
- * Process parameters to determine ppid and sk.
+ * Process parameters to determine ppid.
  *
  * @param array $params
  *
@@ -144,9 +144,9 @@ function civicrm_api3_stripe_ProcessParams($params) {
   $created = NULL;
   $limit = NULL;
   $starting_after = NULL;
-  $sk = NULL;
   $source = 'stripe';
   $filter_processed = 0;
+  $subscription = NULL;
 
   if (array_key_exists('created', $params) ) {
     $created = $params['created'];
@@ -188,10 +188,24 @@ function civicrm_api3_stripe_ProcessParams($params) {
   if (array_key_exists('filter_processed', $params)) {
     $allowed = [ 0, 1 ];
     if (!in_array($params['filter_processed'], $allowed)) {
-      throw new API_Exception(E::ts("Filter processed can only be set to 0 or 1."), 1230);
+      throw new API_Exception(E::ts("Filter processed can only be set to 0 or 1."), 1239);
     }
     $filter_processed = $params['filter_processed'];
+  }
 
+  if (array_key_exists('subscription', $params)) {
+    if (!preg_match('/^sub_/', $params['subscription'])) {
+      throw new API_Exception(E::ts("Subscription should start with sub_."), 1240);
+    }
+
+    if (array_key_exists('source', $params)) {
+      throw new API_Exception(E::ts("Subscription and source are incompatible. Please choose one or the other."), 1241);
+    }
+    else {
+      $source = NULL;
+    }
+
+    $subscription = $params['subscription'];
   }
   return [
     'type' => $type,
@@ -199,8 +213,26 @@ function civicrm_api3_stripe_ProcessParams($params) {
     'limit' => $limit,
     'starting_after' => $starting_after,
     'source' => $source,
-    'filter_processed' => $filter_processed
+    'filter_processed' => $filter_processed,
+    'subscription' => $subscription,
   ];
+}
+
+/**
+ *
+ * Massage system log events
+ *
+ * This is silly. The stripe library converts everything to an array when they
+ * call json_decode, but then seems to somehow rebuild the ['objects'] layer
+ * as actual objects. To try to mimic the same results, we don't covert the entire
+ * json string to an array, only the data index, leaving the rest as objects.
+ */
+function civicrm_api3_stripe_listevents_massage_systemlog_json($data) {
+  // Decode from json, ensure top layer is an array.
+  $data = (array) json_decode($data);
+  // Also ensure the data layer is an array.
+  $data['data'] = (array) $data['data'];
+  return $data;
 }
 
 /**
@@ -221,6 +253,7 @@ function civicrm_api3_stripe_Listevents($params) {
   $starting_after = $parsed['starting_after'];
   $source = $parsed['source'];
   $filter_processed = $parsed['filter_processed'];
+  $subscription = $parsed['subscription'];
 
   $args = [];
   if ($type) {
@@ -236,25 +269,40 @@ function civicrm_api3_stripe_Listevents($params) {
     $args['starting_after'] = $starting_after;
   }
 
-  if ($source == 'stripe') {
+  $data_list = [ 'data' => [] ];
+  if ($subscription) {
+    // If we are searching by subscription, we ignore source.
+    $sql = 'SELECT context FROM civicrm_system_log WHERE message = %0 AND context LIKE %1 AND context LIKE %2 ORDER BY timestamp DESC limit %3';
+    $sql_params = [
+      0 => [ 'payment_notification processor_id=' . $params['ppid'], 'String'  ],
+      1 => [ '%' . $type . '%', 'String' ],
+      2 => [ '%' . $subscription . '%', 'String' ],
+      3 => [ $limit, 'Integer' ]
+    ];
+
+    $dao = CRM_Core_DAO::executeQuery($sql, $sql_params);
+    while($dao->fetch()) {
+      $data_list['data'][] = civicrm_api3_stripe_listevents_massage_systemlog_json($dao->context);
+    }
+
+  }
+  elseif ($source == 'stripe') {
     $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $params['ppid']]));
     $processor->setAPIParams();
     $data_list = \Stripe\Event::all($args);
   }
   else {
-    // The evtid_ part is a crude way to filter for Stripe events.
-    $sql = 'SELECT context FROM civicrm_system_log WHERE context LIKE \'{"id":"evt%\' AND context LIKE %0 ORDER BY timestamp DESC limit %1';
-    $sql_params = [ 0 => [ '%' . $type . '%', 'String' ], 1 => [ $limit, 'Integer' ] ];
+    // source is systemlog.
+    $sql = 'SELECT context FROM civicrm_system_log WHERE message = %0 AND context LIKE %1 ORDER BY timestamp DESC limit %2';
+    $sql_params = [
+      0 => [ 'payment_notification processor_id=' . $params['ppid'], 'String'  ],
+      1 => [ '%' . $type . '%', 'String' ],
+      2 => [ $limit, 'Integer' ]
+    ];
+
     $dao = CRM_Core_DAO::executeQuery($sql, $sql_params);
-    $data_list = [ 'data' => [] ];
     while($dao->fetch()) {
-      // This is silly. The stripe library converts everything to an array when they
-      // call json_decode, but then seems to somehow rebuild the ['objects'] layer
-      // as actual objects. To try to mimic the same results, we don't covert the entire
-      // json string to an array, only the data index, leaving the rest as objects.
-      $data = (array) json_decode($dao->context);
-      $data['data'] = (array) $data['data'];
-      $data_list['data'][] = $data;
+      $data_list['data'][] = civicrm_api3_stripe_listevents_massage_systemlog_json($dao->context);
     }
   }
   $out = $data_list;
@@ -301,17 +349,12 @@ function civicrm_api3_stripe_Listevents($params) {
 
         // Check if charge is in the contributions table.
         $contribution = NULL;
-        $results = civicrm_api3('Contribution', 'get', ['trxn_id' => $item['charge']]);
-        if ($results['count'] > 0) {
-          $contribution = array_pop($results['values']);
-        }
-        else {
-          // From 6.0 we store the Stripe Invoice ID in the Contribution.trxn_id if available (ie it's a recur).
-          // Otherwise we continue to store the Stripe Charge ID.
-          $results = civicrm_api3('Contribution', 'get', ['trxn_id' => $item['invoice']]);
-          if ($results['count'] > 0) {
-            $contribution = array_pop($results['values']);
-          }
+        $results = \Civi\Api4\Contribution::get()
+          ->addClause('OR', [ 'trxn_id', 'LIKE', '%' . $item['charge'] . '%' ], [ 'trxn_id', 'LIKE', '%' . $item['invoice'] . '%' ])
+          ->setCheckPermissions(FALSE)
+          ->execute();
+        if ($results->rowCount > 0) {
+          $contribution = $results->first();
         }
         if ($contribution) {
           $item['contribution_id'] = $contribution['id'];
