@@ -272,7 +272,7 @@ function civicrm_api3_stripe_Listevents($params) {
   $data_list = [ 'data' => [] ];
   if ($subscription) {
     // If we are searching by subscription, we ignore source.
-    $sql = 'SELECT context FROM civicrm_system_log WHERE message = %0 AND context LIKE %1 AND context LIKE %2 ORDER BY timestamp DESC limit %3';
+    $sql = 'SELECT id, context FROM civicrm_system_log WHERE message = %0 AND context LIKE %1 AND context LIKE %2 ORDER BY timestamp DESC limit %3';
     $sql_params = [
       0 => [ 'payment_notification processor_id=' . $params['ppid'], 'String'  ],
       1 => [ '%' . $type . '%', 'String' ],
@@ -282,7 +282,9 @@ function civicrm_api3_stripe_Listevents($params) {
 
     $dao = CRM_Core_DAO::executeQuery($sql, $sql_params);
     while($dao->fetch()) {
-      $data_list['data'][] = civicrm_api3_stripe_listevents_massage_systemlog_json($dao->context);
+      $data = civicrm_api3_stripe_listevents_massage_systemlog_json($dao->context);
+      $data['system_log_id'] = $dao->id;
+      $data_list['data'][] = $data;
     }
 
   }
@@ -293,7 +295,7 @@ function civicrm_api3_stripe_Listevents($params) {
   }
   else {
     // source is systemlog.
-    $sql = 'SELECT context FROM civicrm_system_log WHERE message = %0 AND context LIKE %1 ORDER BY timestamp DESC limit %2';
+    $sql = 'SELECT id, context FROM civicrm_system_log WHERE message = %0 AND context LIKE %1 ORDER BY timestamp DESC limit %2';
     $sql_params = [
       0 => [ 'payment_notification processor_id=' . $params['ppid'], 'String'  ],
       1 => [ '%' . $type . '%', 'String' ],
@@ -302,20 +304,25 @@ function civicrm_api3_stripe_Listevents($params) {
 
     $dao = CRM_Core_DAO::executeQuery($sql, $sql_params);
     while($dao->fetch()) {
-      $data_list['data'][] = civicrm_api3_stripe_listevents_massage_systemlog_json($dao->context);
+      $data = civicrm_api3_stripe_listevents_massage_systemlog_json($dao->context);
+      $data['system_log_id'] = $dao->id;
+      $data_list['data'][] = $data;
     }
   }
   $out = $data_list;
   if ($params['output'] == 'brief') {
     $out = [];
     foreach($data_list['data'] as $data) {
-      $item = [
-        'id' => $data['id'],
-        'created' => date('Y-m-d H:i:s', $data['created']),
-        'livemode' => $data['livemode'],
-        'pending_webhooks' => $data['pending_webhooks'],
-        'type' => $data['type'],
-      ];
+      $item = [];
+      if (array_key_exists('system_log_id', $data)) {
+        $item['system_log_id'] = $data['system_log_id'];
+      }
+      $item['id'] = $data['id'];
+      $item['created'] = date('Y-m-d H:i:s', $data['created']);
+      $item['livemode'] = $data['livemode'];
+      $item['pending_webhooks'] = $data['pending_webhooks'];
+      $item['type'] = $data['type'];
+      
       if (preg_match('/invoice\.payment_/', $data['type'])) {
         $item['invoice'] = $data['data']['object']->id;
         $item['charge'] = $data['data']['object']->charge;
