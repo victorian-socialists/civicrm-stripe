@@ -255,24 +255,16 @@ function civicrm_api3_stripe_Listevents($params) {
   $filter_processed = $parsed['filter_processed'];
   $subscription = $parsed['subscription'];
 
-  $args = [];
-  if ($type) {
-    $args['type'] = $type;
-  }
-  if ($created) {
-    $args['created'] = $created;
-  }
-  if ($limit) {
-    $args['limit'] = $limit;
-  }
-  if ($starting_after) {
-    $args['starting_after'] = $starting_after;
-  }
-
+  // $data_list will contain all the values we will return to the user.
   $data_list = [ 'data' => [] ];
+
+  // Search by a single Stripe subscription id.
   if ($subscription) {
-    // If we are searching by subscription, we ignore source.
-    $sql = 'SELECT id, context FROM civicrm_system_log WHERE message = %0 AND context LIKE %1 AND context LIKE %2 ORDER BY timestamp DESC limit %3';
+    // If we are searching by subscription, we ignore source because we will
+    // search both the system log and we will query Stripe to get a complete
+    // list.
+    $sql = 'SELECT id, context FROM civicrm_system_log WHERE message = %0 AND 
+      context LIKE %1 AND context LIKE %2 ORDER BY timestamp DESC limit %3';
     $sql_params = [
       0 => [ 'payment_notification processor_id=' . $params['ppid'], 'String'  ],
       1 => [ '%' . $type . '%', 'String' ],
@@ -281,20 +273,68 @@ function civicrm_api3_stripe_Listevents($params) {
     ];
 
     $dao = CRM_Core_DAO::executeQuery($sql, $sql_params);
+    $seen_charges = [];
     while($dao->fetch()) {
       $data = civicrm_api3_stripe_listevents_massage_systemlog_json($dao->context);
+      if (in_array($data['data']['object']->charge, $seen_charges)) {
+        // We might get more then one event for a single charge if the first attempt fails. We
+        // don't need to list them all.
+        continue;
+      }
+      $seen_charges[] = $data['data']['object']->charge;
       $data['system_log_id'] = $dao->id;
-      $data_list['data'][] = $data;
+
+      // Add this charge to the list to return. Index by timestamp so we can
+      // sort them chronologically later.
+      $data_list['data'][$data->created] = $data;
     }
 
+    // Now query stripe directly to see if there are any that system log didn't record.
+    $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $params['ppid']]));
+    $processor->setAPIParams();
+    $invoices = $processor->stripeClient->invoices->all(['subscription' => $subscription]);
+    $seen_invoices = [];
+    foreach($invoices['data'] as $invoice) {
+      if ($invoice->charge) {
+        // We get a lot of repeats - for example, one item for the creation of the subscription
+        // and another for the initial charge. We only want one record per charge.
+        if (!in_array($invoice->charge, $seen_charges)) {
+          // If we already have this charge from system log, we don't need it again.
+          if (!in_array($invoice->charge, $seen_invoices)) { 
+            // This means a charge was made that was not included in the system log.
+            $data_list['data'][$invoice->created] = $invoice;
+            $seen_invoices[]  = $invoice->charge;
+          }
+        }
+      }
+    }
+    // Since we're combining data from the system log and from stripe, it may be
+    // out of chronological order.
+    asort($data_list);
   }
+
+  // Query the last month of Stripe events.
   elseif ($source == 'stripe') {
     $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $params['ppid']]));
     $processor->setAPIParams();
+    $args = [];
+    if ($type) {
+      $args['type'] = $type;
+    }
+    if ($created) {
+      $args['created'] = $created;
+    }
+    if ($limit) {
+      $args['limit'] = $limit;
+    }
+    if ($starting_after) {
+      $args['starting_after'] = $starting_after;
+    }
     $data_list = \Stripe\Event::all($args);
   }
+
+  // Query the system log.
   else {
-    // source is systemlog.
     $sql = 'SELECT id, context FROM civicrm_system_log WHERE message = %0 AND context LIKE %1 ORDER BY timestamp DESC limit %2';
     $sql_params = [
       0 => [ 'payment_notification processor_id=' . $params['ppid'], 'String'  ],
@@ -309,6 +349,7 @@ function civicrm_api3_stripe_Listevents($params) {
       $data_list['data'][] = $data;
     }
   }
+
   $out = $data_list;
   if ($params['output'] == 'brief') {
     $out = [];
@@ -323,37 +364,62 @@ function civicrm_api3_stripe_Listevents($params) {
       $item['pending_webhooks'] = $data['pending_webhooks'];
       $item['type'] = $data['type'];
       
+      $invoice = NULL;
+      $charge = NULL;
+      $customer = NULL;
+      $subscription = NULL;
+      $total = NULL;
       if (preg_match('/invoice\.payment_/', $data['type'])) {
-        $item['invoice'] = $data['data']['object']->id;
-        $item['charge'] = $data['data']['object']->charge;
-        $item['customer'] = $data['data']['object']->customer;
-        $item['subscription'] = $data['data']['object']->subscription;
-        $item['total'] = $data['data']['object']->total;
+        $invoice = $data['data']['object']->id;
+        $charge = $data['data']['object']->charge;
+        $customer = $data['data']['object']->customer;
+        $subscription = $data['data']['object']->subscription;
+        $total = $data['data']['object']->total;
+      } 
+      elseif($data['object'] == 'invoice') {
+        $invoice = $data->id;
+        $charge = $data->charge;
+        $customer = $data->customer;
+        $subscription = $data->subscription;
+        $total = $data->total;
+      }
 
-        // We will populate several additional fields based on whether any
-        // of this data has been entered into CiviCRM.
-        $item['contact_id'] = NULL;
-        $item['contribution_recur_id'] = NULL;
-        $item['contribution_recur_status_id'] = NULL;
-        $item['contribution_id'] = NULL;
-        $item['contribution_status_id'] = NULL;
-        $item['processed'] = 'no';
+      $item['invoice'] = $invoice;
+      $item['charge'] = $charge;
+      $item['customer'] = $customer;
+      $item['subscription'] = $subscription;
+      $item['total'] = $total;
 
+      // We will populate several additional fields based on whether any
+      // of this data has been entered into CiviCRM.
+      $item['contact_id'] = NULL;
+      $item['contribution_recur_id'] = NULL;
+      $item['contribution_recur_status_id'] = NULL;
+      $item['contribution_id'] = NULL;
+      $item['contribution_status_id'] = NULL;
+      $item['processed'] = 'no';
+
+      if ($customer) {
         // Check if the customer is in the stripe customer table.
-        $results = civicrm_api3('StripeCustomer', 'get', [ 'id' => $data['data']['object']->customer]);
+        $results = civicrm_api3('StripeCustomer', 'get', [ 'id' => $customer]);
         if ($results['count'] == 1) {
           $value = array_pop($results['values']);
           $item['contact_id'] = $value['contact_id'];
         }
+      }
+
+      if ($subscription) {
         // Check if recurring contribution can be found.
-        $results = civicrm_api3('ContributionRecur', 'get', ['trxn_id' => $item['subscription']]);
+        $results = civicrm_api3('ContributionRecur', 'get', ['trxn_id' => $subscription]);
         if ($results['count'] > 0) {
           $item['contribution_recur_id'] = $results['id'];
           $contribution_recur = array_pop($results['values']);
           $status_id = $contribution_recur['contribution_status_id'];
           $item['contribution_recur_status_id'] = CRM_Core_PseudoConstant::getName('CRM_Contribute_BAO_Contribution', 'contribution_status_id', $status_id);
         }
+      }
 
+      if ($charge && $invoice) {
         // Check if charge is in the contributions table.
         $contribution = NULL;
         $results = \Civi\Api4\Contribution::get()
