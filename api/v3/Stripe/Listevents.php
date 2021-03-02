@@ -263,13 +263,14 @@ function civicrm_api3_stripe_Listevents($params) {
     // If we are searching by subscription, we ignore source because we will
     // search both the system log and we will query Stripe to get a complete
     // list.
-    $sql = 'SELECT id, context FROM civicrm_system_log WHERE message = %0 AND 
-      context LIKE %1 AND context LIKE %2 ORDER BY timestamp DESC limit %3';
+    $sql = 'SELECT id, context FROM civicrm_system_log WHERE message = %0 AND
+      context LIKE %1 AND (context LIKE "%invoice.payment_failed%" OR context LIKE
+      "%invoice.payment_succeeded%") ORDER BY timestamp DESC limit %2';
+
     $sql_params = [
       0 => [ 'payment_notification processor_id=' . $params['ppid'], 'String'  ],
-      1 => [ '%' . $type . '%', 'String' ],
-      2 => [ '%' . $subscription . '%', 'String' ],
-      3 => [ $limit, 'Integer' ]
+      1 => [ '%' . $subscription . '%', 'String' ],
+      2 => [ $limit, 'Integer' ]
     ];
 
     $dao = CRM_Core_DAO::executeQuery($sql, $sql_params);
