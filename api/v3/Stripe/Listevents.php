@@ -142,7 +142,7 @@ function civicrm_api3_stripe_VerifyEventType($eventType) {
 function civicrm_api3_stripe_ProcessParams($params) {
   $type = NULL;
   $created = NULL;
-  $limit = NULL;
+  $limit = 25;
   $starting_after = NULL;
   $source = 'stripe';
   $filter_processed = 0;
@@ -286,7 +286,8 @@ function civicrm_api3_stripe_Listevents($params) {
 
       // Add this charge to the list to return. Index by timestamp so we can
       // sort them chronologically later.
-      $data_list['data'][$data->created] = $data;
+      $index = $data['created'];
+      $data_list['data'][$index] = $data;
     }
 
     // Now query stripe directly to see if there are any that system log didn't record.
