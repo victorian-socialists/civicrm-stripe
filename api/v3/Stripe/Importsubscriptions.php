@@ -126,7 +126,7 @@ function civicrm_api3_stripe_importsubscriptions($params) {
     }
 
     // Create the subscription
-    $created_subscription = civicrm_api3('StripeSubscription', 'import', $new_subscription);
+    $created_subscription = civicrm_api3('Stripe', 'Importsubscription', $new_subscription);
     $new_subscription['recur_id'] = $created_subscription['values']['recur_id'];
     $results['imported'][] = $new_subscription;
   }

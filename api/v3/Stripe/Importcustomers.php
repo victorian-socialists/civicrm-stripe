@@ -26,9 +26,6 @@ function _civicrm_api3_stripe_importcustomers_spec(&$spec) {
   $spec['starting_after']['title'] = ts('Start importing customers after this one');
   $spec['starting_after']['type'] = CRM_Utils_Type::T_STRING;
   $spec['starting_after']['api.required'] = FALSE;
-  $spec['customer']['title'] = ts('Import a specific customer');
-  $spec['customer']['type'] = CRM_Utils_Type::T_STRING;
-  $spec['customer']['api.required'] = FALSE;
 }
 
 /**
@@ -64,26 +61,19 @@ function civicrm_api3_stripe_importcustomers($params) {
     $args['starting_after'] = $starting_after;
   }
 
-  if ($params['customer']) {
-    $customer = \Stripe\Customer::retrieve($params['customer']);
-    $customers_stripe_clean = [$customer];
-    $customer_ids = [$customer->id];
-  }
-  else {
-    $customers_stripe = \Stripe\Customer::all($args);
+  $customers_stripe = \Stripe\Customer::all($args);
 
-    // Exit if there aren't records to process
-    if (!count($customers_stripe->data)) {
-      return civicrm_api3_create_success($results);
-    }
-
-    // Search the customers in CiviCRM
-    $customer_ids = array_map(
-      function ($customer) { return $customer->id; },
-      $customers_stripe->data
-    );
-    $customers_stripe_clean = $customers_stripe->data;
+  // Exit if there aren't records to process
+  if (!count($customers_stripe->data)) {
+    return civicrm_api3_create_success($results);
   }
+
+  // Search the customers in CiviCRM
+  $customer_ids = array_map(
+    function ($customer) { return $customer->id; },
+    $customers_stripe->data
+  );
+  $customers_stripe_clean = $customers_stripe->data;
 
   $escaped_customer_ids = CRM_Utils_Type::escapeAll($customer_ids, 'String');
   $filter_item = array_map(
@@ -124,141 +114,25 @@ function civicrm_api3_stripe_importcustomers($params) {
       continue;
     }
 
-    // Search contact by email
-    if ($customer->email || $customer->name) {
-
-      $re = '/^([^\s]*)\s(.*)$/m';
-      preg_match_all($re, $customer->name, $matches, PREG_SET_ORDER, 0);
-      $first_name = isset($matches[0][1]) ? $matches[0][1] : "-";
-      $last_name = isset($matches[0][2]) ? $matches[0][2] : "-";
-
-        // Case to create customer without email
-      if(!$customer->email) {
-        $contact_ids = [];
-      }
-      else {
-        $email_result = civicrm_api3('Email', 'get', [
-          'sequential' => 1,
-          'email' => $customer->email,
-        ]);
-
-        // List of contact ids using this email address
-        $contacts_by_email = array_map(
-          function ($found_email) { return $found_email['contact_id']; },
-          $email_result['values']
-        );
-
-        if (count($contacts_by_email)) {
-          // Only consider non deleted records of individuals
-          $undeleted_contacts = civicrm_api3('Contact', 'get', [
-            'return' => [ 'id' ],
-            'id' => [ 'IN' => $contacts_by_email ],
-            'is_deleted' => FALSE,
-            'contact_type' => 'Individual',
-          ]);
-
-          $contact_ids = array_unique(
-            array_values(
-              array_map(
-                function ($found_contact) { return $found_contact['id']; },
-                $undeleted_contacts['values']
-              )
-            )
-          );
-        } else {
-          $contact_ids = [];
-        }
-
-        $data = [
-          'email' => $customer->email,
-          'stripe_id' => $customer->id,
-        ];
-
-        if (property_exists($customer, 'name')) {
-          $data['name'] = $customer->name;
-        }
-      }
-
-      if (count($contact_ids) == 0) {
-        // Create the new contact record
-        $params_create_contact = [
-          'sequential' => 1,
-          'contact_type' => 'Individual',
-          'source' => 'Stripe > ' . $customer->description,
-          'first_name' => $first_name,
-          'last_name' => $last_name,
-        ];
-
-        if ($customer->email) {
-          $params_create_contact['email'] = $customer->email;
-        }
-
-        $contact = civicrm_api3('Contact', 'create', $params_create_contact);
-        $contact_id = $contact['id'];
-        // Report the contact creation
-        $tag = 'imported';
-        $data['contact_id'] = $contact_id;
-      }
-      else if (count($contact_ids) == 1) {
-        $contact_id = end($contact_ids);
-
-        // Report the contact as found by email
-        $tag = 'skipped';
-        $data['contact_id'] = $contact_id;
-      }
-      else {
-        $contact_id = end($contact_ids);
-
-        // Report the contact as duplicated
-        $tag = 'errors';
-        $data['warning'] = E::ts("Number of contact records " .
-          "with this email is greater than 1. Contact id: $contact_id " .
-          "will be used");
-        $data['contact_ids'] = $contact_ids;
-      }
+    $c_params = [ 'ppid' => $params['ppid'], 'customer' => $customer->id  ];
+    $c_result = civicrm_api3('Stripe', 'Importcustomer', $c_params );
+    $c_value = array_pop($c_result['values']);
+    $data = [
+        'contact_id' => $c_value['contact_id'],
+        'email' => $c_value['email'],
+        'stripe_id' => $c_value['stripe_id'],
+    ];
+    if (array_key_exists('skipped', $c_value)) {
+      $index = 'skipped';   
     }
-
-    $results[$tag][] = $data;
-
-    // Try to create the Stripe customer record
-    if ($contact_id != NULL && $contact_id > 0) {
-      // Keep running if it already existed
-      try {
-        CRM_Stripe_Customer::add(
-          [
-          'contact_id' => $contact_id,
-          'id' => $customer->id,
-          'processor_id' => $ppid
-          ]
-        );
-      } catch(Exception $e) {
-      }
-
-      // Update the record's 'is live' descriptor and its email
-      $is_live = ($payment_processor["is_test"] == 1) ? 0 : 1;
-
-      if ($customer->email) {
-        $queryParams = [
-          1 => [$customer->email, 'String'],
-          2 => [$customer->id, 'String'],
-          3 => [$is_live, 'Integer'],
-          4 => [$contact_id, 'Integer'],
-        ];
-        CRM_Core_DAO::executeQuery("UPDATE civicrm_stripe_customers
-          SET is_live = %3, email = %1, contact_id = %4
-          WHERE id = %2", $queryParams);
-      }
-      else {
-        $queryParams = [
-          1 => [$customer->id, 'String'],
-          2 => [$is_live, 'Integer'],
-          3 => [$contact_id, 'Integer'],
-        ];
-        CRM_Core_DAO::executeQuery("UPDATE civicrm_stripe_customers
-          SET is_live = %2, contact_id = %3
-          WHERE id = %1", $queryParams);
-      }
+    elseif (array_key_exists('dupes', $c_value)) {
+      $index = 'errors';
+      $data['message'] = 'More then one matching contact was found.';
     }
+    else {
+      $index = 'imported';
+    }
+    $results[$index][] = $data;
   }
 
   return civicrm_api3_create_success($results);
