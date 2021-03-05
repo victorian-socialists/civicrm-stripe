@@ -41,8 +41,8 @@ function civicrm_api3_stripe_invoice_process($params) {
     $ipnClass->setVerifyData(FALSE);
     $ipnClass->setData((Object) ['object' => $stripeInvoiceObject]);
     $ipnClass->setExceptionMode(FALSE);
-    if (isset($emailReceipt)) {
-      $ipnClass->setSendEmailReceipt($params['is_email_receipt'] ?? NULL);
+    if (isset($params['is_email_receipt'])) {
+      $ipnClass->setSendEmailReceipt($params['is_email_receipt']);
     }
 
     if ($ipnClass->processWebhook()) {
