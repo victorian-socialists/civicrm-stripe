@@ -23,15 +23,27 @@ define('STRIPE_PHPUNIT_TEST', 1);
  */
 class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements HeadlessInterface, HookInterface, TransactionalInterface {
 
+  /** @var int */
   protected $contributionID;
+  /** @var int */
   protected $financialTypeID = 1;
+  /** @var array */
   protected $contact;
+  /** @var int */
   protected $contactID;
+  /** @var int */
   protected $paymentProcessorID;
+  /** @var array of payment processor configuration values */
   protected $paymentProcessor;
+  /** @var CRM_Core_Payment_Stripe */
+  protected $paymentObject;
+  /** @var string */
   protected $trxn_id;
+  /** @var string */
   protected $processorID;
+  /** @var string */
   protected $cc = '4111111111111111';
+  /** @var string */
   protected $total = '400.00';
 
   public function setUpHeadless() {
@@ -87,13 +99,13 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
     $processor = array_pop($result['values']);
     $this->paymentProcessor = $processor;
     $this->paymentProcessorID = $result['id'];
+    $this->paymentObject = new CRM_Core_Payment_Stripe('test' /*mode*/, $this->paymentProcessor);
   }
 
   /**
    * Submit to stripe
    */
   public function doPayment($params = []) {
-    $mode = 'test';
 
     \Stripe\Stripe::setApiKey(CRM_Core_Payment_Stripe::getSecretKey($this->paymentProcessor));
 
@@ -128,7 +140,6 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
       $paymentMethodID = $paymentMethod->id;
     }
 
-    $stripe = new CRM_Core_Payment_Stripe($mode, $this->paymentProcessor);
     $params = array_merge([
       'payment_processor_id' => $this->paymentProcessorID,
       'amount' => $this->total,
@@ -145,7 +156,7 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
       'additional_participants' => [],
     ], $params);
 
-    $ret = $stripe->doPayment($params);
+    $ret = $this->paymentObject->doPayment($params);
 
     if (array_key_exists('trxn_id', $ret)) {
       $this->trxn_id = $ret['trxn_id'];
@@ -169,6 +180,7 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
   public function assertValidTrxn() {
     $this->assertNotEmpty($this->trxn_id, "A trxn id was assigned");
 
+    // @todo Consider mock this, though currently only used by Direct Test, so maybe not.
     $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $this->paymentProcessorID]));
     $processor->setAPIParams();
 
