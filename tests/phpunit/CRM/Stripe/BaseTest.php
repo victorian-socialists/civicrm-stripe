@@ -100,6 +100,8 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
     $this->paymentProcessor = $processor;
     $this->paymentProcessorID = $result['id'];
     $this->paymentObject = new CRM_Core_Payment_Stripe('test' /*mode*/, $this->paymentProcessor);
+    // Set params, creates stripeClient
+    $this->paymentObject->setAPIParams();
   }
 
   /**
@@ -107,10 +109,8 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
    */
   public function doPayment($params = []) {
 
-    \Stripe\Stripe::setApiKey(CRM_Core_Payment_Stripe::getSecretKey($this->paymentProcessor));
-
-    // Send in credit card to get payment method.
-    $paymentMethod = \Stripe\PaymentMethod::create([
+    // Send in credit card to get payment method. xxx mock here
+    $paymentMethod = $this->paymentObject->stripeClient->paymentMethods->create([
       'type' => 'card',
       'card' => [
         'number' => $this->cc,
