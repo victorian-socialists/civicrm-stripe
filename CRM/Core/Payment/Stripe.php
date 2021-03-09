@@ -33,6 +33,16 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    */
   public function __construct($mode, $paymentProcessor) {
     $this->_paymentProcessor = $paymentProcessor;
+
+    if (defined('STRIPE_PHPUNIT_TEST') && isset($GLOBALS['mockStripeClient'])) {
+      // When under test, prefer the mock.
+      $this->stripeClient = $GLOBALS['mockStripeClient'];
+
+    }
+    else {
+      // Normally we create a new stripe client.
+      $this->stripeClient = new \Stripe\StripeClient(self::getSecretKey($this->_paymentProcessor));
+    }
   }
 
   /**
@@ -209,8 +219,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     \Stripe\Stripe::setAppInfo('CiviCRM', CRM_Utils_System::version(), CRM_Utils_System::baseURL());
     \Stripe\Stripe::setApiKey(self::getSecretKey($this->_paymentProcessor));
     \Stripe\Stripe::setApiVersion(CRM_Stripe_Check::API_VERSION);
-
-    $this->stripeClient = new \Stripe\StripeClient(self::getSecretKey($this->_paymentProcessor));
   }
 
   /**
@@ -560,7 +568,8 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       // This is where we save the customer card
       // @todo For a recurring payment we have to save the card. For a single payment we'd like to develop the
       //   save card functionality but should not save by default as the customer has not agreed.
-      $paymentMethod = $this->stripeClient->paymentMethods->retrieve($propertyBag->getCustomProperty('paymentMethodID'));
+      $paymentMethodID = $propertyBag->getCustomProperty('paymentMethodID');
+      $paymentMethod = $this->stripeClient->paymentMethods->retrieve($paymentMethodID);
       $paymentMethod->attach(['customer' => $stripeCustomer->id]);
       $stripeCustomer = $this->stripeClient->customers->retrieve($stripeCustomer->id);
 
@@ -724,6 +733,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     // Update the recurring payment
     civicrm_api3('ContributionRecur', 'create', $recurParams);
 
+    // artfulrobot: Q. what do we normally get here?
     if ($stripeSubscription->latest_invoice) {
       // Get the paymentIntent for the latest invoice
       $intent = $stripeSubscription->latest_invoice['payment_intent'];
@@ -1207,4 +1217,16 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     return $text;
   }
 
+  /*
+   * Sets a mock stripe client object for this object and all future created
+   * instances. This should only be called by phpunit tests.
+   *
+   * Nb. cannot change other already-existing instances.
+   */
+  public function setMockStripeClient($stripeClient) {
+    if (!defined('STRIPE_PHPUNIT_TEST')) {
+      throw new \RuntimeException("setMockStripeClient was called while not in a STRIPE_PHPUNIT_TEST");
+    }
+    $GLOBALS['mockStripeClient'] = $this->stripeClient = $stripeClient;
+  }
 }

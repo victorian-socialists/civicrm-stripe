@@ -141,7 +141,7 @@ class CRM_Stripe_Customer {
     $stripeCustomerParams = self::getStripeCustomerMetadata($params);
 
     try {
-      $stripeCustomer = \Stripe\Customer::create($stripeCustomerParams);
+      $stripeCustomer = $stripe->stripeClient->customers->create($stripeCustomerParams);
     }
     catch (Exception $e) {
       $err = CRM_Core_Payment_Stripe::parseStripeException('create_customer', $e, FALSE);

@@ -29,7 +29,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
   // This test is particularly dirty for some reason so we have to
   // force a reset.
   public function setUpHeadless() {
-    $force = TRUE;
+    $force = false;
     return \Civi\Test::headless()
       ->install('mjwshared')
       ->installMe(__DIR__)
@@ -41,6 +41,109 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
    * update it after creation. The membership should also be updated.
    */
   public function testIPNContribution() {
+
+    // Mock the Stripe API. xxx
+    $this->assertInstanceOf('CRM_Core_Payment_Stripe', $this->paymentObject);
+
+    // Create a mock stripe client.
+    $stripeClient = $this->createMock('Stripe\\StripeClient');
+    // Update our CRM_Core_Payment_Stripe object and ensure any others
+    // instantiated separately will also use it.
+    $this->paymentObject->setMockStripeClient($stripeClient);
+
+    // Mock the payment methods service.
+    $mockPaymentMethod = $this->createMock('Stripe\\PaymentMethod');
+    $mockPaymentMethod->method('__get')
+                      ->will($this->returnValueMap([
+                        [ 'id', 'PM_ID_MOCK']
+                      ]));
+
+    $stripeClient->paymentMethods = $this->createMock('Stripe\\Service\\PaymentMethodService');
+    // When create called, return something with an ID.
+    $stripeClient->paymentMethods
+                 ->method('create')
+                 ->willReturn($mockPaymentMethod);
+//                     new PropertySpy('paymentMethod.create', ['id' => 'PM_ID_MOCK']));
+
+    $stripeClient->paymentMethods
+                 ->method('retrieve')
+                 ->willReturn($mockPaymentMethod);
+
+
+    // Mock the Customers service
+    $stripeClient->customers = $this->createMock('Stripe\\Service\\CustomerService');
+    $stripeClient->customers
+                 ->method('create')
+                 ->willReturn(
+                     new PropertySpy('customers.create', ['id' => 'CU_ID_MOCK'])
+                 );
+    $stripeClient->customers
+                 ->method('retrieve')
+                 ->willReturn(
+                     new PropertySpy('customers.create', ['id' => 'CU_ID_MOCK'])
+                 );
+
+    $mockPlan = $this->createMock('Stripe\\Plan');
+    $stripeClient->plans = $this->createMock('Stripe\\Service\\PlanService');
+    $stripeClient->plans
+      ->method('retrieve')
+      ->willReturn($mockPlan);
+
+    // $stripeSubscription = $this->stripeClient->subscriptions->create($subscriptionParams);
+
+    // Need a mock intent with id and status, and 
+    $mockCharge = $this->createMock('Stripe\\Charge');
+    $mockCharge
+      ->method('__get')
+      ->will($this->returnValueMap([
+        ['id', 'CH_ID_MOCK'],
+        ['balance_transaction', NULL],
+      ]));
+
+    $mockPaymentIntent = $this->createMock('Stripe\\PaymentIntent');
+    $mockPaymentIntent
+      ->method('__get')
+      ->will($this->returnValueMap([
+        ['id', 'PI_ID_MOCK'],
+        ['status', 'requires_capture'],
+        ['charges', (object) ['data' => [ $mockCharge ]]]
+      ]));
+
+    $stripeClient->subscriptions = $this->createMock('Stripe\\Service\\SubscriptionService');
+    $stripeClient->subscriptions
+        ->method('create')
+        ->willReturn(new PropertySpy('subscription.create', [
+          'id' => 'SB_ID_MOCK',
+          'latest_invoice' => ['id' => 'IN_ID_MOCK', 'payment_intent' => $mockPaymentIntent],
+          'pending_setup_intent' => '',
+        ]));
+
+    $stripeClient->balanceTransactions = $this->createMock('Stripe\\Service\\BalanceTransactionService');
+    $stripeClient->balanceTransactions
+    ->method('retrieve')
+    ->willReturn(new PropertySpy('balanceTransaction', [
+      'fee' => 1,
+      'currency' => 'USD',
+      'exchange_rate' => 1,
+    ]));
+
+    $stripeClient->paymentIntents = $this->createMock('Stripe\\Service\\PaymentIntentService');
+    // todo change the status from requires_capture to ?
+    //$stripeClient->paymentIntents ->method('update') ->willReturn();
+
+    $stripeClient->invoices = $this->createMock('Stripe\\Service\\InvoiceService');
+    $stripeClient->invoices
+      ->method('all')
+      ->willReturn(['data' => (object) ['charge' => 'CH_ID_MOCK', 'created' => date('Y-m-d H:i:s')]]);
+    //$invoices = $processor->stripeClient->invoices->all(['subscription' => $subscription]);
+
+    // Mock Event service.
+    $stripeClient->events = $this->createMock('Stripe\\Service\\EventService');
+    // @todo create Mock events.
+    $stripeClient->events
+      ->method('all')
+      ->willReturn(['data' => [$mockEvent]]);
+
     // Setup a recurring contribution for $200 per month.
     $this->setupRecurringTransaction();
 
@@ -60,6 +163,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     $this->assertEquals(2, $status_id);
 
     // Now check to see if an event was triggered and if so, process it.
+    // xxx
     $payment_object = $this->getEvent('invoice.payment_succeeded');
     if ($payment_object) {
       $this->ipn($payment_object);
@@ -152,4 +256,20 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     $this->contributionID = $contributionRecur['values']['0']['api.contribution.create']['id'];
   }
 
+}
+
+class PropertySpy {
+  protected $_name;
+  protected $_props;
+  public function __construct($name, $props) {
+    $this->_name = $name;
+    $this->_props = $props;
+  }
+  public function __get($prop) {
+    if (array_key_exists($prop, $this->_props)) {
+      return $this->_props[$prop];
+    }
+    print "$this->_name property '$prop' requested\n";
+    return NULL;
+  }
 }

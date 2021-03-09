@@ -316,6 +316,7 @@ function civicrm_api3_stripe_Listevents($params) {
 
   // Query the last month of Stripe events.
   elseif ($source == 'stripe') {
+    // Here we need to get a singleton xxx
     $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $params['ppid']]));
     $processor->setAPIParams();
     $args = [];
