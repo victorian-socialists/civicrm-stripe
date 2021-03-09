@@ -99,7 +99,7 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
     $processor = array_pop($result['values']);
     $this->paymentProcessor = $processor;
     $this->paymentProcessorID = $result['id'];
-    $this->paymentObject = new CRM_Core_Payment_Stripe('test' /*mode*/, $this->paymentProcessor);
+    $this->paymentObject = \Civi\Payment\System::singleton()->getById($result['id']);
     // Set params, creates stripeClient
     $this->paymentObject->setAPIParams();
   }
