@@ -291,7 +291,7 @@ function civicrm_api3_stripe_Listevents($params) {
     }
 
     // Now query stripe directly to see if there are any that system log didn't record.
-    $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $params['ppid']]));
+    $processor = \Civi\Payment\System::singleton()->getById($params['ppid']);
     $processor->setAPIParams();
     $invoices = $processor->stripeClient->invoices->all(['subscription' => $subscription]);
     $seen_invoices = [];
@@ -317,7 +317,7 @@ function civicrm_api3_stripe_Listevents($params) {
   // Query the last month of Stripe events.
   elseif ($source == 'stripe') {
     // Here we need to get a singleton xxx
-    $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $params['ppid']]));
+    $processor = \Civi\Payment\System::singleton()->getById($params['ppid']);
     $processor->setAPIParams();
     $args = [];
     if ($type) {
@@ -331,7 +331,7 @@ function civicrm_api3_stripe_Listevents($params) {
     if ($starting_after) {
       $args['starting_after'] = $starting_after;
     }
-    $data_list = \Stripe\Event::all($args);
+    $data_list = $processor->stripeClient->events->all($args);
   }
 
   // Query the system log.
