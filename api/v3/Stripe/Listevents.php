@@ -265,12 +265,11 @@ function civicrm_api3_stripe_Listevents($params) {
     // list.
     $sql = 'SELECT id, context FROM civicrm_system_log WHERE message = %0 AND
       context LIKE %1 AND (context LIKE "%invoice.payment_failed%" OR context LIKE
-      "%invoice.payment_succeeded%") ORDER BY timestamp DESC limit %2';
+      "%invoice.payment_succeeded%") ORDER BY timestamp DESC';
 
     $sql_params = [
       0 => [ 'payment_notification processor_id=' . $params['ppid'], 'String'  ],
       1 => [ '%' . $subscription . '%', 'String' ],
-      2 => [ $limit, 'Integer' ]
     ];
 
     $dao = CRM_Core_DAO::executeQuery($sql, $sql_params);
@@ -326,9 +325,8 @@ function civicrm_api3_stripe_Listevents($params) {
     if ($created) {
       $args['created'] = $created;
     }
-    if ($limit) {
-      $args['limit'] = $limit;
-    }
+    // 100 is the max we can request.
+    $args['limit'] = 100;
     if ($starting_after) {
       $args['starting_after'] = $starting_after;
     }
@@ -337,11 +335,10 @@ function civicrm_api3_stripe_Listevents($params) {
 
   // Query the system log.
   else {
-    $sql = 'SELECT id, context FROM civicrm_system_log WHERE message = %0 AND context LIKE %1 ORDER BY timestamp DESC limit %2';
+    $sql = 'SELECT id, context FROM civicrm_system_log WHERE message = %0 AND context LIKE %1 ORDER BY timestamp DESC';
     $sql_params = [
       0 => [ 'payment_notification processor_id=' . $params['ppid'], 'String'  ],
       1 => [ '%' . $type . '%', 'String' ],
-      2 => [ $limit, 'Integer' ]
     ];
 
     $dao = CRM_Core_DAO::executeQuery($sql, $sql_params);
@@ -352,10 +349,18 @@ function civicrm_api3_stripe_Listevents($params) {
     }
   }
 
-  $out = $data_list;
-  if ($params['output'] == 'brief') {
+  if ($params['output'] != 'brief') {
+    $out = $data_list;
+    // Only return the requested number of results.
+    $out['data'] = array_slice($data_list['data'], 0, $limit);
+  }
+  else {
     $out = [];
+    $count = 0;
     foreach($data_list['data'] as $data) {
+      if ($count > $limit) {
+        break;
+      }
       $item = [];
       if (array_key_exists('system_log_id', $data)) {
         $item['system_log_id'] = $data['system_log_id'];
@@ -444,6 +449,7 @@ function civicrm_api3_stripe_Listevents($params) {
           }
         }
       }
+      $count++;
       $out[] = $item;
     }
   }
