@@ -358,8 +358,7 @@ function civicrm_api3_stripe_Listevents($params) {
     $out = [];
     $count = 0;
     foreach($data_list['data'] as $data) {
-      $count++;
-      if ($count > $limit) {
+      if ($count >= $limit) {
         break;
       }
       $item = [];
@@ -450,6 +449,7 @@ function civicrm_api3_stripe_Listevents($params) {
           }
         }
       }
+      $count++;
       $out[] = $item;
     }
   }
