@@ -25,6 +25,10 @@ The api commands are:
   * `ppid` - Use the given Payment Processor ID. By default, uses the saved, live Stripe payment processor and throws an error if there is more than one.
   * `noreceipt` - Set to 1 if you want to suppress the generation of receipts or set to 0 or leave out to send receipts normally.
 
+* `Stripe.Retryall`: Attempt to replay all charges for a given payment processor that are completed in Stripe but not completed in CiviCRM.
+  * `ppid` - Use the given Payment Processor ID. By default, uses the saved, live Stripe payment processor and throws an error if there is more than one.
+  * `limit` - Limit number of results (25 is default).
+
 * `Stripe.Cleanup`: Cleanup and remove old database tables/fields that are no longer required.
 
 ### Import related.
