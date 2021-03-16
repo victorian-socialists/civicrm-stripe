@@ -342,8 +342,14 @@ function civicrm_api3_stripe_Listevents($params) {
     ];
 
     $dao = CRM_Core_DAO::executeQuery($sql, $sql_params);
+    $seen_charges = [];
     while($dao->fetch()) {
       $data = civicrm_api3_stripe_listevents_massage_systemlog_json($dao->context);
+      $charge = $data['data']['object']->charge;
+      if ($charge && in_array($charge, $seen_charges)) {
+        continue;
+      }
+      $seen_charges[] = $charge;
       $data['system_log_id'] = $dao->id;
       $data_list['data'][] = $data;
     }
