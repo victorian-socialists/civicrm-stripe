@@ -180,12 +180,11 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
   public function assertValidTrxn() {
     $this->assertNotEmpty($this->trxn_id, "A trxn id was assigned");
 
-    // @todo Consider mock this, though currently only used by Direct Test, so maybe not.
-    $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $this->paymentProcessorID]));
+    $processor = \Civi\Payment\System::singleton()->getById($this->paymentProcessorID);
     $processor->setAPIParams();
 
     try {
-      $results = \Stripe\Charge::retrieve(["id" => $this->trxn_id]);
+      $results = $processor->stripeClient->charges->retrieve(["id" => $this->trxn_id]);
       $found = TRUE;
     }
     catch (Stripe_Error $e) {
