@@ -220,7 +220,7 @@ class CRM_Core_Payment_StripeIPN {
       // We have not received this webhook before.
       // Some webhooks we always add to the queue and do not process immediately (eg. invoice.finalized)
       if (in_array($this->eventType, CRM_Stripe_Webhook::getDelayProcessingEvents())) {
-        // Process the webhook immediately.
+        // Process the webhook immediately. @todo is this comment correct? surely it means do NOT process webhook immediately?
         $processWebhook = FALSE;
       }
     }
@@ -313,6 +313,7 @@ class CRM_Core_Payment_StripeIPN {
         // An invoice has been created and finalized (ready for payment)
         // This usually happens automatically through a Stripe subscription
         if (!$this->setInfo()) {
+          // Unable to find a Contribution.
           if (!$this->contribution_recur_id) {
             // We don't have a matching contribution or a recurring contribution - this was probably created outside of CiviCRM
             // @todo In the future we may want to match the customer->contactID and create a contribution to match.
@@ -339,8 +340,15 @@ class CRM_Core_Payment_StripeIPN {
 
       case 'invoice.payment_succeeded':
         // Successful recurring payment. Either we are completing an existing contribution or it's the next one in a subscription
+        //
+        // We *normally/ideally* expect to be able to find the contribution via setInfo(),
+        // since the logical order of events would be invoice.finalized first which
+        // creates a contribution; then invoice.payment_succeeded following, which would
+        // find it.
         if (!$this->setInfo()) {
+          // We were unable to locate the Contribution; it could be the next one in a subscription.
           if (!$this->contribution_recur_id) {
+            // Hmmm. We could not find the contribution recur record either. Silently ignore this event(!)
             return TRUE;
           }
           else {
@@ -405,6 +413,7 @@ class CRM_Core_Payment_StripeIPN {
         }
 
         if (!$this->setInfo()) {
+          // We could not find this contribution.
           return TRUE;
         }
         $params = [
@@ -541,7 +550,7 @@ class CRM_Core_Payment_StripeIPN {
    * as much as we can about this event and set that information as
    * properties to be used later.
    *
-   * @return bool
+   * @return bool TRUE if we were able to find a contribution (via getContribution)
    * @throws \CRM_Core_Exception
    */
   public function setInfo() {
@@ -628,6 +637,7 @@ class CRM_Core_Payment_StripeIPN {
     }
 
     // B2) Contribution linked to subscription and we have invoice_id
+    // @todo there is a case where $contribution is not defined (i.e. if charge_id is empty)
     if (!$contribution['count']) {
       unset($paymentParams['trxn_id']);
       if (!empty($this->invoice_id)) {
@@ -637,6 +647,7 @@ class CRM_Core_Payment_StripeIPN {
     }
 
     // B1) Contribution linked to subscription and we have subscription_id
+    // @todo there is a case where $contribution is not defined (i.e. if charge_id, invoice_id are empty)
     if (!$contribution['count']) {
       unset($paymentParams['trxn_id']);
       if (!empty($this->subscription_id)) {
@@ -645,6 +656,7 @@ class CRM_Core_Payment_StripeIPN {
       }
     }
 
+    // @todo there is a case where $contribution is not defined (i.e. if charge_id, invoice_id, subscription_id are empty)
     if (!$contribution['count']) {
       if ((bool)\Civi::settings()->get('stripe_ipndebug')) {
         $message = $this->_paymentProcessor->getPaymentProcessorLabel() . 'No matching contributions for event ' . $this->getEventID();
