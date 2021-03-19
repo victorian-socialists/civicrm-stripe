@@ -344,12 +344,52 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       ],
     ]);
     //
-    // Ensure Contribution and recur records remain as-was.
+    // Ensure Contribution is marked Failed, with the reason, and that the
+    // ContributionRecur is not changed from Pending.
     //
     $this->checkContrib([
       'contribution_status_id' => 'Failed',
       'trxn_id'                => 'in_mock',
       'cancel_reason'          => 'Mocked failure',
+    ]);
+    $this->checkContribRecur([ 'contribution_status_id' => 'Pending' ]);
+  }
+  /**
+   *
+   * @see https://stripe.com/docs/billing/invoices/overview#invoice-status-transition-endpoints-and-webhooks
+   */
+  public function testNewRecurringInvoicePaymentFailed() {
+
+    $this->mockRecurringPaymentSetup();
+
+    $this->simulateEvent([
+      'id'               => 'evt_mock',
+      'object'           => 'event',
+      'type'             => 'invoice.payment_failed',
+      'livemode'         => false,
+      'pending_webhooks' => 0,
+      'request'          => [ 'id' => NULL ],
+      'data'             => [
+        'object' => [
+          'id'                  => 'in_mock',
+          'object'              => 'invoice',
+          'charge'              => 'ch_mock',
+          'amount_due'          => $this->total*100,
+          'amount_paid'         => 0,
+          'customer'            => 'cus_mock',
+          'created'             => time(),
+          'status'              => 'uncollectible'
+        ]
+      ],
+    ]);
+
+    //
+    // Ensure Contribution is marked Failed, with the reason, and that the
+    // ContributionRecur is not changed from Pending.
+    //
+    $this->checkContrib([
+      'contribution_status_id' => 'Failed',
+      'trxn_id'                => 'in_mock',
     ]);
     $this->checkContribRecur([ 'contribution_status_id' => 'Pending' ]);
   }
@@ -526,21 +566,23 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
           'subscription' => 'sub_mock',
           'customer'     => 'cus_mock',
           'created'      => time(),
-          'amount_due'   => $this->total*100,
     ];
     $mockCharge1 = new PropertySpy('charge1', $common + [
-          'id'           => 'ch_mock',
-          'object'       => 'charge',
+          'id'                  => 'ch_mock',
+          'object'              => 'charge',
           'balance_transaction' => 'txn_mock',
+          'amount'              => $this->total*100,
         ]);
     $mockCharge2 = new PropertySpy('charge2', $common + [
           'id'                  => 'ch_mock_2',
           'object'              => 'charge',
           'balance_transaction' => 'txn_mock_2',
+          'amount'              => $this->total*100,
         ]);
     $mockInvoice2 = new PropertySpy('invoice2', $common + [
           'id'           => 'in_mock_2',
           'object'       => 'invoice',
+          'amount_due'   => $this->total*100,
           'charge'       => 'ch_mock_2',
         ]);
     $balanceTransaction2 = new PropertySpy('balance_transaction2', [
@@ -931,10 +973,6 @@ class PropertySpy implements ArrayAccess, Iterator, Countable, JsonSerializable 
     return $this->_props;
   }
 }
-class X {
-  public function hi() {}
-}
-
 /**
  * Stubs a method by returning a value from a map.
  */
