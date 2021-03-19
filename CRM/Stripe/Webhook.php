@@ -41,7 +41,10 @@ class CRM_Stripe_Webhook {
 
     foreach ($result['values'] as $paymentProcessor) {
       $webhook_path = self::getWebhookPath($paymentProcessor['id']);
+      // @todo consider replacing this:
       $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $paymentProcessor['id']]));
+      // with
+      // $processor = \Civi\Payment\System::singleton()->getById($paymentProcessor['id']);
       $processor->setAPIParams();
 
       try {
@@ -197,7 +200,10 @@ class CRM_Stripe_Webhook {
    * @param int $paymentProcessorId
    */
   public static function createWebhook($paymentProcessorId) {
+    // @todo consider replacing this:
     $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $paymentProcessorId]));
+    // With:
+    // $processor = \Civi\Payment\System::singleton()->getById($paymentProcessor['id']);
     $processor->setAPIParams();
 
     $params = [
