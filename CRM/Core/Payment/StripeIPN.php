@@ -71,6 +71,16 @@ class CRM_Core_Payment_StripeIPN {
   protected $setInputParametersHasRun = FALSE;
 
   /**
+   * Normally if any exception is thrown in processing a webhook it is
+   * caught and a simple error logged.
+   *
+   * In a test environment it is often helpful for it to throw the exception instead.
+   *
+   * @var bool.
+   */
+  public $exceptionOnFailure = FALSE;
+
+  /**
    * Returns TRUE if we handle this event type, FALSE otherwise
    * @param string $eventType
    *
@@ -272,8 +282,16 @@ class CRM_Core_Payment_StripeIPN {
       $success = $this->processEventType();
     }
     catch (Exception $e) {
-      $success = FALSE;
-      \Civi::log()->error("StripeIPN: processEventType failed. EventID: {$this->eventID} : " . $e->getMessage());
+      if ($this->exceptionOnFailure) {
+        // Re-throw a modified exception. (Special case for phpunit testing).
+        $message = get_class($e) . ": " . $e->getMessage();
+        throw new RuntimeException($message, $e->getCode(), $e);
+      }
+      else {
+        // Normal use.
+        $success = FALSE;
+        \Civi::log()->error("StripeIPN: processEventType failed. EventID: {$this->eventID} : " . $e->getMessage() . "\n" . $e->getTraceAsString());
+      }
     }
 
     $uniqueIdentifier = $this->getWebhookUniqueIdentifier();
