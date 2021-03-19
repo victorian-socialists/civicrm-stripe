@@ -412,11 +412,20 @@ class CRM_Core_Payment_StripeIPN {
 
         if ($this->contribution['contribution_status_id'] == $pendingContributionStatusID) {
           // If this contribution is Pending, set it to Failed.
+
+          // To obtain the failure_message we need to look up the charge object
+          $failureMessage = '';
+          if ($this->charge_id) {
+            $stripeCharge = $this->_paymentProcessor->stripeClient->charges->retrieve($this->charge_id);
+            $failureMessage = CRM_Stripe_Api::getObjectParam('failure_message', $stripeCharge);
+            $failureMessage = is_string($failureMessage) ? $failureMessage : '';
+          }
+
           $params = [
             'contribution_id' => $this->contribution['id'],
             'order_reference' => $this->invoice_id,
             'cancel_date' => $this->receive_date,
-            'cancel_reason' => $this->retrieve('failure_message', 'String'),
+            'cancel_reason'   => $failureMessage,
           ];
           $this->updateContributionFailed($params);
         }

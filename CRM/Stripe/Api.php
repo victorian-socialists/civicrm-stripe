@@ -103,10 +103,8 @@ class CRM_Stripe_Api {
             return (string) $stripeObject->customer;
 
           case 'failure_message':
-            if (!empty($stripeObject->charge)) {
-              $stripeCharge = \Stripe\Charge::retrieve($stripeObject->charge);
-              return (string) $stripeCharge->failure_message;
-            }
+            // This is a coding error, but it looks like the general policy here is to return something. Could otherwise consider throwing an exception.
+            Civi::log()->error("Coding error: CRM_Stripe_Api::getObjectParam failure_message is not a property on a Stripe Invoice object. Please alter your code to fetch the Charge and obtain the failure_message from that.");
             return '';
 
         }
