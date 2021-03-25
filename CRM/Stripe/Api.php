@@ -19,6 +19,7 @@ class CRM_Stripe_Api {
    * @throws \Stripe\Exception\ApiErrorException
    */
   public static function getObjectParam($name, $stripeObject) {
+    // object is a string containing the Stripe object name
     switch ($stripeObject->object) {
       case 'charge':
         switch ($name) {
