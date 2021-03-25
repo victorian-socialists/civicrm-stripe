@@ -219,7 +219,7 @@
             })
             .fail(function() {
               swalClose();
-              displayError('Unknown error', true);
+              displayError(ts('Unknown error'), true);
             });
         }
         else {
@@ -273,7 +273,7 @@
               }
             })
             .fail(function(object) {
-              var error = 'Unknown error';
+              var error = ts('Unknown error');
               if (object.hasOwnProperty('statusText') && (object.statusText !== 'OK')) {
                 // A PHP exit can return 200 "OK" but we don't want to display "OK" as the error!
                 error = object.statusText;
@@ -322,7 +322,7 @@
       })
       .fail(function(object) {
         // Triggered when http code !== 200 (eg. 400 Bad request)
-        var error = 'Unknown error';
+        var error = ts('Unknown error');
         if (object.hasOwnProperty('statusText')) {
           error = object.statusText;
         }
@@ -774,7 +774,7 @@
                     if (result.error) {
                       // The payment failed -- ask your customer for a new payment method.
                       debugging('confirmCardPayment failed');
-                      displayError('The payment failed - please try a different payment method.', true);
+                      displayError(ts('The payment failed - please try a different payment method.'), true);
                     } else {
                       // The payment has succeeded.
                       successHandler('paymentIntentID', result.paymentIntent);

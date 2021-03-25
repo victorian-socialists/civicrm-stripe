@@ -115,7 +115,7 @@
             }
           })
           .fail(function(object) {
-            var error = 'Unknown error';
+            var error = ts('Unknown error');
             if (object.hasOwnProperty('statusText') && (object.statusText !== 'OK')) {
               // A PHP exit can return 200 "OK" but we don't want to display "OK" as the error!
               error = object.statusText;
