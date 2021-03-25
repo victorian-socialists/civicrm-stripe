@@ -114,13 +114,32 @@ class CRM_Core_Payment_StripeIPN {
       $this->setData($event->data);
     }
 
-    if (!is_object($this->getData())) {
+    $data = $this->getData();
+    if (!is_object($data)) {
       $this->exception('Invalid input data (not an object)');
     }
 
-    $this->invoice_id = $this->retrieve('invoice_id', 'String', FALSE);
+    // When we receive a charge.X webhook event and it has an invoice ID we expand the invoice object
+    //   so that we have the subscription ID.
+    //   We'll receive both invoice.payment_succeeded/failed and charge.succeeded/failed at the same time
+    //   and we need to make sure we don't process them at the same time or we can get deadlocks/race conditions
+    //   that cause processing to fail.
+    if (($data->object instanceof \Stripe\Charge) && !empty($data->object->invoice)) {
+      $data->object = $this->_paymentProcessor->stripeClient->charges->retrieve(
+        $this->getData()->object->id,
+        ['expand' => ['invoice']]
+      );
+      $this->setData($data);
+      $this->subscription_id = CRM_Stripe_Api::getObjectParam('subscription_id', $this->getData()->object->invoice);
+      $this->invoice_id = CRM_Stripe_Api::getObjectParam('invoice_id', $this->getData()->object->invoice);
+    }
+    else {
+      $this->subscription_id = $this->retrieve('subscription_id', 'String', FALSE);
+      $this->invoice_id = $this->retrieve('invoice_id', 'String', FALSE);
+    }
+
     $this->charge_id = $this->retrieve('charge_id', 'String', FALSE);
-    $this->subscription_id = $this->retrieve('subscription_id', 'String', FALSE);
+
     $this->setInputParametersHasRun = TRUE;
   }
 
