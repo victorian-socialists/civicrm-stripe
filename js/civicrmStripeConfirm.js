@@ -24,12 +24,28 @@
           confirm.handleCardConfirm();
         }
       }
-      else {
+      else if (paymentIntentProcessResponse.requires_payment_method) {
+        CRM.payment.debugging(confirm.scriptName, 'Payment failed - requires_payment_method');
+        confirm.swalFire({
+          title: '',
+          text: ts('The payment failed - please try a different payment method.'),
+          icon: 'error'
+        }, '', true);
+      }
+      else if (paymentIntentProcessResponse.succeeded) {
         // All good, nothing more to do
         CRM.payment.debugging(confirm.scriptName, 'success - payment captured');
         confirm.swalFire({
           title: ts('Payment successful'),
           icon: 'success'
+        }, '', true);
+      }
+      else {
+        CRM.payment.debugging(confirm.scriptName, 'Payment Failed - unknown error');
+        confirm.swalFire({
+          title: '',
+          text: ts('The payment failed - unknown error.'),
+          icon: 'error'
         }, '', true);
       }
     },
@@ -87,7 +103,6 @@
      */
     handleCardConfirm: function() {
       CRM.payment.debugging(confirm.scriptName, 'handle card confirm');
-
       if (CRM.vars.stripe.hasOwnProperty('paymentIntentID')) {
         // Send paymentMethod.id to server
         CRM.api3('StripePaymentintent', 'Process', {
