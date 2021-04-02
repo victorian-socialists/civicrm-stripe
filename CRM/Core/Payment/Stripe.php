@@ -945,24 +945,54 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     # See https://stripe.com/docs/statement-descriptors
     $disallowed_characters = ['<', '>', '\\', "'", '"', '*'];
 
-    if (!isset(\Civi::$statics[__CLASS__]['description']['contact_contribution'])) {
-      \Civi::$statics[__CLASS__]['description']['contact_contribution'] = $params['contactID'] . '-' . ($params['contributionID'] ?? 'XX');
-    }
+    $contactContributionID = $params['contactID'] . '-' . ($params['contributionID'] ?? 'XX');
     switch ($type) {
+      // For statement_descriptor / statement_descriptor_suffix:
+      // 1. Get it from the setting if defined.
+      // 2. Generate it from the contact/contribution ID + description (event/contribution title).
+      // 3. Set it to the current "domain" name in CiviCRM.
+      // 4. If we end up with a blank descriptor Stripe will reject it - https://lab.civicrm.org/extensions/stripe/-/issues/293
+      //   so we set it to ".".
       case 'statement_descriptor':
-        $description = substr(\Civi::$statics[__CLASS__]['description']['contact_contribution'] . " " . $params['description'], 0, 22);
-        break;
+        $description = \Civi::settings()->get('stripe_statementdescriptor');
+        if (empty($description)) {
+          $description = trim("{$contactContributionID} {$params['description']}");
+          if (empty($description)) {
+            $description = \Civi\Api4\Domain::get(FALSE)
+              ->setCurrentDomain(TRUE)
+              ->addSelect('name')
+              ->execute()
+              ->first()['name'];
+          }
+        }
+        $description = str_replace($disallowed_characters, '', $description);
+        if (empty($description)) {
+          $description = '.';
+        }
+        return substr($description, 0, 22);
 
       case 'statement_descriptor_suffix':
-        $description = \Civi::$statics[__CLASS__]['description']['contact_contribution'] . " " . substr($params['description'],0,7);
-        break;
+        $description = \Civi::settings()->get('stripe_statementdescriptorsuffix');
+        if (empty($description)) {
+          $description = trim("{$contactContributionID} {$params['description']}");
+          if (empty($description)) {
+            $description = \Civi\Api4\Domain::get(FALSE)
+              ->setCurrentDomain(TRUE)
+              ->addSelect('name')
+              ->execute()
+              ->first()['name'];
+          }
+        }
+        $description = str_replace($disallowed_characters, '', $description);
+        if (empty($description)) {
+          $description = '.';
+        }
+        return substr($description,0,12);
 
       default:
         // The (paymentIntent) full description has no restriction on characters that are allowed/disallowed.
-        return "{$params['description']} " . \Civi::$statics[__CLASS__]['description']['contact_contribution'] . " #" . CRM_Utils_Array::value('invoiceID', $params);
+        return "{$params['description']} " . $contactContributionID . " #" . ($params['invoiceID'] ?? '');
     }
-
-    return str_replace($disallowed_characters, ' ', $description);
   }
 
   /**
