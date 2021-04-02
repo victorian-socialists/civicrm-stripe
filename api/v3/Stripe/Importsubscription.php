@@ -9,6 +9,8 @@
  +--------------------------------------------------------------------+
  */
 
+use CRM_Stripe_ExtensionUtil as E;
+
 /**
  * API to import a stripe subscription, create a customer, recur, contribution and optionally link to membership
  * You run it once for each subscription and it creates/updates a recurring contribution in civicrm (and optionally links it to a membership).
@@ -34,13 +36,18 @@ function civicrm_api3_stripe_importsubscription($params) {
   // Create the stripe customer in CiviCRM if it doesn't exist already.
   $customerParams = [
     'customer_id' => CRM_Stripe_Api::getObjectParam('customer_id', $stripeSubscription),
-    'contact_id' => $params['contact_id'],
     'processor_id' => (int) $params['ppid'],
   ];
 
-  $customer = civicrm_api3('StripeCustomer', 'get', $customerParams);
-  if ($customer['count'] == 0) {
-    $customer = civicrm_api3('StripeCustomer', 'create', $customerParams);
+  $custresult = civicrm_api3('StripeCustomer', 'get', $customerParams);
+  if ($custresult['count'] == 0) {
+    // Create the customer.
+    $cusotmerParmas['contact_id'] = $params['contact_id'];
+    $custresult = civicrm_api3('StripeCustomer', 'create', $customerParams);
+  }
+  $customer = array_pop($custresult['values']);
+  if ($customer['contact_id'] != $params['contact_id']) {
+    throw new API_Exception(E::ts("There is a mismatch between the contact id for the customer indicated by the subscription (%1) and the contact id provided via the API params (%2).", [ 1 => $customer['contact_id'], 2 => $params['contact_id']])); 
   }
 
   // Create the recur record in CiviCRM if it doesn't exist.
@@ -79,6 +86,9 @@ function civicrm_api3_stripe_importsubscription($params) {
   foreach ($stripeInvoices->data as $stripeInvoice) {
     if (CRM_Stripe_Api::getObjectParam('subscription_id', $stripeInvoice) === $params['subscription']) {
       $charge = CRM_Stripe_Api::getObjectParam('charge_id', $stripeInvoice);
+      if (empty($charge)) {
+        continue;
+      }
       $exists_params = [
 	'contribution_test' => $processor->getIsTestMode(),
 	'trxn_id' => $charge
