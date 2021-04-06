@@ -464,9 +464,9 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * Process payment
    * Submit a payment using Stripe's PHP API:
    * https://stripe.com/docs/api?lang=php
-   * Payment processors should set payment_status_id.
+   * Payment processors should set payment_status_id/payment_status.
    *
-   * @param array|PropertyBag $params
+   * @param array|PropertyBag $propertyBag
    *   Assoc array of input parameters for this transaction.
    * @param string $component
    *
@@ -658,7 +658,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     // @fixme FROM HERE we are using $params array (but some things are READING from $propertyBag)
 
     // We set payment status as pending because the IPN will set it as completed / failed
-    $params['payment_status_id'] = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending');
+    $params = $this->setStatusPaymentPending($params);
 
     $required = NULL;
     if (empty($this->getRecurringContributionId($propertyBag))) {
@@ -822,7 +822,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
           }
           // Success!
           // Set the desired contribution status which will be set later (do not set on the contribution here!)
-          $params['payment_status_id'] = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Completed');
+          $params = $this->setStatusPaymentCompleted($params);
           // Transaction ID is always stripe Charge ID.
           $this->setPaymentProcessorTrxnID($stripeCharge->id);
 
