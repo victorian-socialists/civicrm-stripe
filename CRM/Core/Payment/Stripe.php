@@ -41,7 +41,11 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     }
     else {
       // Normally we create a new stripe client.
-      $this->stripeClient = new \Stripe\StripeClient(self::getSecretKey($this->_paymentProcessor));
+      $secretKey = self::getSecretKey($this->_paymentProcessor);
+      // You can configure only one of live/test so don't initialize StripeClient if keys are blank
+      if (!empty($secretKey)) {
+        $this->stripeClient = new \Stripe\StripeClient($secretKey);
+      }
     }
   }
 
@@ -51,7 +55,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return string
    */
   public static function getSecretKey($paymentProcessor) {
-    return trim(CRM_Utils_Array::value('password', $paymentProcessor));
+    return trim($paymentProcessor['password'] ?? '');
   }
 
   /**
@@ -60,7 +64,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return string
    */
   public static function getPublicKey($paymentProcessor) {
-    return trim(CRM_Utils_Array::value('user_name', $paymentProcessor));
+    return trim($paymentProcessor['user_name'] ?? '');
   }
 
   /**
