@@ -184,10 +184,10 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
     $processor->setAPIParams();
 
     try {
-      $results = $processor->stripeClient->charges->retrieve(["id" => $this->trxn_id]);
+      $processor->stripeClient->charges->retrieve(["id" => $this->trxn_id]);
       $found = TRUE;
     }
-    catch (Stripe_Error $e) {
+    catch (Exception $e) {
       $found = FALSE;
     }
 
@@ -200,15 +200,12 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
   public function setupTransaction($params = []) {
      $contribution = civicrm_api3('contribution', 'create', array_merge([
       'contact_id' => $this->contactID,
-      'contribution_status_id' => 2,
       'payment_processor_id' => $this->paymentProcessorID,
       // processor provided ID - use contact ID as proxy.
       'processor_id' => $this->contactID,
       'total_amount' => $this->total,
       'financial_type_id' => $this->financialTypeID,
       'contribution_status_id' => 'Pending',
-      'contact_id' => $this->contactID,
-      'payment_processor_id' => $this->paymentProcessorID,
       'is_test' => 1,
      ], $params));
     $this->assertEquals(0, $contribution['is_error']);

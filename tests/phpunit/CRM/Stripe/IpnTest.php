@@ -47,7 +47,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
   // This test is particularly dirty for some reason so we have to
   // force a reset.
   public function setUpHeadless() {
-    $force = false;
+    $force = FALSE;
     return \Civi\Test::headless()
       ->install('mjwshared')
       ->installMe(__DIR__)
@@ -65,7 +65,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       'type'             => 'invoice.payment_succeeded',
       'id'               => 'evt_mock',
       'object'           => 'event', // ?
-      'livemode'         => false,
+      'livemode'         => FALSE,
       'pending_webhooks' => 0,
       'request'          => [ 'id' => NULL ],
       'data'             => [
@@ -103,7 +103,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       'type'             => 'charge.succeeded',
       'id'               => 'evt_mock',
       'object'           => 'event',
-      'livemode'         => false,
+      'livemode'         => FALSE,
       'pending_webhooks' => 0,
       'request'          => [ 'id' => NULL ],
       'data'             => [
@@ -141,7 +141,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       'type'             => 'charge.failed',
       'id'               => 'evt_mock',
       'object'           => 'event',
-      'livemode'         => false,
+      'livemode'         => FALSE,
       'pending_webhooks' => 0,
       'request'          => [ 'id' => NULL ],
       'data'             => [
@@ -182,7 +182,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       'id'               => 'evt_mock',
       'object'           => 'event',
       'type'             => 'invoice.payment_failed',
-      'livemode'         => false,
+      'livemode'         => FALSE,
       'pending_webhooks' => 0,
       'request'          => [ 'id' => NULL ],
       'data'             => [
@@ -231,7 +231,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       'type'             => 'invoice.finalized',
       'id'               => 'evt_mock_2',
       'object'           => 'event',
-      'livemode'         => false,
+      'livemode'         => FALSE,
       'pending_webhooks' => 0,
       'request'          => [ 'id' => NULL ],
       'data'             => [
@@ -255,7 +255,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       'type'             => 'invoice.payment_succeeded',
       'id'               => 'evt_mock_3',
       'object'           => 'event',
-      'livemode'         => false,
+      'livemode'         => FALSE,
       'pending_webhooks' => 0,
       'request'          => [ 'id' => NULL ],
       'data'             => [
@@ -301,7 +301,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       'type'             => 'invoice.payment_succeeded',
       'id'               => 'evt_mock_2',
       'object'           => 'event',
-      'livemode'         => false,
+      'livemode'         => FALSE,
       'pending_webhooks' => 0,
       'request'          => [ 'id' => NULL ],
       'data'             => [
@@ -332,7 +332,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       'type'             => 'invoice.finalized',
       'id'               => 'evt_mock_3',
       'object'           => 'event',
-      'livemode'         => false,
+      'livemode'         => FALSE,
       'pending_webhooks' => 0,
       'request'          => [ 'id' => NULL ],
       'data'             => [
@@ -377,23 +377,23 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     // To do this we'll need a new invoice and a new charge.
     // and pending balance transaction
     $mockInvoice2 = new PropertySpy('invoice2', [
-          'id'           => 'in_mock_2',
-          'object'       => 'invoice',
-          'amount_due'   => $this->total*100,
-          'charge'       => 'ch_mock_2',
-          'subscription' => 'sub_mock',
-          'customer'     => 'cus_mock',
-          'created'      => time(),
-        ]);
+      'id'           => 'in_mock_2',
+      'object'       => 'invoice',
+      'amount_due'   => $this->total*100,
+      'charge'       => 'ch_mock_2',
+      'subscription' => 'sub_mock',
+      'customer'     => 'cus_mock',
+      'created'      => time(),
+    ]);
     $mockCharge2 = new PropertySpy('charge2', [
-          'id'                  => 'ch_mock_2',
-          'object'              => 'charge',
-          'balance_transaction' => 'txn_mock_2',
-          'amount'              => $this->total*100,
-          'subscription' => 'sub_mock',
-          'customer'     => 'cus_mock',
-          'created'      => time(),
-        ]);
+      'id'                  => 'ch_mock_2',
+      'object'              => 'charge',
+      'balance_transaction' => 'txn_mock_2',
+      'amount'              => $this->total*100,
+      'subscription' => 'sub_mock',
+      'customer'     => 'cus_mock',
+      'created'      => time(),
+    ]);
     $balanceTransaction2 = new PropertySpy('balance_transaction2', [
       'id'            => 'txn_mock_2',
       'object'        => 'balance_transaction',
@@ -426,7 +426,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       'type'             => 'invoice.finalized',
       'id'               => 'evt_mock_3',
       'object'           => 'event',
-      'livemode'         => false,
+      'livemode'         => FALSE,
       'pending_webhooks' => 0,
       'request'          => [ 'id' => NULL ],
       'data'             => [
@@ -452,7 +452,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       'id'               => 'evt_mock_4',
       'object'           => 'event',
       'type'             => 'invoice.payment_failed',
-      'livemode'         => false,
+      'livemode'         => FALSE,
       'pending_webhooks' => 0,
       'request'          => [ 'id' => NULL ],
       'data'             => [
@@ -479,14 +479,14 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     // Now simulate an invoice.payment_succeeded - e.g. a 2nd charge attempt worked.
     //
     $mockCharge3 = new PropertySpy('charge3', [
-          'id'                  => 'ch_mock_3',
-          'object'              => 'charge',
-          'balance_transaction' => 'txn_mock_3',
-          'amount'              => $this->total*100,
-          'subscription'        => 'sub_mock',
-          'customer'            => 'cus_mock',
-          'created'             => time(),
-        ]);
+      'id'                  => 'ch_mock_3',
+      'object'              => 'charge',
+      'balance_transaction' => 'txn_mock_3',
+      'amount'              => $this->total*100,
+      'subscription'        => 'sub_mock',
+      'customer'            => 'cus_mock',
+      'created'             => time(),
+    ]);
     $balanceTransaction2 = new PropertySpy('balance_transaction3', [
       'id'            => 'txn_mock_3',
       'object'        => 'balance_transaction',
@@ -515,7 +515,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       'id'               => 'evt_mock_5',
       'object'           => 'event',
       'type'             => 'invoice.payment_succeeded',
-      'livemode'         => false,
+      'livemode'         => FALSE,
       'pending_webhooks' => 0,
       'request'          => [ 'id' => NULL ],
       'data'             => [
@@ -537,17 +537,13 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       'contribution_status_id' => 'Completed',
       'trxn_id' => 'in_mock_2,ch_mock_3',
     ], $contributions[1]);
-
-
-
-
   }
+
   /**
    * Tests situation when the initial recurring payment came in OK,
    * but the subscription is then deleted.
    */
   public function testRecurringDeletedAfterInitialSuccess() {
-
     // Initial payment comes in...
     $this->testNewRecurringInvoicePaymentSucceeded();
 
@@ -567,10 +563,10 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     $stripeClient = $this->paymentObject->stripeClient;
     $stripeClient->subscriptions = $this->createMock('Stripe\\Service\\SubscriptionService');
     $stripeClient->subscriptions
-        ->method('retrieve')
-        ->will($this->returnValueMapOrDie([
-          ['sub_mock', NULL, NULL, $mockSubscription],
-        ]));
+      ->method('retrieve')
+      ->will($this->returnValueMapOrDie([
+        ['sub_mock', NULL, NULL, $mockSubscription],
+      ]));
     //
     // Now test if we get customer.subscription.deleted .
     //
@@ -578,7 +574,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       'type'             => 'customer.subscription.deleted',
       'id'               => 'evt_mock_2',
       'object'           => 'event',
-      'livemode'         => false,
+      'livemode'         => FALSE,
       'pending_webhooks' => 0,
       'request'          => [ 'id' => NULL ],
       'data'             => [
@@ -588,9 +584,9 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
 
     // Recur should be Cancelled.
     $this->checkContribRecur( [
-        'contribution_status_id' => 'Cancelled',
-        'cancel_date'            => date('Y-m-d H:i:s', $cancelTimestamp),
-      ]);
+      'contribution_status_id' => 'Cancelled',
+      'cancel_date'            => date('Y-m-d H:i:s', $cancelTimestamp),
+    ]);
 
     // We should still have 1 contrib which should be unaffected.
     $this->getContributionsAndAssertCount(1);
@@ -599,6 +595,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       'trxn_id'                => 'in_mock,ch_mock',
     ]);
   }
+
   /**
    * Retrieve the event with a matching subscription id
    *
@@ -635,7 +632,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
   /**
    * Run the webhook/ipn
    *
-   * @return bool whether it was successful (nb. false might be valid where we
+   * @return bool whether it was successful (nb. FALSE might be valid where we
    * want stripe to resend something again later)
    */
   public function ipn($event, $verifyRequest = TRUE, $exceptionOnFailure=FALSE) {
@@ -721,6 +718,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       $this->assertEquals($expect, $contribution[$field], "Expected Contribution.$field = " . json_encode($expect));
     }
   }
+
   /**
    * Sugar for checking things on the contribution recur.
    */
@@ -736,6 +734,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       $this->assertEquals($expect, $contribution[$field]);
     }
   }
+
   /**
    * Returns an array of arrays of contributions.
    */
@@ -749,34 +748,34 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     $this->assertEquals($expectedCount, $contributions['count']);
     return $contributions['values'];
   }
+
   /**
    * DRY code
    */
   protected function getMocksForRecurringInvoiceFinalized() :array {
-
     $common = [
-          'subscription' => 'sub_mock',
-          'customer'     => 'cus_mock',
-          'created'      => time(),
+      'subscription' => 'sub_mock',
+      'customer'     => 'cus_mock',
+      'created'      => time(),
     ];
     $mockCharge1 = new PropertySpy('charge1', $common + [
-          'id'                  => 'ch_mock',
-          'object'              => 'charge',
-          'balance_transaction' => 'txn_mock',
-          'amount'              => $this->total*100,
-        ]);
+        'id'                  => 'ch_mock',
+        'object'              => 'charge',
+        'balance_transaction' => 'txn_mock',
+        'amount'              => $this->total*100,
+      ]);
     $mockCharge2 = new PropertySpy('charge2', $common + [
-          'id'                  => 'ch_mock_2',
-          'object'              => 'charge',
-          'balance_transaction' => 'txn_mock_2',
-          'amount'              => $this->total*100,
-        ]);
+        'id'                  => 'ch_mock_2',
+        'object'              => 'charge',
+        'balance_transaction' => 'txn_mock_2',
+        'amount'              => $this->total*100,
+      ]);
     $mockInvoice2 = new PropertySpy('invoice2', $common + [
-          'id'           => 'in_mock_2',
-          'object'       => 'invoice',
-          'amount_due'   => $this->total*100,
-          'charge'       => 'ch_mock_2',
-        ]);
+        'id'           => 'in_mock_2',
+        'object'       => 'invoice',
+        'amount_due'   => $this->total*100,
+        'charge'       => 'ch_mock_2',
+      ]);
     $balanceTransaction2 = new PropertySpy('balance_transaction2', [
       'id'            => 'txn_mock_2',
       'object'        => 'balance_transaction',
@@ -805,6 +804,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
 
     return [$mockCharge1, $mockCharge2, $mockInvoice2, $balanceTransaction2];
   }
+
   /**
    * DRY code. Sets up the database as it would be after a recurring contrib
    * has been set up with Stripe.
@@ -837,32 +837,32 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     // Mock the payment methods service.
     $mockPaymentMethod = $this->createMock('Stripe\\PaymentMethod');
     $mockPaymentMethod->method('__get')
-                      ->will($this->returnValueMap([
-                        [ 'id', 'pm_mock']
-                      ]));
+      ->will($this->returnValueMap([
+        [ 'id', 'pm_mock']
+      ]));
     $stripeClient->paymentMethods = $this->createMock('Stripe\\Service\\PaymentMethodService');
     $stripeClient->paymentMethods
-                 ->method('create')
-                 ->willReturn($mockPaymentMethod);
+      ->method('create')
+      ->willReturn($mockPaymentMethod);
     $stripeClient->paymentMethods
-                 ->expects($this->atLeastOnce())
-                 ->method('retrieve')
-                 ->with($this->equalTo('pm_mock'))
-                 ->willReturn($mockPaymentMethod);
+      ->expects($this->atLeastOnce())
+      ->method('retrieve')
+      ->with($this->equalTo('pm_mock'))
+      ->willReturn($mockPaymentMethod);
 
     // Mock the Customers service
     $stripeClient->customers = $this->createMock('Stripe\\Service\\CustomerService');
     $stripeClient->customers
-                 ->method('create')
-                 ->willReturn(
-                     new PropertySpy('customers.create', ['id' => 'cus_mock'])
-                 );
+      ->method('create')
+      ->willReturn(
+        new PropertySpy('customers.create', ['id' => 'cus_mock'])
+      );
     $stripeClient->customers
-                 ->method('retrieve')
-                 ->with($this->equalTo('cus_mock'))
-                 ->willReturn(
-                     new PropertySpy('customers.retrieve', ['id' => 'cus_mock'])
-                 );
+      ->method('retrieve')
+      ->with($this->equalTo('cus_mock'))
+      ->willReturn(
+        new PropertySpy('customers.retrieve', ['id' => 'cus_mock'])
+      );
 
     $mockPlan = $this->createMock('Stripe\\Plan');
     $mockPlan
@@ -896,54 +896,54 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       ]));
 
     $mockSubscription = new PropertySpy('subscription.create', [
-          'id' => 'sub_mock',
-          'current_period_end' => time()+60*60*24,
-          'latest_invoice' => [
-            'id' => 'in_mock',
-            'payment_intent' => $mockPaymentIntent,
-          ],
-          'pending_setup_intent' => '',
-        ]);
+      'id' => 'sub_mock',
+      'current_period_end' => time()+60*60*24,
+      'latest_invoice' => [
+        'id' => 'in_mock',
+        'payment_intent' => $mockPaymentIntent,
+      ],
+      'pending_setup_intent' => '',
+    ]);
     $stripeClient->subscriptions = $this->createMock('Stripe\\Service\\SubscriptionService');
     $stripeClient->subscriptions
-        ->method('create')
-        ->willReturn($mockSubscription);
+      ->method('create')
+      ->willReturn($mockSubscription);
     $stripeClient->subscriptions
-        ->method('retrieve')
-        ->with($this->equalTo('sub_mock'))
-        ->willReturn($mockSubscription);
+      ->method('retrieve')
+      ->with($this->equalTo('sub_mock'))
+      ->willReturn($mockSubscription);
 
     $stripeClient->balanceTransactions = $this->createMock('Stripe\\Service\\BalanceTransactionService');
     $stripeClient->balanceTransactions
-    ->method('retrieve')
-    ->with($this->equalTo('txn_mock'))
-    ->willReturn(new PropertySpy('balanceTransaction', [
-      'id' => 'txn_mock',
-      'fee' => 1190, /* means $11.90 */
-      'currency' => 'usd',
-      'exchange_rate' => NULL,
-      'object' => 'balance_transaction',
-    ]));
+      ->method('retrieve')
+      ->with($this->equalTo('txn_mock'))
+      ->willReturn(new PropertySpy('balanceTransaction', [
+        'id' => 'txn_mock',
+        'fee' => 1190, /* means $11.90 */
+        'currency' => 'usd',
+        'exchange_rate' => NULL,
+        'object' => 'balance_transaction',
+      ]));
 
     // $stripeClient->paymentIntents = $this->createMock('Stripe\\Service\\PaymentIntentService');
     // todo change the status from requires_capture to ?
     //$stripeClient->paymentIntents ->method('update') ->willReturn();
 
     $mockInvoice = new PropertySpy('Invoice', [
-        'amount_due' => $this->total*100,
-        'charge_id' => 'ch_mock', //xxx
-        'created' => time(),
-        'currency' => 'usd',
-        'customer' => 'cus_mock',
-        'id' => 'in_mock',
-        'object' => 'invoice',
-        'subscription' => 'sub_mock',
-      ]);
+      'amount_due' => $this->total*100,
+      'charge_id' => 'ch_mock', //xxx
+      'created' => time(),
+      'currency' => 'usd',
+      'customer' => 'cus_mock',
+      'id' => 'in_mock',
+      'object' => 'invoice',
+      'subscription' => 'sub_mock',
+    ]);
     $stripeClient->invoices = $this->createMock('Stripe\\Service\\InvoiceService');
     $stripeClient->invoices
-                 ->expects($this->never())
-                 ->method($this->anything())
-               ;
+      ->expects($this->never())
+      ->method($this->anything())
+    ;
     /*
       ->method('all')
       ->willReturn(['data' => $mockInvoice]);
@@ -951,9 +951,9 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
 
     $stripeClient->charges = $this->createMock('Stripe\\Service\\ChargeService');
     $stripeClient->charges
-                 ->method('retrieve')
-                 ->with($this->equalTo('ch_mock'))
-                 ->willReturn($mockCharge);
+      ->method('retrieve')
+      ->with($this->equalTo('ch_mock'))
+      ->willReturn($mockCharge);
 
     // Setup a recurring contribution for $this->total per month.
     $this->setupRecurringTransaction();
@@ -991,12 +991,14 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       'processor_id'           => 'sub_mock',
     ]);
   }
+
   /**
    *
    */
   protected function returnValueMapOrDie($map) :ValueMapOrDie {
     return new ValueMapOrDie($map);
   }
+
   /**
    * Simulate an event being sent from Stripe and processed by our IPN code.
    *
@@ -1006,20 +1008,19 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
    * @return bool result from ipn()
    */
   protected function simulateEvent($eventData, $exceptionOnFailure=TRUE) {
-
     // Mock Event service.
     $stripeClient = $this->paymentObject->stripeClient;
     $stripeClient->events = $this->createMock('Stripe\\Service\\EventService');
 
     $mockEvent = PropertySpy::fromMixed('simulate ' . $eventData['type'], $eventData);
     $stripeClient->events
-                 ->method('all')
-                 ->willReturn(new PropertySpy('events.all', [ 'data' => [ $mockEvent ] ]));
+      ->method('all')
+      ->willReturn(new PropertySpy('events.all', [ 'data' => [ $mockEvent ] ]));
     $stripeClient->events
-                 ->expects($this->atLeastOnce())
-                 ->method('retrieve')
-                 ->with($this->equalTo($eventData['id']))
-                 ->willReturn(new PropertySpy('events.retrieve', $mockEvent));
+      ->expects($this->atLeastOnce())
+      ->method('retrieve')
+      ->with($this->equalTo($eventData['id']))
+      ->willReturn(new PropertySpy('events.retrieve', $mockEvent));
 
     // Fetch the event
     // Previously used the following - but see docblock of getEvent()
@@ -1054,6 +1055,7 @@ class PropertySpy implements ArrayAccess, Iterator, Countable, JsonSerializable 
    * mocked we can figure it out quickly.
    */
   public static $outputMode = 'print';
+
   /**
    * @var string $buffer
    *
@@ -1074,21 +1076,26 @@ class PropertySpy implements ArrayAccess, Iterator, Countable, JsonSerializable 
     // $this->warning("Iterating " . array_keys($this->_props)[$this->key()]);
     return current($this->_props);
   }
+
   /**
    * Implemetns Countable
    */
   public function count() {
     return \count($this->_props);
   }
-  public function key ( ) {
+
+  public function key() {
     return key($this->_props);
   }
+
   public function next() {
     return next($this->_props);
   }
+
   public function rewind() {
     return reset($this->_props);
   }
+
   public function valid() {
     return array_key_exists(key($this->_props), $this->_props);
   }
@@ -1100,6 +1107,7 @@ class PropertySpy implements ArrayAccess, Iterator, Countable, JsonSerializable 
     }
     static::$globalObjects++;
   }
+
   /**
    * Factory method
    *
@@ -1113,14 +1121,15 @@ class PropertySpy implements ArrayAccess, Iterator, Countable, JsonSerializable 
       return new static($name, $data);
     }
     throw new \Exception("PropertySpy::fromMixed requires array|PropertySpy, got "
-      . is_object($data) ? get_class($data) : gettype($data)
+    . is_object($data) ? get_class($data) : gettype($data)
     );
   }
+
   public function __destruct() {
     static::$globalObjects--;
     if (static::$buffer === 'local') {
       $msg = "PropertySpy: $this->_name\n"
-          . json_encode($this->localLog, JSON_PRETTY_PRINT) . "\n";
+        . json_encode($this->localLog, JSON_PRETTY_PRINT) . "\n";
       if (static::$outputMode === 'print') {
         print $msg;
       }
@@ -1145,6 +1154,7 @@ class PropertySpy implements ArrayAccess, Iterator, Countable, JsonSerializable 
       }
     }
   }
+
   protected function warning($msg) {
     if (static::$buffer === 'none') {
       // Immediate output
@@ -1162,6 +1172,7 @@ class PropertySpy implements ArrayAccess, Iterator, Countable, JsonSerializable 
       $this->localLog[] = $msg;
     }
   }
+
   public function __get($prop) {
     if ($prop === 'log') {
       throw new \Exception("stop");
@@ -1172,6 +1183,7 @@ class PropertySpy implements ArrayAccess, Iterator, Countable, JsonSerializable 
     $this->warning("->$prop requested but not defined");
     return NULL;
   }
+
   public function __set($prop, $value) {
     $this->_props[$prop] = $value;
 
@@ -1181,12 +1193,14 @@ class PropertySpy implements ArrayAccess, Iterator, Countable, JsonSerializable 
     }
     $this->_props[$prop] = $value;
   }
+
   public function offsetGet($prop) {
     if (array_key_exists($prop, $this->_props)) {
       return $this->_props[$prop];
     }
     $this->warning("['$prop'] requested but not defined");
   }
+
   public function offsetExists($prop) {
     if (!array_key_exists($prop, $this->_props)) {
       $this->warning("['$prop'] offsetExists requested but not defined");
@@ -1194,27 +1208,33 @@ class PropertySpy implements ArrayAccess, Iterator, Countable, JsonSerializable 
     }
     return TRUE;
   }
+
   public function __isset($prop) {
     if (!array_key_exists($prop, $this->_props)) {
       $this->warning("isset(->$prop) but not defined");
     }
     return isset($this->_props[$prop]);
   }
+
   public function offsetSet($prop, $value) {
     $this->warning("['$prop'] offsetSet");
     $this->_props[$prop] = $value;
   }
+
   public function offsetUnset($prop) {
     $this->warning("['$prop'] offsetUnset");
     unset($this->_props[$prop]);
   }
+
   /**
    * Implement JsonSerializable
    */
   public function jsonSerialize() {
     return $this->_props;
   }
+
 }
+
 /**
  * Stubs a method by returning a value from a map.
  */
@@ -1247,7 +1267,9 @@ class ValueMapOrDie implements \PHPUnit\Framework\MockObject\Stub {
     throw new \InvalidArgumentException("Mock called with unexpected arguments: "
       . $invocation->toString());
   }
+
   public function toString(): string {
     return 'return value from a map or throw InvalidArgumentException';
   }
+
 }
