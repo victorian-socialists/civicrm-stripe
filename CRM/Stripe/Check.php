@@ -34,6 +34,7 @@ class CRM_Stripe_Check {
     self::checkExtensionFirewall($messages);
     self::checkExtensionSweetalert($messages);
     self::checkIfSeparateMembershipPaymentEnabled($messages);
+    self::checkUpgradeMessages($messages);
   }
 
   /**
@@ -228,6 +229,41 @@ class CRM_Stripe_Check {
           }
         }
       }
+    }
+  }
+
+  /**
+   * Display messages on version upgrade
+   *
+   * @param array $messages
+   */
+  private static function checkUpgradeMessages(&$messages) {
+    // @todo: When we release 6.7 we need to think about if this should be displayed or not (consider install/upgrade).
+    if ((bool) \Civi::settings()->get('stripe_upgrade66message')) {
+      $message = new CRM_Utils_Check_Message(
+        __FUNCTION__ . 'stripe_upgrade66message',
+        E::ts('Thankyou for upgrading to Stripe 6.6. You MUST check your configuration to make sure it will continue working:
+        <ul>
+          <li><strong>Access AJAX API</strong> permission is required for all users that make payments using Stripe (including the anonymous user).
+          Make sure you update your CMS user roles to include this permission.</li>
+          <li>Billing address fields are now disabled by default (if you require additional fields collect them via a profile).
+          If you require the billing address fields you can enable them in <em>Administer->CiviContribute->Stripe Settings->Disable billing address fields</em>.
+          They will be removed in a future version - if this is a problem please contact <a href="https://mjw.pt/support">MJW</a> and let us know why!</li>
+          <li><a href="https://docs.civicrm.org/mjwshared/en/latest/refunds/">Refund UI</a> is now enabled by default.</li>
+        </ul>'
+        ),
+        E::ts('Stripe: You need to check some settings now that you have upgraded to 6.6'),
+        \Psr\Log\LogLevel::CRITICAL,
+        'fa-money'
+      );
+      $message->addAction(
+        E::ts('I\'ve read this'),
+        E::ts('I\'ve read this and made any necessary configuration changes - don\'t show me this upgrade message any
+      more'),
+        'api3',
+        ['Setting', 'create', ['stripe_upgrade66message' => 0]]
+      );
+      $messages[] = $message;
     }
   }
 

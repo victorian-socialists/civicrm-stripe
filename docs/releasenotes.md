@@ -9,10 +9,11 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
-## Release 6.6 (not yet released 2021-03-05)
+## Release 6.6 (not yet released 2021-04-10)
 **Requires mjwshared (Payment Shared) 1.0**
 
-**Requires "Access AJAX API" for anonymous users**
+**Access AJAX API permission is required** for all users that make payments using Stripe (including the anonymous user).
+Make sure you update your CMS user roles to include this permission.
 
 * Support for [Payment Request Button](https://stripe.com/docs/stripe-js/elements/payment-request-button) which provides Google Pay and Apple Pay support.
     * To enable, you must set the "Country" in Stripe Settings and then the payment request button will replace the card element when the client browser supports it.
@@ -25,6 +26,14 @@ Releases use the following numbering system:
 * Use new PaymentProcessorWebhook entity to track/process webhooks and avoid simultaneous processing of events.
 * Fixes to processing `invoice.payment_failed` IPN event (also triggered during 3d secure verification).
 * [!146](https://lab.civicrm.org/extensions/stripe/-/merge_requests/146) Listevent API improvements.
+* Fix [#305](https://lab.civicrm.org/extensions/stripe/-/issues/305),[#293](https://lab.civicrm.org/extensions/stripe/-/issues/293) Allow specifying a static statement descriptor.
+* [!148](https://lab.civicrm.org/extensions/stripe/-/merge_requests/148) Implement testing infrastructure with mock Stripe client and add multiple IPN tests - thankyou [@artfulrobot](https://artfulrobot.uk/).
+* [!147](https://lab.civicrm.org/extensions/stripe/-/merge_requests/147) Multiple improvements to import API - thankyou [Jamie McClelland - ProgressiveTech](https://progressivetech.org/).
+* Retrieve subscriptionID so we don't process charge.failed/invoice.payment_failed simultaneously.
+* Fix showing 'successful' on thankyou page when payment failed because of error 'requires payment method'.
+* Make more javascript strings translatable.
+* Disable billing fields by default.
+* Add 6.6 upgrade message to system checks.
 
 ## Release 6.5.8
 
