@@ -245,7 +245,7 @@ class CRM_Stripe_Check {
         E::ts('Thankyou for upgrading to Stripe 6.6. You MUST check your configuration to make sure it will continue working:
         <ul>
           <li><strong>Access AJAX API</strong> permission is required for all users that make payments using Stripe (including the anonymous user).
-          Make sure you update your CMS user roles to include this permission.</li>
+          You need to check that all users making Stripe payments have the CiviCRM permission <strong>Access AJAX API</strong> otherwise payments will fail.</li>
           <li>Billing address fields are now disabled by default (if you require additional fields collect them via a profile).
           If you require the billing address fields you can enable them in <em>Administer->CiviContribute->Stripe Settings->Disable billing address fields</em>.
           They will be removed in a future version - if this is a problem please contact <a href="https://mjw.pt/support">MJW</a> and let us know why!</li>
