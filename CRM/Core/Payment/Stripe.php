@@ -945,7 +945,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return string
    */
   private function getDescription($params, $type = 'description') {
-    $description = NULL;
     # See https://stripe.com/docs/statement-descriptors
     $disallowed_characters = ['<', '>', '\\', "'", '"', '*'];
 
