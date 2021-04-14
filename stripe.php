@@ -201,10 +201,14 @@ function stripe_civicrm_buildForm($formName, &$form) {
       break;
 
     case 'CRM_Admin_Form_PaymentProcessor':
-      // Hide configuration fields that we don't use
-      foreach (['accept_credit_cards', 'url_site', 'url_recur', 'test_url_site', 'test_url_recur'] as $element)
-      if ($form->elementExists($element)) {
-        $form->removeElement($element);
+      $paymentProcessor = $form->getVar('_paymentProcessorDAO');
+      if ($paymentProcessor && $paymentProcessor->class_name === 'Payment_Stripe') {
+        // Hide configuration fields that we don't use
+        foreach (['accept_credit_cards', 'url_site', 'url_recur', 'test_url_site', 'test_url_recur'] as $element) {
+          if ($form->elementExists($element)) {
+            $form->removeElement($element);
+          }
+        }
       }
       break;
   }
