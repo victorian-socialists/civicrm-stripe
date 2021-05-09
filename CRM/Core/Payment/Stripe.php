@@ -956,7 +956,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       // 4. If we end up with a blank descriptor Stripe will reject it - https://lab.civicrm.org/extensions/stripe/-/issues/293
       //   so we set it to ".".
       case 'statement_descriptor':
-        $description = \Civi::settings()->get('stripe_statementdescriptor');
+        $description = trim(\Civi::settings()->get('stripe_statementdescriptor'));
         if (empty($description)) {
           $description = trim("{$contactContributionID} {$params['description']}");
           if (empty($description)) {
@@ -974,7 +974,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         return substr($description, 0, 22);
 
       case 'statement_descriptor_suffix':
-        $description = \Civi::settings()->get('stripe_statementdescriptorsuffix');
+        $description = trim(\Civi::settings()->get('stripe_statementdescriptorsuffix'));
         if (empty($description)) {
           $description = trim("{$contactContributionID} {$params['description']}");
           if (empty($description)) {
