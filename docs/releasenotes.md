@@ -9,7 +9,7 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
-## Release 6.6 (not yet released 2021-04-10)
+## Release 6.6 (not yet released 2021-05-09)
 **Requires mjwshared (Payment Shared) 1.0**
 
 **Access AJAX API permission is required** for all users that make payments using Stripe (including the anonymous user).
@@ -34,6 +34,7 @@ Make sure you update your CMS user roles to include this permission.
 * Make more javascript strings translatable.
 * Disable billing fields by default.
 * Add 6.6 upgrade message to system checks.
+* Fix [#306](https://lab.civicrm.org/extensions/stripe/-/issues/306) Can't pay for event with more then one participant.
 
 ## Release 6.5.8
 
