@@ -394,7 +394,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'currency' => $this->getDefaultCurrencyForForm($form),
       'billingAddressID' => CRM_Core_BAO_LocationType::getBilling(),
       'publishableKey' => CRM_Core_Payment_Stripe::getPublicKeyById($form->_paymentProcessor['id']),
-      'jsDebug' => (boolean) \Civi::settings()->get('stripe_jsdebug'),
       'paymentProcessorTypeID' => $form->_paymentProcessor['payment_processor_type_id'],
       'locale' => CRM_Stripe_Api::mapCiviCRMLocaleToStripeLocale(),
       'apiVersion' => CRM_Stripe_Check::API_VERSION,

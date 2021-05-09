@@ -169,7 +169,6 @@ function stripe_civicrm_buildForm($formName, &$form) {
           'publishableKey' => CRM_Core_Payment_Stripe::getPublicKeyById($form->_paymentProcessor['id']),
           'locale' => CRM_Stripe_Api::mapCiviCRMLocaleToStripeLocale(),
           'apiVersion' => CRM_Stripe_Check::API_VERSION,
-          'jsDebug' => (boolean) \Civi::settings()->get('stripe_jsdebug'),
           'csrfToken' => class_exists('\Civi\Firewall\Firewall') ? \Civi\Firewall\Firewall::getCSRFToken() : NULL,
           'country' => CRM_Core_BAO_Country::defaultContactCountry(),
         ];
