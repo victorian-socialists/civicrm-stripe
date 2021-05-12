@@ -37,7 +37,7 @@ This would require funding for approximately 16 hours work.
 
 ## Card on File / Updating card details
 
-See: https://lab.civicrm.org/extensions/stripe/-/issues/64
+See: [Issue#64](https://lab.civicrm.org/extensions/stripe/-/issues/64)
 
 Stripe supports saving cards and other payment methods. These can be retrieved, re-used and updated.
 We would like to provide support for re-using saved cards in CiviCRM.
@@ -68,7 +68,7 @@ is probably a priority for civi?
 
 #### 4. Develop a method to deduplicate payment methods
 
-See: eg. https://github.com/stripe/stripe-payments-demo/issues/45).
+See: eg. [stripe-payments-demo/issues/45](https://github.com/stripe/stripe-payments-demo/issues/45).
 Cards are duplicated by default and we need to clean this up before we can provide a UI to retrieve cards in CiviCRM.
 
 ### Estimate
@@ -112,7 +112,7 @@ to implement.
 
 ## Update Subscription
 
-See: https://lab.civicrm.org/extensions/stripe/-/issues/18
+See: [Issue#18](https://lab.civicrm.org/extensions/stripe/-/issues/18)
 
 #### Stripe -> CiviCRM
 
