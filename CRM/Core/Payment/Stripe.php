@@ -947,7 +947,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     # See https://stripe.com/docs/statement-descriptors
     $disallowed_characters = ['<', '>', '\\', "'", '"', '*'];
 
-    $contactContributionID = $params['contactID'] . '-' . ($params['contributionID'] ?? 'XX');
+    $contactContributionID = $params['contactID'] . 'X' . ($params['contributionID'] ?? 'XX');
     switch ($type) {
       // For statement_descriptor / statement_descriptor_suffix:
       // 1. Get it from the setting if defined.
@@ -969,7 +969,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         }
         $description = str_replace($disallowed_characters, '', $description);
         if (empty($description)) {
-          $description = '.';
+          $description = 'X';
         }
         return substr($description, 0, 22);
 
@@ -987,7 +987,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         }
         $description = str_replace($disallowed_characters, '', $description);
         if (empty($description)) {
-          $description = '.';
+          $description = 'X';
         }
         return substr($description,0,12);
 
