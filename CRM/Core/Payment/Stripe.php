@@ -945,6 +945,9 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    */
   private function getDescription($params, $type = 'description') {
     # See https://stripe.com/docs/statement-descriptors
+    # And note: both the descriptor and the descriptor suffix must have at
+    # least one alphabetical character - so we ensure that all returned
+    # statement descriptors minimally have an "X".
     $disallowed_characters = ['<', '>', '\\', "'", '"', '*'];
 
     $contactContributionID = $params['contactID'] . 'X' . ($params['contributionID'] ?? 'XX');
