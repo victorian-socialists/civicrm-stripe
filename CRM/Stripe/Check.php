@@ -26,8 +26,8 @@ class CRM_Stripe_Check {
    * @var string
    */
   const MIN_VERSION_MJWSHARED = '1.0';
-  const MIN_VERSION_SWEETALERT = '1.4';
-  const MIN_VERSION_FIREWALL = '1.1.2';
+  const MIN_VERSION_SWEETALERT = '1.4.1';
+  const MIN_VERSION_FIREWALL = '1.1.3';
 
   public static function checkRequirements(&$messages) {
     self::checkExtensionMjwshared($messages);
