@@ -486,6 +486,21 @@
     }
     form.dataset.submitted = 'true';
 
+    // cividiscount: when a code is applied it stays in the text-field
+    // If it is valid discount-applied attribute is 1, otherwise it's undefined.
+    // Logic: If we have a discountcode field, text in the discountcode field and the discount-applied attribute is not set do not submit form
+    if($('input#discountcode').length && ($('input#discountcode').val().length > 0) && ($('input#discountcode').attr('discount-applied') != 1)) {
+      debugging('Discount Code Entered but not applied');
+      swalFire({
+        icon: 'error',
+        text: ts('Please apply the Discount Code or clear the Discount Code text-field'),
+        title: ''
+      }, '#crm-container', true);
+      triggerEvent('crmBillingFormNotValid');
+      form.dataset.submitted = 'false';
+      return false;
+    }
+
     if (($(form).valid() === false) || $(form).data('crmBillingFormValid') === false) {
       debugging('Form not valid');
       $('div#card-errors').hide();
