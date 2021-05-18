@@ -712,9 +712,10 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
 
     $recurParams = [
       'id' =>     $this->getRecurringContributionId($propertyBag),
+      // @fixme trxn_id/processor_id - see https://lab.civicrm.org/dev/financial/-/issues/57#note_19168
+      //   We need to set them both but one should be removed. doCancelRecurring()/updateSubscriptionBillingInfo() both
+      //   get processor_id
       'trxn_id' => $this->getPaymentProcessorSubscriptionID(),
-      // FIXME processor_id is deprecated as it is not guaranteed to be unique, but currently (CiviCRM 5.9)
-      //  it is required by cancelSubscription (where it is called subscription_id)
       'processor_id' => $this->getPaymentProcessorSubscriptionID(),
       'auto_renew' => 1,
       'next_sched_contribution_date' => $this->calculateNextScheduledDate($params),
