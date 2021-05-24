@@ -8,6 +8,8 @@ Latest releases can be found in the [CiviCRM extensions directory](https://civic
 
 **Always read the [Release Notes](https://docs.civicrm.org/stripe/en/latest/releasenotes/) carefully before upgrading!**
 
+Stripe generously supports CiviCRM, providing a portion of every transaction processed by users of CiviCRM through its platform at no cost to the organizations using CiviCRM.
+
 ## Documentation
 
 [Available here](https://docs.civicrm.org/stripe/en/latest).
