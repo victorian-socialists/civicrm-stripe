@@ -23,6 +23,7 @@
   </compatibility>
   <comments>Original Author: Joshua Walker (drastik) - Drastik by Design.
     Jamie Mcclelland (ProgressiveTech) did a lot of the 5.x compatibility work.
+    Stripe generously donates a portion of each transaction to support CiviCRM.
   </comments>
   <requires>
     <ext>mjwshared</ext>
