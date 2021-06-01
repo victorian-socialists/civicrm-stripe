@@ -23,7 +23,7 @@
 
 {* Add the components required for a Stripe card element *}
 {crmScope extensionKey='com.drastikbydesign.stripe'}
-  <div id="stripeContainer">
+  <div id="crm-payment-js-billing-form-container" class="stripe">
     <div id="card-element" style="display: none"></div>
     <div id="paymentrequest-element" style="display: none"></div>
     {* Area for Stripe to report errors *}
