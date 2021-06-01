@@ -66,8 +66,6 @@
       return;
     }
 
-    var submitButtons = CRM.payment.getBillingSubmit();
-
     // Load Stripe onto the form.
     var cardElement = document.getElementById('card-element');
     if ((typeof cardElement !== 'undefined') && (cardElement)) {
