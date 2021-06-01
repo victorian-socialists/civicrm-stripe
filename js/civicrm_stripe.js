@@ -363,7 +363,7 @@
         .done(function(data) {
           stripeLoading = false;
           debugging("Script loaded and executed.");
-          loadStripeBillingBlock();
+          loadBillingBlock();
           triggerEvent('crmBillingFormReloadComplete');
           triggerEvent('crmStripeBillingFormReloadComplete');
         })
@@ -374,7 +374,7 @@
         });
     }
     else {
-      loadStripeBillingBlock();
+      loadBillingBlock();
       if (checkPaymentElementsAreValid()) {
         triggerEvent('crmStripeBillingFormReloadComplete');
       }
@@ -385,8 +385,8 @@
     }
   }
 
-  function loadStripeBillingBlock() {
-    debugging('loadStripeBillingBlock');
+  function loadBillingBlock() {
+    debugging('loadBillingBlock');
 
     // When switching payment processors we need to make sure these are empty
     paymentData.clientSecret = null;
