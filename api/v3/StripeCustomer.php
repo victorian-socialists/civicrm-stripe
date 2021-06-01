@@ -75,7 +75,7 @@ function civicrm_api3_stripe_customer_get($params) {
     ];
     $results[] = $result;
   }
-  return civicrm_api3_create_success($results);
+  return civicrm_api3_create_success($results ?? []);
 }
 
 /**
