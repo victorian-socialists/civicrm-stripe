@@ -262,8 +262,15 @@ class CRM_Core_Payment_StripeIPN {
       ->addValue('event_id', $this->eventID)
       ->execute();
 
-    if (!$processWebhook) {
-      return TRUE;
+    // Check the number of webhooks to be processed does not exceed connection-limit
+    $toBeProcessedWebhook = PaymentprocessorWebhook::get()
+        ->setCheckPermissions(FALSE) // Replace with ::update(FALSE) when minversion = 5.29
+        ->addWhere('payment_processor_id', '=', $this->_paymentProcessor->getID())
+        ->addWhere('processed_date', 'IS NULL')
+        ->execute();
+
+    if (!$processWebhook || $toBeProcessedWebhook->rowCount > 50 ) {
+        return TRUE;
     }
 
     return $this->processWebhook();
