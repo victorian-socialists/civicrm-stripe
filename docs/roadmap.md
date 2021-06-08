@@ -81,10 +81,6 @@ Approximately 24-30 hours.
 
 See [Stripe Connect](https://stripe.com/connect).
 
-## Payment Requests (Google / Apple Pay)
-
-See [Stripe#81](https://lab.civicrm.org/extensions/stripe/-/issues/81).
-
 ## Stripe ACH/EFT - partially funded
 
 See [Make it Happen](https://civicrm.org/make-it-happen/stripe-ach-payments) campaign on CiviCRM.org.
