@@ -99,13 +99,13 @@ function civicrm_api3_stripe_paymentintent_get($params) {
  * @return void
  */
 function _civicrm_api3_stripe_paymentintent_process_spec(&$spec) {
-  $spec['payment_method_id']['title'] = E::ts("Stripe generated code used to create a payment intent.");
+  $spec['payment_method_id']['title'] = E::ts("Payment Method ID");
   $spec['payment_method_id']['type'] = CRM_Utils_Type::T_STRING;
   $spec['payment_method_id']['api.default'] = NULL;
-  $spec['payment_intent_id']['title'] = E::ts("The payment intent id itself, if available.");
+  $spec['payment_intent_id']['title'] = E::ts("Payment Intent ID.");
   $spec['payment_intent_id']['type'] = CRM_Utils_Type::T_STRING;
   $spec['payment_intent_id']['api.default'] = NULL;
-  $spec['amount']['title'] = E::ts("The payment amount.");
+  $spec['amount']['title'] = E::ts("Payment amount.");
   $spec['amount']['type'] = CRM_Utils_Type::T_STRING;
   $spec['amount']['api.default'] = NULL;
   $spec['capture']['title'] = E::ts("Whether we should try to capture the amount, not just confirm it.");
@@ -114,7 +114,7 @@ function _civicrm_api3_stripe_paymentintent_process_spec(&$spec) {
   $spec['description']['title'] = E::ts("Describe the payment.");
   $spec['description']['type'] = CRM_Utils_Type::T_STRING;
   $spec['description']['api.default'] = NULL;
-  $spec['currency']['title'] = E::ts("Whether we should try to capture the amount, not just confirm it.");
+  $spec['currency']['title'] = E::ts("Currency (eg. EUR)");
   $spec['currency']['type'] = CRM_Utils_Type::T_STRING;
   $spec['currency']['api.default'] = CRM_Core_Config::singleton()->defaultCurrency;
   $spec['payment_processor_id']['title'] = E::ts("The stripe payment processor id.");
@@ -174,12 +174,20 @@ function civicrm_api3_stripe_paymentintent_process($params) {
   $title = CRM_Utils_Type::validate($params['description'], 'String');
   $intentParams['confirm'] = TRUE;
   $currency = CRM_Utils_Type::validate($params['currency'], 'String', CRM_Core_Config::singleton()->defaultCurrency);
-  $processorID = CRM_Utils_Type::validate((int)$params['id'], 'Positive');
-  !empty($processorID) ?: _civicrm_api3_stripe_paymentintent_returnInvalid();
-  $paymentProcessor = civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $processorID]);
-  ($paymentProcessor['class_name'] === 'Payment_Stripe') ?: _civicrm_api3_stripe_paymentintent_returnInvalid();
-  $processor = new CRM_Core_Payment_Stripe('', $paymentProcessor);
-  $processor->setAPIParams();
+
+  // Until 6.6.1 we were passing 'id' instead of the correct 'payment_processor_id' from js scripts. This retains
+  //   compatibility with any 3rd-party scripts.
+  if (isset($params['id']) && !isset($params['payment_processor_id'])) {
+    $params['payment_processor_id'] = $params['id'];
+  }
+  $paymentProcessorID = CRM_Utils_Type::validate((int)$params['payment_processor_id'], 'Positive');
+
+  !empty($paymentProcessorID) ?: _civicrm_api3_stripe_paymentintent_returnInvalid();
+  /** @var CRM_Core_Payment_Stripe $paymentProcessor */
+  $paymentProcessor = \Civi\Payment\System::singleton()->getById($paymentProcessorID);
+
+  ($paymentProcessor->getPaymentProcessor()['class_name'] === 'Payment_Stripe') ?: _civicrm_api3_stripe_paymentintent_returnInvalid();
+  $paymentProcessor->setAPIParams();
 
   $intentParams['confirmation_method'] = 'manual';
   if (empty($paymentIntentID) && empty($paymentMethodID)) {
@@ -201,7 +209,7 @@ function civicrm_api3_stripe_paymentintent_process($params) {
     // We don't yet have a PaymentIntent, create one using the
     // Payment Method ID and attempt to confirm it too.
     try {
-      $intentParams['amount'] = $processor->getAmount(['amount' => $amount, 'currency' => $currency]);
+      $intentParams['amount'] = $paymentProcessor->getAmount(['amount' => $amount, 'currency' => $currency]);
       $intentParams['currency'] = $currency;
       // authorize the amount but don't take from card yet
       $intentParams['capture_method'] = 'manual';
@@ -210,13 +218,13 @@ function civicrm_api3_stripe_paymentintent_process($params) {
       if ($paymentMethodID) {
         $intentParams['payment_method'] = $paymentMethodID;
       }
-
-      $intent = $processor->stripeClient->paymentIntents->create($intentParams);
-    } catch (Exception $e) {
+      $intent = $paymentProcessor->stripeClient->paymentIntents->create($intentParams);
+    }
+    catch (Exception $e) {
       // Save the "error" in the paymentIntent table in in case investigation is required.
       $stripePaymentintentParams = [
         'stripe_intent_id' => 'null',
-        'payment_processor_id' => $processorID,
+        'payment_processor_id' => $paymentProcessorID,
         'status' => 'failed',
         'description' => "{$e->getRequestId()};{$e->getMessage()};{$title}",
         'referrer' => $_SERVER['HTTP_REFERER'],
@@ -240,7 +248,7 @@ function civicrm_api3_stripe_paymentintent_process($params) {
   // Save the generated paymentIntent in the CiviCRM database for later tracking
   $stripePaymentintentParams = [
     'stripe_intent_id' => $intent->id,
-    'payment_processor_id' => $processorID,
+    'payment_processor_id' => $paymentProcessorID,
     'status' => $intent->status,
     'description' => "{$title}",
     'referrer' => $_SERVER['HTTP_REFERER'],

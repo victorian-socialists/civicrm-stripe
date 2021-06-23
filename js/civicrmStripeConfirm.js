@@ -108,7 +108,7 @@
         CRM.api3('StripePaymentintent', 'Process', {
           payment_intent_id: CRM.vars.stripe.paymentIntentID,
           capture: true,
-          id: CRM.vars.stripe.id,
+          payment_processor_id: CRM.vars.stripe.id,
           description: document.title,
           csrfToken: CRM.vars.stripe.csrfToken
         })

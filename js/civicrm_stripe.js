@@ -237,7 +237,7 @@
             payment_method_id: createPaymentMethodResult.paymentMethod.id,
             amount: CRM.payment.getTotalAmount().toFixed(2),
             currency: CRM.payment.getCurrency(CRM.vars.stripe.currency),
-            id: CRM.vars.stripe.id,
+            payment_processor_id: CRM.vars.stripe.id,
             description: document.title,
             csrfToken: CRM.vars.stripe.csrfToken,
             extra_data: CRM.payment.getBillingEmail() + CRM.payment.getBillingName()
@@ -301,7 +301,7 @@
     CRM.api3('StripePaymentintent', 'Process', {
       amount: CRM.payment.getTotalAmount().toFixed(2),
       currency: CRM.payment.getCurrency(CRM.vars.stripe.currency),
-      id: CRM.vars.stripe.id,
+      payment_processor_id: CRM.vars.stripe.id,
       description: document.title,
       csrfToken: CRM.vars.stripe.csrfToken
     })
