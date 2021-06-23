@@ -272,7 +272,7 @@
                 }
               }
             })
-            .fail(function(object) { stripePaymentIntentProcessFail(object); });
+            .fail(function(failObject) { stripePaymentIntentProcessFail(failObject); });
         }
       }
     });
@@ -313,7 +313,7 @@
           // From here the on 'paymentmethod' of the paymentRequest handles completion/failure
         }
       })
-      .fail(function(object) { stripePaymentIntentProcessFail(object); });
+      .fail(function(failObject) { stripePaymentIntentProcessFail(failObject); });
   }
 
   /**
@@ -323,13 +323,13 @@
    */
   function stripePaymentIntentProcessFail(failObject) {
     var error = ts('Unknown error');
-    if (object.hasOwnProperty('statusText') && (object.statusText !== 'OK')) {
+    if (failObject.hasOwnProperty('statusText') && (failObject.statusText !== 'OK')) {
       // A PHP exit can return 200 "OK" but we don't want to display "OK" as the error!
-      if (object.statusText === 'parsererror') {
+      if (failObject.statusText === 'parsererror') {
         error = ts('Configuration error - unable to process paymentIntent');
       }
       else {
-        error = object.statusText;
+        error = failObject.statusText;
       }
     }
     displayError(error, true);
