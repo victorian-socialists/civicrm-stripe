@@ -272,7 +272,7 @@
                 }
               }
             })
-            .fail(stripePaymentIntentProcessFail(paymentIntentProcessResponse));
+            .fail(function(object) { stripePaymentIntentProcessFail(object); });
         }
       }
     });
@@ -313,7 +313,7 @@
           // From here the on 'paymentmethod' of the paymentRequest handles completion/failure
         }
       })
-      .fail(stripePaymentIntentProcessFail(paymentIntentProcessResponse));
+      .fail(function(object) { stripePaymentIntentProcessFail(object); });
   }
 
   /**
