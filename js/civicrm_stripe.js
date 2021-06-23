@@ -272,14 +272,7 @@
                 }
               }
             })
-            .fail(function(object) {
-              var error = ts('Unknown error');
-              if (object.hasOwnProperty('statusText') && (object.statusText !== 'OK')) {
-                // A PHP exit can return 200 "OK" but we don't want to display "OK" as the error!
-                error = object.statusText;
-              }
-              displayError(error, true);
-            });
+            .fail(stripePaymentIntentProcessFail(paymentIntentProcessResponse));
         }
       }
     });
@@ -320,14 +313,27 @@
           // From here the on 'paymentmethod' of the paymentRequest handles completion/failure
         }
       })
-      .fail(function(object) {
-        // Triggered when http code !== 200 (eg. 400 Bad request)
-        var error = ts('Unknown error');
-        if (object.hasOwnProperty('statusText')) {
-          error = object.statusText;
-        }
-        displayError(error, true);
-      });
+      .fail(stripePaymentIntentProcessFail(paymentIntentProcessResponse));
+  }
+
+  /**
+   * Display a helpful error message if call to StripePaymentintent.Process fails
+   * @param {object} failObject
+   * @returns {boolean}
+   */
+  function stripePaymentIntentProcessFail(failObject) {
+    var error = ts('Unknown error');
+    if (object.hasOwnProperty('statusText') && (object.statusText !== 'OK')) {
+      // A PHP exit can return 200 "OK" but we don't want to display "OK" as the error!
+      if (object.statusText === 'parsererror') {
+        error = ts('Configuration error - unable to process paymentIntent');
+      }
+      else {
+        error = object.statusText;
+      }
+    }
+    displayError(error, true);
+    return true;
   }
 
   /**

@@ -133,7 +133,12 @@
             var error = ts('Unknown error');
             if (object.hasOwnProperty('statusText') && (object.statusText !== 'OK')) {
               // A PHP exit can return 200 "OK" but we don't want to display "OK" as the error!
-              error = object.statusText;
+              if (object.statusText === 'parsererror') {
+                error = ts('Configuration error - unable to process paymentIntent');
+              }
+              else {
+                error = object.statusText;
+              }
             }
             CRM.payment.debugging(confirm.scriptName, error);
             confirm.swalFire({
