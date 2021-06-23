@@ -108,7 +108,6 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
    * Submit to stripe
    */
   public function doPayment($params = []) {
-
     // Send in credit card to get payment method. xxx mock here
     $paymentMethod = $this->paymentObject->stripeClient->paymentMethods->create([
       'type' => 'card',
@@ -123,7 +122,7 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
     $paymentIntentID = NULL;
     $paymentMethodID = NULL;
 
-    if (!array_key_exists('is_recur', $params)) {
+    if (!isset($params['is_recur'])) {
       // Send in payment method to get payment intent.
       $paymentIntentParams = [
         'payment_method_id' => $paymentMethod->id,

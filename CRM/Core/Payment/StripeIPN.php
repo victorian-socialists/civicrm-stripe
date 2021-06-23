@@ -767,9 +767,13 @@ class CRM_Core_Payment_StripeIPN {
       'id' => $this->contribution_recur_id,
     ]);
 
-    if (empty($contributionRecur['installments']) && empty($contributionRecur['end_date'])) {
+    if (empty($contributionRecur['end_date'])) {
       return;
     }
+
+    // There is no easy way of retrieving a count of all invoices for a subscription so we ignore the "installments"
+    //   parameter for now and rely on checking end_date (which was calculated based on number of installments...)
+    // if (empty($contributionRecur['installments'])) { return; }
 
     $stripeSubscription = $this->_paymentProcessor->stripeClient->subscriptions->retrieve($this->subscription_id);
     // If we've passed the end date cancel the subscription
@@ -779,9 +783,6 @@ class CRM_Core_Payment_StripeIPN {
       $this->_paymentProcessor->stripeClient->subscriptions->update($this->subscription_id, ['cancel_at_period_end' => TRUE]);
       $this->updateRecurCompleted(['id' => $this->contribution_recur_id]);
     }
-    // There is no easy way of retrieving a count of all invoices for a subscription so we ignore the "installments"
-    //   parameter for now and rely on checking end_date (which was calculated based on number of installments...)
-    // $stripeInvoices = \Stripe\Invoice::all(['subscription' => $this->subscription_id, 'limit' => 100]);
   }
 
 }
