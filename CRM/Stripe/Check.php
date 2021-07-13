@@ -71,7 +71,7 @@ class CRM_Stripe_Check {
       $messages[] = $message;
       return;
     }
-    if ($extensions['values'][$extensions['id']]['status'] === 'installed') {
+    if (isset($extensions['id']) && $extensions['values'][$extensions['id']]['status'] === 'installed') {
       self::requireExtensionMinVersion($messages, $extensionName, self::MIN_VERSION_MJWSHARED, $extensions['values'][$extensions['id']]['version']);
     }
   }
@@ -105,7 +105,7 @@ class CRM_Stripe_Check {
       );
       $messages[] = $message;
     }
-    if ($extensions['values'][$extensions['id']]['status'] === 'installed') {
+    if (isset($extensions['id']) && $extensions['values'][$extensions['id']]['status'] === 'installed') {
       self::requireExtensionMinVersion($messages, $extensionName, CRM_Stripe_Check::MIN_VERSION_FIREWALL, $extensions['values'][$extensions['id']]['version']);
     }
   }
@@ -142,7 +142,7 @@ class CRM_Stripe_Check {
       $messages[] = $message;
       return;
     }
-    if ($extensions['values'][$extensions['id']]['status'] === 'installed') {
+    if (isset($extensions['id']) && $extensions['values'][$extensions['id']]['status'] === 'installed') {
       self::requireExtensionMinVersion($messages, $extensionName, CRM_Stripe_Check::MIN_VERSION_SWEETALERT, $extensions['values'][$extensions['id']]['version']);
     }
   }
