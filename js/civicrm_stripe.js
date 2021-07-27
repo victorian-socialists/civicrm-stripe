@@ -61,7 +61,7 @@
 
     // Get the form containing payment details
     form = CRM.payment.getBillingForm();
-    if (typeof form.length === 'undefined' || form.length === 0) {
+    if (form === null || typeof form.length === 'undefined' || form.length === 0) {
       debugging('No billing form!');
       return;
     }
