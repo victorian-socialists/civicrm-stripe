@@ -59,6 +59,10 @@
   window.civicrmStripeHandleReload = function() {
     debugging('civicrmStripeHandleReload');
 
+    // If we are reloading start with the form submit buttons visible
+    // They may get hidden later depending on the element type.
+    $(submitButtons).show();
+
     // Get the form containing payment details
     form = CRM.payment.getBillingForm();
     if (form === null || typeof form.length === 'undefined' || form.length === 0) {
@@ -412,13 +416,14 @@
     debugging('locale: ' + CRM.vars.stripe.locale);
     var stripeElements = stripe.elements({locale: CRM.vars.stripe.locale});
 
+    submitButtons = CRM.payment.getBillingSubmit();
+
     // By default we load paymentRequest button if we can, fallback to card element
     if (createElementPaymentRequest(stripeElements) === false) {
       createElementCard(stripeElements);
     }
 
     setBillingFieldsRequiredForJQueryValidate();
-    submitButtons = CRM.payment.getBillingSubmit();
 
     // If another submit button on the form is pressed (eg. apply discount)
     //  add a flag that we can set to stop payment submission
@@ -818,6 +823,7 @@
         if (result) {
           elements.paymentRequestButton.mount('#paymentrequest-element');
           document.getElementById('paymentrequest-element').style.display = 'block';
+          $(submitButtons).hide();
         } else {
           document.getElementById('paymentrequest-element').style.display = 'none';
         }
