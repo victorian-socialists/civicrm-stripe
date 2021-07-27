@@ -269,7 +269,10 @@ class CRM_Core_Payment_StripeIPN {
         ->addWhere('processed_date', 'IS NULL')
         ->execute();
 
-    if (!$processWebhook || $toBeProcessedWebhook->rowCount > 50 ) {
+    // Limit on webhooks that will be processed immediately. Otherwise we delay execution. 0=unlimited.
+    $webhookProcessingLimit = (int)\Civi::settings()->get('stripe_webhook_processing_limit');
+    if (!$processWebhook
+      || (($toBeProcessedWebhook->rowCount > $webhookProcessingLimit) && ($webhookProcessingLimit > 0))) {
         return TRUE;
     }
 

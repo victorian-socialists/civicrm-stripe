@@ -13,6 +13,7 @@ Releases use the following numbering system:
 
 * Fix PHP notice when there are no Stripe customers.
 * Fix [#313](https://lab.civicrm.org/extensions/stripe/-/issues/315) Stripe and CiviDiscount, Stripe payment is cancelled if the Discount Code is NOT first applied on the Event Registration form.
+* Implement [!164](https://lab.civicrm.org/extensions/stripe/-/merge_requests/164) Add configurable limit on maximum number of webhooks that will be processed simultaneously (default 50).
 
 ## Release 6.6
 **Requires mjwshared (Payment Shared) 1.0**
