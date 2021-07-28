@@ -10,28 +10,30 @@
  */
 
 /**
- * Populate the CiviCRM civicrm_system_log with Stripe events.
+ * Populate the CiviCRM civicrm_paymentprocessor_webhook with Stripe events.
  *
  * This api will take all stripe events known to Stripe that are of the type
- * invoice.payment_succeeded and add them * to the civicrm_system_log table.
- * It will not add an event that has already been added, so it can be run
- * multiple times. Once added, they can be replayed using the Stripe.Ipn
- * api call.
+ * invoice.payment_succeeded and add them * to the civicrm_paymentprocessor_webhook table.
+ * It will not add an event that has already been added, so it can be run multiple times.
+ * Once added, they will be automatically processed by the Job.process_paymentprocessor_webhooks api call.
  */
 
+use Civi\Api4\PaymentProcessor;
+use Civi\Api4\PaymentprocessorWebhook;
+
 /**
- * Stripe.Populatelog API specification
+ * Stripe.Populatewebhookqueue API specification
  *
  * @param array $spec description of fields supported by this API call
  */
-function _civicrm_api3_stripe_Populatelog_spec(&$spec) {
+function _civicrm_api3_stripe_Populatewebhookqueue_spec(&$spec) {
   $spec['ppid']['title'] = ts("The id of the payment processor.");
   $spec['type']['title'] = ts("The event type - defaults to invoice.payment_succeeded.");
   $spec['type']['api.default'] = 'invoice.payment_succeeded';
 }
 
 /**
- * Stripe.Populatelog API
+ * Stripe.Populatewebhookqueue API
  *
  * @param array $params
  *
@@ -39,10 +41,10 @@ function _civicrm_api3_stripe_Populatelog_spec(&$spec) {
  * @throws \API_Exception
  * @throws \CiviCRM_API3_Exception
  */
-function civicrm_api3_stripe_Populatelog($params) {
+function civicrm_api3_stripe_Populatewebhookqueue($params) {
   if (!$params['ppid']) {
     // By default, select the live stripe processor (we expect there to be only one).
-    $paymentProcessors = \Civi\Api4\PaymentProcessor::get(FALSE)
+    $paymentProcessors = PaymentProcessor::get(FALSE)
       ->addWhere('is_active', '=', TRUE)
       ->addWhere('is_test', '=', FALSE)
       ->addWhere('payment_processor_type_id:name', '=', 'Stripe')
@@ -77,40 +79,31 @@ function civicrm_api3_stripe_Populatelog($params) {
       break;
     }
   }
+
   $results = [];
+  $eventIDs = CRM_Utils_Array::collect('id', $items);
+
+  $paymentprocessorWebhookEventIDs = PaymentprocessorWebhook::get(FALSE)
+    ->addWhere('payment_processor_id', '=', $params['ppid'])
+    ->addWhere('event_id', 'IN', $eventIDs)
+    ->execute()->column('event_id');
+
+  $missingEventIDs = array_diff($eventIDs, $paymentprocessorWebhookEventIDs);
+
   foreach($items as $item) {
-    $id = $item['id'];
-    // Insert into System Log if it doesn't exist.
-    $like_event_id = '%event_id=' . addslashes($id);
-    $sql = "SELECT id FROM civicrm_system_log WHERE message LIKE '$like_event_id'";
-    $dao= CRM_Core_DAO::executeQuery($sql);
-    if ($dao->N == 0) {
-      $message = "payment_notification processor_id=${params['ppid']} event_id=${id}";
-      $contact_id = _civicrm_api3_stripe_cid_for_trxn($item['charge']);
-      if ($contact_id) {
-        $item['contact_id'] = $contact_id;
-      }
-      $log = new CRM_Utils_SystemLogger();
-      $log->alert($message, $item);
-      $results[] = $id;
+    if (!in_array($item['id'], $missingEventIDs)) {
+      continue;
     }
+
+    $webhookUniqueIdentifier = ($item['charge'] ?? '') . ':' . ($item['invoice'] ?? '') . ':' . ($item['subscription'] ?? '');
+    PaymentprocessorWebhook::create(FALSE)
+      ->addValue('payment_processor_id', $params['ppid'])
+      ->addValue('trigger', $item['type'])
+      ->addValue('identifier', $webhookUniqueIdentifier)
+      ->addValue('event_id', $item['id'])
+      ->execute();
+
+    $results[] = $item['id'];
   }
   return civicrm_api3_create_success($results);
-}
-
-/**
- * @param string $trxn
- *   Stripe charge ID
- *
- * @return int|null
- */
-function _civicrm_api3_stripe_cid_for_trxn($trxn) {
-  try {
-    $params = ['trxn_id' => $trxn, 'return' => 'contact_id'];
-    $result = (int)civicrm_api3('Contribution', 'getvalue', $params);
-    return $result;
-  }
-  catch (Exception $e) {
-    return NULL;
-  }
 }

@@ -6,30 +6,54 @@ The api commands are:
 
 ## Stripe
 
-* `Stripe.Listevents`: Events are the notifications that Stripe sends to the Webhook. Listevents will list all notifications that have been sent. You can further restrict them with the following parameters:
-  * `ppid` - Use the given Payment Processor ID. By default, uses the saved, live Stripe payment processor and throws an error if there is more than one.
-  * `type` - Limit to the given Stripe events type. By default, show invoice.payment_succeeded. Change to 'all' to show all.
-  * `output` - What information to show. Defaults to 'brief' which provides a summary. Alternatively use raw to get the raw JSON returned by Stripe.
-  * `limit` - Limit number of results returned (100 is max, 10 is default).
-  * `starting_after` - Only return results after this event id. This can be used for paging purposes - if you want to retreive more than 100 results.
-  * `source` - By default, source is set to "stripe" and limited to events reported by Stripe in the last 30 days. If instead you specify "systemlog" you can query the `civicrm_system_log` table for events, which potentially go back farther then 30 days.
-  * `subscription` - If you specify a subscription id, results will be limited to events tied to the given subscription id. Furthermore, both the `civicrm_system_log` table will be queried and the results will be supplemented by a list of expected charges based on querying Stripe, allowing you to easily find missing charges for a given subscription.
-  * `filter_processed` - Set to 1 if you want to filter out results for contributions that have been properly processed by CiviCRM already.
+#### `Stripe.Listevents`:
 
-* `Stripe.Populatelog`: If you are running a version of CiviCRM that supports the SystemLog - then this API call will populate your SystemLog with all of your past Stripe Events. You can safely re-run and not create duplicates. With a populated SystemLog - you can selectively replay events that may have caused errors the first time or otherwise not been properly recorded. Parameters:
-  * `ppid` - Use the given Payment Processor ID. By default, uses the saved, live Stripe payment processor and throws an error if there is more than one.
+Events are the notifications that Stripe sends to the Webhook. Listevents will list all notifications that have been sent. You can further restrict them with the following parameters:
 
-* `Stripe.Ipn`: Replay a given Stripe Event. Parameters. This will always fetch the chosen Event from Stripe before replaying.
-  * `id` - The id from the SystemLog of the event to replay.
-  * `evtid` - The Event ID as provided by Stripe.
-  * `ppid` - Use the given Payment Processor ID. By default, uses the saved, live Stripe payment processor and throws an error if there is more than one.
-  * `noreceipt` - Set to 1 if you want to suppress the generation of receipts or set to 0 or leave out to send receipts normally.
+    * `ppid` - Use the given Payment Processor ID. By default, uses the saved, live Stripe payment processor and throws an error if there is more than one.
+    * `type` - Limit to the given Stripe events type. By default, show invoice.payment_succeeded. Change to 'all' to show all.
+    * `output` - What information to show. Defaults to 'brief' which provides a summary. Alternatively use raw to get the raw JSON returned by Stripe.
+    * `limit` - Limit number of results returned (100 is max, 10 is default).
+    * `starting_after` - Only return results after this event id. This can be used for paging purposes - if you want to retreive more than 100 results.
+    * `source` - By default, source is set to "stripe" and limited to events reported by Stripe in the last 30 days. If instead you specify "systemlog" you can query the `civicrm_system_log` table for events, which potentially go back farther then 30 days.
+    * `subscription` - If you specify a subscription id, results will be limited to events tied to the given subscription id. Furthermore, both the `civicrm_system_log` table will be queried and the results will be supplemented by a list of expected charges based on querying Stripe, allowing you to easily find missing charges for a given subscription.
+    * `filter_processed` - Set to 1 if you want to filter out results for contributions that have been properly processed by CiviCRM already.
 
-* `Stripe.Retryall`: Attempt to replay all charges for a given payment processor that are completed in Stripe but not completed in CiviCRM.
-  * `ppid` - Use the given Payment Processor ID. By default, uses the saved, live Stripe payment processor and throws an error if there is more than one.
-  * `limit` - Limit number of results (25 is default).
+#### `Stripe.Populatelog`:
 
-* `Stripe.Cleanup`: Cleanup and remove old database tables/fields that are no longer required.
+This API call will populate your SystemLog with all of your past Stripe Events. You can safely re-run and not create duplicates. With a populated SystemLog - you can selectively replay events that may have caused errors the first time or otherwise not been properly recorded. Parameters:
+
+    * `ppid` - Use the given Payment Processor ID. By default, uses the saved, live Stripe payment processor and throws an error if there is more than one.
+    * `type` - The event type - defaults to invoice.payment_succeeded.
+
+The standard API3 "limit" option is also supported and if specified will limit the total number of events to that limit (default 0).
+
+#### `Stripe.Populatewebhookqueue`:
+
+    * `ppid` - Use the given Payment Processor ID. By default, uses the saved, live Stripe payment processor and throws an error if there is more than one.
+    * `type` - The event type - defaults to invoice.payment_succeeded.
+
+The standard API3 "limit" option is also supported and if specified will limit the total number of events to that limit (default 0).
+
+#### `Stripe.Ipn`:
+
+Replay a given Stripe Event. Parameters. This will always fetch the chosen Event from Stripe before replaying.
+
+    * `id` - The id from the SystemLog of the event to replay.
+    * `evtid` - The Event ID as provided by Stripe.
+    * `ppid` - Use the given Payment Processor ID. By default, uses the saved, live Stripe payment processor and throws an error if there is more than one.
+    * `noreceipt` - Set to 1 if you want to suppress the generation of receipts or set to 0 or leave out to send receipts normally.
+
+#### `Stripe.Retryall`:
+
+Attempt to replay all charges for a given payment processor that are completed in Stripe but not completed in CiviCRM.
+
+    * `ppid` - Use the given Payment Processor ID. By default, uses the saved, live Stripe payment processor and throws an error if there is more than one.
+    * `limit` - Limit number of results (25 is default).
+
+#### `Stripe.Cleanup`:
+
+Cleanup and remove old database tables/fields that are no longer required.
 
 ### Import related.
 
@@ -65,7 +89,7 @@ When importing subscriptions, all invoice/charges assigned to the subscription w
     * [Stripe doc](https://stripe.com/docs/api/subscriptions/list)
 
 
-#### Customers 
+#### Customers
 
 * `Stripe.importallcustomers` - import all customers for a given payment processor.
   * Parameters:

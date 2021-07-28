@@ -29,7 +29,7 @@ function _civicrm_api3_stripe_ListEvents_spec(&$spec) {
   $spec['ppid']['api.required'] = TRUE;
   $spec['type']['title'] = ts("Limit to the given Stripe events type, defaults to invoice.payment_succeeded.");
   $spec['type']['api.default'] = 'invoice.payment_succeeded';
-  $spec['limit']['title'] = ts("Limit number of results returned (100 is max)");
+  $spec['limit']['title'] = ts("Limit number of results returned (100 is max, 25 default)");
   $spec['starting_after']['title'] = ts("Only return results after this id.");
   $spec['output']['api.default'] = 'brief';
   $spec['output']['title'] = ts("How to format the output, brief or raw. Defaults to brief.");
@@ -227,7 +227,7 @@ function civicrm_api3_stripe_ProcessParams($params) {
  * as actual objects. To try to mimic the same results, we don't covert the entire
  * json string to an array, only the data index, leaving the rest as objects.
  */
-function civicrm_api3_stripe_listevents_massage_systemlog_json($data) {
+function _civicrm_api3_stripe_listevents_massage_systemlog_json($data) {
   // Decode from json, ensure top layer is an array.
   $data = (array) json_decode($data);
   // Also ensure the data layer is an array.
@@ -275,7 +275,7 @@ function civicrm_api3_stripe_Listevents($params) {
     $dao = CRM_Core_DAO::executeQuery($sql, $sql_params);
     $seen_charges = [];
     while($dao->fetch()) {
-      $data = civicrm_api3_stripe_listevents_massage_systemlog_json($dao->context);
+      $data = _civicrm_api3_stripe_listevents_massage_systemlog_json($dao->context);
       if (in_array($data['data']['object']->charge, $seen_charges)) {
         // We might get more then one event for a single charge if the first attempt fails. We
         // don't need to list them all.
@@ -301,7 +301,7 @@ function civicrm_api3_stripe_Listevents($params) {
         // and another for the initial charge. We only want one record per charge.
         if (!in_array($invoice->charge, $seen_charges)) {
           // If we already have this charge from system log, we don't need it again.
-          if (!in_array($invoice->charge, $seen_invoices)) { 
+          if (!in_array($invoice->charge, $seen_invoices)) {
             // This means a charge was made that was not included in the system log.
             $data_list['data'][$invoice->created] = $invoice;
             $seen_invoices[]  = $invoice->charge;
@@ -345,7 +345,7 @@ function civicrm_api3_stripe_Listevents($params) {
     $dao = CRM_Core_DAO::executeQuery($sql, $sql_params);
     $seen_charges = [];
     while($dao->fetch()) {
-      $data = civicrm_api3_stripe_listevents_massage_systemlog_json($dao->context);
+      $data = _civicrm_api3_stripe_listevents_massage_systemlog_json($dao->context);
       $charge = $data['data']['object']->charge;
       if ($charge && in_array($charge, $seen_charges)) {
         continue;
@@ -377,7 +377,7 @@ function civicrm_api3_stripe_Listevents($params) {
       $item['livemode'] = $data['livemode'];
       $item['pending_webhooks'] = $data['pending_webhooks'];
       $item['type'] = $data['type'];
-      
+
       $invoice = NULL;
       $charge = NULL;
       $customer = NULL;
@@ -389,7 +389,7 @@ function civicrm_api3_stripe_Listevents($params) {
         $customer = $data['data']['object']->customer;
         $subscription = $data['data']['object']->subscription;
         $total = $data['data']['object']->total;
-      } 
+      }
       elseif($data['object'] == 'invoice') {
         $invoice = $data->id;
         $charge = $data->charge;
