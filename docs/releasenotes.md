@@ -15,6 +15,9 @@ Releases use the following numbering system:
 * Fix [#313](https://lab.civicrm.org/extensions/stripe/-/issues/315) Stripe and CiviDiscount, Stripe payment is cancelled if the Discount Code is NOT first applied on the Event Registration form.
 * Implement [!164](https://lab.civicrm.org/extensions/stripe/-/merge_requests/164) Add configurable limit on maximum number of webhooks that will be processed simultaneously (default 50).
 * Add API3 Stripe.Populatewebhookqueue and fix Stripe.Populatelog.
+* Fixes to PaymentRequest button [#313](https://lab.civicrm.org/extensions/stripe/-/issues/313):
+    * Hide submit buttons when paymentRequest button is active.
+    * Fix loading of paymentRequest element when multiple payment processors available.
 
 ## Release 6.6
 **Requires mjwshared (Payment Shared) 1.0**
