@@ -45,6 +45,9 @@
     load();
   });
 
+  /**
+   * Called on every load of this script (whether billingblock loaded via AJAX or DOMContentLoaded)
+   */
   function load() {
     if (window.civicrmStripeHandleReload) {
       // Call existing instance of this, instead of making new one.
@@ -87,6 +90,12 @@
     }
   };
 
+  /**
+   * Called when payment details have been entered and validated successfully
+   *
+   * @param type
+   * @param object
+   */
   function successHandler(type, object) {
     debugging(type + ': success - submitting form');
 
@@ -142,6 +151,11 @@
     }
   }
 
+  /**
+   * Get a list of jQuery elements for all possible Stripe elements that could be loaded
+   *
+   * @returns {{paymentrequest: (*|jQuery|HTMLElement), card: (*|jQuery|HTMLElement)}}
+   */
   function getJQueryPaymentElements() {
     return {
       card: $('div#card-element'),
@@ -191,6 +205,11 @@
     return false;
   }
 
+  /**
+   * Handle the "Card" submission to Stripe
+   *
+   * @param submitEvent
+   */
   function handleSubmitCard(submitEvent) {
     debugging('handle submit card');
     stripe.createPaymentMethod('card', elements.card).then(function (createPaymentMethodResult) {
@@ -282,6 +301,11 @@
     });
   }
 
+  /**
+   * Handle the "PaymentRequest" submission to Stripe
+   *
+   * @param submitEvent
+   */
   function handleSubmitPaymentRequestButton(submitEvent) {
     debugging('handle submit paymentRequestButton');
 
@@ -350,6 +374,9 @@
     delete(CRM.vars.stripe);
   }
 
+  /**
+   * Check environment and trigger loadBillingBlock()
+   */
   function checkAndLoad() {
     if (typeof CRM.vars.stripe === 'undefined') {
       debugging('CRM.vars.stripe not defined! Not a Stripe processor?');
@@ -395,6 +422,9 @@
     }
   }
 
+  /**
+   * This actually loads the billingBlock and the chosen Stripe element
+   */
   function loadBillingBlock() {
     debugging('loadBillingBlock');
 
