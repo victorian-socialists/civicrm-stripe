@@ -401,8 +401,6 @@
           stripeLoading = false;
           debugging("Script loaded and executed.");
           loadBillingBlock();
-          triggerEvent('crmBillingFormReloadComplete');
-          triggerEvent('crmStripeBillingFormReloadComplete');
         })
         .fail(function() {
           stripeLoading = false;
@@ -412,13 +410,6 @@
     }
     else {
       loadBillingBlock();
-      if (checkPaymentElementsAreValid()) {
-        triggerEvent('crmStripeBillingFormReloadComplete');
-      }
-      else {
-        debugging('Failed to load payment elements');
-        triggerEventCrmBillingFormReloadFailed();
-      }
     }
   }
 
@@ -449,10 +440,13 @@
     submitButtons = CRM.payment.getBillingSubmit();
 
     // By default we load paymentRequest button if we can, fallback to card element
-    if (createElementPaymentRequest(stripeElements) === false) {
-      createElementCard(stripeElements);
-    }
+    createElementPaymentRequest(stripeElements);
+  }
 
+  /**
+   * This is called once Stripe elements have finished loading onto the form
+   */
+  function doAfterStripeElementsHaveLoaded() {
     setBillingFieldsRequiredForJQueryValidate();
 
     // If another submit button on the form is pressed (eg. apply discount)
@@ -515,6 +509,15 @@
 
       $('#billingcheckbox:input').hide();
       $('label[for="billingcheckbox"]').hide();
+    }
+
+    if (checkPaymentElementsAreValid()) {
+      triggerEvent('crmBillingFormReloadComplete');
+      triggerEvent('crmStripeBillingFormReloadComplete');
+    }
+    else {
+      debugging('Failed to load payment elements');
+      triggerEventCrmBillingFormReloadFailed();
     }
   }
 
@@ -739,13 +742,16 @@
     elements.card.addEventListener('change', function (event) {
       cardElementChanged(event);
     });
+
+    doAfterStripeElementsHaveLoaded();
   }
 
   function createElementPaymentRequest(stripeElements) {
     debugging('try to create paymentRequest element');
     if (CRM.payment.supportsRecur() || CRM.payment.isEventAdditionalParticipants()) {
       debugging('paymentRequest element is not supported on this form');
-      return false;
+      createElementCard(stripeElements);
+      return;
     }
     var paymentRequest = null;
     try {
@@ -762,14 +768,16 @@
     } catch(err) {
       if (err.name === 'IntegrationError') {
         debugging('Cannot enable paymentRequestButton: ' + err.message);
-        return false;
+        createElementCard(stripeElements);
+        return;
       }
     }
 
     // Check the availability of the Payment Request API first.
     paymentRequest.canMakePayment()
       .catch(function(result) {
-        return false;
+        createElementCard(stripeElements);
+        return;
       })
       .then(function(result) {
         paymentData.paymentRequest = paymentRequest;
@@ -857,6 +865,8 @@
         } else {
           document.getElementById('paymentrequest-element').style.display = 'none';
         }
+
+        doAfterStripeElementsHaveLoaded();
       });
   }
 
