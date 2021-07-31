@@ -773,13 +773,19 @@
       }
     }
 
-    // Check the availability of the Payment Request API first.
     paymentRequest.canMakePayment()
       .catch(function(result) {
         createElementCard(stripeElements);
         return;
       })
       .then(function(result) {
+        if (!result) {
+          debugging('No available paymentMethods for paymentRequest');
+          createElementCard(stripeElements);
+          return;
+        }
+        debugging('paymentRequest paymentMethods: ' + JSON.stringify(result));
+        // Mount paymentRequestButtonElement to the DOM
         paymentData.paymentRequest = paymentRequest;
         elements.paymentRequestButton = stripeElements.create('paymentRequestButton', {
           paymentRequest: paymentRequest,
