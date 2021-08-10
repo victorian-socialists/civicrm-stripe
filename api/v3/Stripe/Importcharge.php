@@ -92,6 +92,7 @@ function civicrm_api3_stripe_importcharge($params) {
     // Lookup the contribution_recur_id.
     $cr_results = \Civi\Api4\ContributionRecur::get()
       ->addWhere('trxn_id', '=', $subscription)
+      ->setCheckPermissions(FALSE)
       ->execute();
     $contribution_recur = $cr_results->first();
     if (!$contribution_recur) {
@@ -121,6 +122,7 @@ function civicrm_api3_stripe_importcharge($params) {
     $c_results = \Civi\Api4\Contribution::get()
         ->addWhere('trxn_id', 'LIKE', '%'. $params['charge'].'%')
         ->addWhere('is_test', '=', $is_test)
+        ->setCheckPermissions(FALSE)
         ->execute();
     $contribution = $c_results->first();
     if ($contribution) {
