@@ -9,6 +9,10 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
+## Release 6.6.2 (not yet released)
+
+* SweetAlert 10/11 compatibility - require SweetAlert extension 1.5
+
 ## Release 6.6.1
 
 * Fix PHP notice when there are no Stripe customers.
@@ -18,6 +22,7 @@ Releases use the following numbering system:
 * Fixes to PaymentRequest button [#313](https://lab.civicrm.org/extensions/stripe/-/issues/313):
     * Hide submit buttons when paymentRequest button is active.
     * Fix loading of paymentRequest element when multiple payment processors available.
+    * Fix no payment element loading in browser when no saved cards and paymentRequest is default.
 * Fix [#331](https://lab.civicrm.org/extensions/stripe/-/issues/331) The API Stripe.importsubscription returns authorization failed.
 
 ## Release 6.6

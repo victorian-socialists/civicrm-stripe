@@ -252,8 +252,8 @@
             title: ts('Please wait'),
             text: ts(' while we pre-authorize your card...'),
             allowOutsideClick: false,
-            onBeforeOpen: function() {
-              Swal.showLoading();
+            willOpen: function() {
+              Swal.showLoading(Swal.getConfirmButton());
             }
           }, '', false);
           CRM.api3('StripePaymentintent', 'Process', {
@@ -315,8 +315,8 @@
       title: ts('Please wait'),
       text: ts(' preparing your payment...'),
       allowOutsideClick: false,
-      onBeforeOpen: function() {
-        Swal.showLoading();
+      willOpen: function() {
+        Swal.showLoading(Swal.getConfirmButton());
       }
     }, '', false);
     CRM.api3('StripePaymentintent', 'Process', {
@@ -1028,7 +1028,7 @@
   function swalFire(parameters, scrollToElement, fallBackToAlert) {
     if (typeof Swal === 'function') {
       if (scrollToElement.length > 0) {
-        parameters.onAfterClose = function() { window.scrollTo($(scrollToElement).position()); };
+        parameters.didClose = function() { window.scrollTo($(scrollToElement).position()); };
       }
       Swal.fire(parameters);
     }

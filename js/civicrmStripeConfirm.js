@@ -233,7 +233,7 @@
     swalFire: function(parameters, scrollToElement, fallBackToAlert) {
       if (typeof Swal === 'function') {
         if (scrollToElement.length > 0) {
-          parameters.onAfterClose = function() { window.scrollTo($(scrollToElement).position()); };
+          parameters.didClose = function() { window.scrollTo($(scrollToElement).position()); };
         }
         Swal.fire(parameters);
       }
@@ -276,8 +276,8 @@
   confirm.swalFire({
     title: ts('Please wait...'),
     allowOutsideClick: false,
-    onBeforeOpen: function() {
-      Swal.showLoading();
+    willOpen: function() {
+      Swal.showLoading(Swal.getConfirmButton());
     }
   }, '', false);
 
