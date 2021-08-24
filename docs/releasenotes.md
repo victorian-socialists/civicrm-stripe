@@ -9,7 +9,7 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
-## Release 6.6.1 (not yet released)
+## Release 6.6.1
 
 * Fix PHP notice when there are no Stripe customers.
 * Fix [#313](https://lab.civicrm.org/extensions/stripe/-/issues/315) Stripe and CiviDiscount, Stripe payment is cancelled if the Discount Code is NOT first applied on the Event Registration form.
@@ -18,6 +18,7 @@ Releases use the following numbering system:
 * Fixes to PaymentRequest button [#313](https://lab.civicrm.org/extensions/stripe/-/issues/313):
     * Hide submit buttons when paymentRequest button is active.
     * Fix loading of paymentRequest element when multiple payment processors available.
+* Fix [#331](https://lab.civicrm.org/extensions/stripe/-/issues/331) The API Stripe.importsubscription returns authorization failed.
 
 ## Release 6.6
 **Requires mjwshared (Payment Shared) 1.0**
