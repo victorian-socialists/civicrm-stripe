@@ -116,19 +116,6 @@ function stripe_civicrm_buildForm($formName, &$form) {
   switch ($formName) {
     case 'CRM_Contribute_Form_Contribution_ThankYou':
     case 'CRM_Event_Form_Registration_ThankYou':
-      \Civi::resources()->addScriptUrl(
-        \Civi::service('asset_builder')->getUrl(
-          'civicrmStripeConfirm.js',
-          [
-            'path' => \Civi::resources()->getPath(E::LONG_NAME, 'js/civicrmStripeConfirm.js'),
-            'mimetype' => 'application/javascript',
-          ]
-        ),
-        // Load after any other scripts
-        100,
-        'page-footer'
-      );
-
       // This is a fairly nasty way of matching and retrieving our paymentIntent as it is no longer available.
       $qfKey = CRM_Utils_Request::retrieve('qfKey', 'String');
       if (!empty($qfKey)) {
@@ -191,12 +178,36 @@ function stripe_civicrm_buildForm($formName, &$form) {
             $jsVars['setupIntentClientSecret'] = $stripeSetupIntent->client_secret;
             $jsVars['intentStatus'] = $stripeSetupIntent->status;
             break;
+
+          default:
+            // For a delayed start_date we only have a paymentMethod (pm_).
+            return;
+        }
+
+        if (in_array($jsVars['intentStatus'], ['succeeded', 'canceled'])) {
+          // If intentStatus == succeeded there is nothing to do so don't load script.
+          // 'canceled' was in the civicrmStripeConfirm.js - not sure why! But including here for now.
+          return;
         }
         \Civi::resources()->addVars(E::SHORT_NAME, $jsVars);
       }
       catch (Exception $e) {
         // Do nothing, we won't attempt further stripe processing
       }
+
+      \Civi::resources()->addScriptUrl(
+        \Civi::service('asset_builder')->getUrl(
+          'civicrmStripeConfirm.js',
+          [
+            'path' => \Civi::resources()->getPath(E::LONG_NAME, 'js/civicrmStripeConfirm.js'),
+            'mimetype' => 'application/javascript',
+          ]
+        ),
+        // Load after any other scripts
+        100,
+        'page-footer'
+      );
+
       break;
 
     case 'CRM_Admin_Form_PaymentProcessor':
