@@ -32,7 +32,7 @@
           icon: 'error'
         }, '', true);
       }
-      else if (paymentIntentProcessResponse.succeeded) {
+      else if (paymentIntentProcessResponse.success) {
         // All good, nothing more to do
         CRM.payment.debugging(confirm.scriptName, 'success - payment captured');
         confirm.swalFire({
