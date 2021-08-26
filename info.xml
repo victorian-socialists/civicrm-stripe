@@ -15,9 +15,9 @@
     <author>Matthew Wire (MJW Consulting)</author>
     <email>mjw@mjwconsult.co.uk</email>
   </maintainer>
-  <releaseDate>2021-08-24</releaseDate>
-  <version>6.6.1</version>
-  <develStage>stable</develStage>
+  <releaseDate>2021-08-26</releaseDate>
+  <version>6.6.2-dev</version>
+  <develStage>beta</develStage>
   <compatibility>
     <ver>5.35</ver>
   </compatibility>

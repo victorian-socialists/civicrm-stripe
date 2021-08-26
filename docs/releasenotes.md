@@ -11,7 +11,11 @@ Releases use the following numbering system:
 
 ## Release 6.6.2 (not yet released)
 
-* SweetAlert 10/11 compatibility - require SweetAlert extension 1.5
+* SweetAlert 10/11 compatibility - require SweetAlert extension 1.5.
+* Fix [#330](https://lab.civicrm.org/extensions/stripe/-/issues/330) Fix system checks when extension 'id' is 0.
+* Fix typo in confirm script that was causing some payments to show 'Payment Failed' on ThankYou page.
+* Disable civicrmStripeConfirm script on ThankYou page if there is no paymentIntent to confirm (eg. non-recurring or delayed start-date).
+
 
 ## Release 6.6.1
 

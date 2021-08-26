@@ -81,7 +81,7 @@ Approximately 24-30 hours.
 
 See [Stripe Connect](https://stripe.com/connect).
 
-## Stripe ACH/EFT - partially funded
+## Stripe ACH/EFT - Fully funded. Will be available in 6.7 release.
 
 See [Make it Happen](https://civicrm.org/make-it-happen/stripe-ach-payments) campaign on CiviCRM.org.
 
