@@ -49,7 +49,7 @@ class CRM_Stripe_Check {
       'full_name' => $extensionName,
     ]);
 
-    if (empty($extensions['id']) || ($extensions['values'][$extensions['id']]['status'] !== 'installed')) {
+    if (empty($extensions['count']) || ($extensions['values'][$extensions['id']]['status'] !== 'installed')) {
       $message = new CRM_Utils_Check_Message(
         __FUNCTION__ . E::SHORT_NAME . '_requirements',
         E::ts('The <em>%1</em> extension requires the <em>Payment Shared</em> extension which is not installed. See <a href="%2" target="_blank">details</a> for more information.',
@@ -88,7 +88,7 @@ class CRM_Stripe_Check {
       'full_name' => $extensionName,
     ]);
 
-    if (empty($extensions['id']) || ($extensions['values'][$extensions['id']]['status'] !== 'installed')) {
+    if (empty($extensions['count']) || ($extensions['values'][$extensions['id']]['status'] !== 'installed')) {
       $message = new CRM_Utils_Check_Message(
         __FUNCTION__ . 'stripe_recommended',
         E::ts('If you are using Stripe to accept payments on public forms (eg. contribution/event registration forms) it is recommended that you install the <strong><a href="https://lab.civicrm.org/extensions/firewall">firewall</a></strong> extension.
@@ -122,7 +122,7 @@ class CRM_Stripe_Check {
       'full_name' => $extensionName,
     ]);
 
-    if (empty($extensions['id']) || ($extensions['values'][$extensions['id']]['status'] !== 'installed')) {
+    if (empty($extensions['count']) || ($extensions['values'][$extensions['id']]['status'] !== 'installed')) {
       $message = new CRM_Utils_Check_Message(
         __FUNCTION__ . 'stripe_recommended',
         E::ts('It is recommended that you install the <strong><a href="https://civicrm.org/extensions/sweetalert">sweetalert</a></strong> extension.
