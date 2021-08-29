@@ -9,13 +9,12 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
-## Release 6.6.2 (not yet released)
+## Release 6.6.2
 
 * SweetAlert 10/11 compatibility - require SweetAlert extension 1.5.
 * Fix [#330](https://lab.civicrm.org/extensions/stripe/-/issues/330) Fix system checks when extension 'id' is 0.
 * Fix typo in confirm script that was causing some payments to show 'Payment Failed' on ThankYou page.
 * Disable civicrmStripeConfirm script on ThankYou page if there is no paymentIntent to confirm (eg. non-recurring or delayed start-date).
-
 
 ## Release 6.6.1
 
