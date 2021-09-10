@@ -197,7 +197,7 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
     $processor->setAPIParams();
 
     try {
-      $processor->stripeClient->charges->retrieve(["id" => $this->trxn_id]);
+      $processor->stripeClient->charges->retrieve($this->trxn_id);
       $found = TRUE;
     }
     catch (Exception $e) {

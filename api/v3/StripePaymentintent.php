@@ -171,6 +171,7 @@ function civicrm_api3_stripe_paymentintent_process($params) {
     _civicrm_api3_stripe_paymentintent_returnInvalid();
   }
 
+  $referrer = $_SERVER['HTTP_REFERER'] ?? '';
   $title = CRM_Utils_Type::validate($params['description'], 'String');
   $intentParams['confirm'] = TRUE;
   $currency = CRM_Utils_Type::validate($params['currency'], 'String', CRM_Core_Config::singleton()->defaultCurrency);
@@ -227,7 +228,7 @@ function civicrm_api3_stripe_paymentintent_process($params) {
         'payment_processor_id' => $paymentProcessorID,
         'status' => 'failed',
         'description' => "{$e->getRequestId()};{$e->getMessage()};{$title}",
-        'referrer' => $_SERVER['HTTP_REFERER'],
+        'referrer' => $referrer,
       ];
       isset($params['extra_data']) ? $stripePaymentintentParams['extra_data'] = $params['extra_data'] : NULL;
       CRM_Stripe_BAO_StripePaymentintent::create($stripePaymentintentParams);
@@ -251,7 +252,7 @@ function civicrm_api3_stripe_paymentintent_process($params) {
     'payment_processor_id' => $paymentProcessorID,
     'status' => $intent->status,
     'description' => "{$title}",
-    'referrer' => $_SERVER['HTTP_REFERER'],
+    'referrer' => $referrer,
   ];
   isset($params['extra_data']) ? $stripePaymentintentParams['extra_data'] = $params['extra_data'] : NULL;
   CRM_Stripe_BAO_StripePaymentintent::create($stripePaymentintentParams);
