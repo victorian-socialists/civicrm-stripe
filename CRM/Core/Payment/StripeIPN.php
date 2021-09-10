@@ -540,6 +540,7 @@ class CRM_Core_Payment_StripeIPN {
         // Subscription is cancelled
         if (!$this->getSubscriptionDetails()) {
           // Subscription was not found in CiviCRM
+          CRM_Mjwshared_Hook::webhookEventNotMatched('stripe', $this, 'subscription_not_found');
           return TRUE;
         }
         // Cancel the recurring contribution
@@ -696,6 +697,7 @@ class CRM_Core_Payment_StripeIPN {
         $message = $this->_paymentProcessor->getPaymentProcessorLabel() . 'No matching contributions for event ' . $this->getEventID();
         Civi::log()->debug($message);
       }
+      CRM_Mjwshared_Hook::webhookEventNotMatched('stripe', $this, 'contribution_not_found');
       return FALSE;
     }
 
@@ -730,6 +732,7 @@ class CRM_Core_Payment_StripeIPN {
         $message = $this->_paymentProcessor->getPaymentProcessorLabel() . 'Stripe Customer not found in CiviCRM for event ' . $this->getEventID();
         Civi::log()->debug($message);
       }
+      CRM_Mjwshared_Hook::webhookEventNotMatched('stripe', $this, 'customer_not_found');
       return FALSE;
     }
     return TRUE;
