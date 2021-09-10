@@ -34,11 +34,6 @@ class CRM_Core_Payment_StripeIPN {
   protected $subscription_id = NULL;
   protected $customer_id = NULL;
   protected $charge_id = NULL;
-  protected $previous_plan_id = NULL;
-  protected $plan_amount = NULL;
-  protected $frequency_interval = NULL;
-  protected $frequency_unit = NULL;
-  protected $plan_start = NULL;
 
   /**
    * @var string The stripe Invoice ID (mapped to trxn_id on a contribution for recurring contributions)
@@ -629,8 +624,13 @@ class CRM_Core_Payment_StripeIPN {
 
     // Get the recurring contribution record associated with the Stripe subscription.
     try {
-      $contributionRecur = civicrm_api3('ContributionRecur', 'getsingle', ['trxn_id' => $this->subscription_id]);
+      $contributionRecur = \Civi\Api4\ContributionRecur::get(FALSE)
+        ->addWhere('trxn_id', '=', $this->subscription_id)
+        ->addWhere('is_test', 'IN', [TRUE, FALSE])
+        ->execute()
+        ->first();
       $this->contribution_recur_id = $contributionRecur['id'];
+      $this->contributionRecur = $contributionRecur;
     }
     catch (Exception $e) {
       if ((bool)\Civi::settings()->get('stripe_ipndebug')) {
@@ -639,10 +639,6 @@ class CRM_Core_Payment_StripeIPN {
       }
       return FALSE;
     }
-    $this->plan_amount = $this->retrieve('plan_amount', 'String', FALSE);
-    $this->frequency_interval = $this->retrieve('frequency_interval', 'String', FALSE);
-    $this->frequency_unit = $this->retrieve('frequency_unit', 'String', FALSE);
-    $this->plan_start = $this->retrieve('plan_start', 'String', FALSE);
     return TRUE;
   }
 

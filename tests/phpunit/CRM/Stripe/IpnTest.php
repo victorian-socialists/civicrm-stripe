@@ -33,11 +33,15 @@
  * @group headless
  */
 class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
+
   protected $contributionRecurID;
-  protected $installments = 5;
-  protected $frequency_unit = 'month';
-  protected $frequency_interval = 1;
   protected $created_ts;
+
+  protected $contributionRecur = [
+    'frequency_unit' => 'month',
+    'frequency_interval' => 1,
+    'installments' => 5,
+  ];
 
   /**
    * Test creating a recurring contribution and
@@ -657,9 +661,9 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       'contact_id' => $this->contactID,
       'amount' => $this->total,
       'sequential' => 1,
-      'installments' => $this->installments,
-      'frequency_unit' => $this->frequency_unit,
-      'frequency_interval' => $this->frequency_interval,
+      'installments' => $this->contributionRecur['installments'],
+      'frequency_unit' => $this->contributionRecur['frequency_unit'],
+      'frequency_interval' => $this->contributionRecur['frequency_interval'],
       'contribution_status_id' => 2,
       'payment_processor_id' => $this->paymentProcessorID,
       'is_test' => 1,
@@ -948,9 +952,9 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       'is_recur'            => 1,
       'contributionRecurID' => $this->contributionRecurID,
       'contributionID'      => $this->contributionID,
-      'frequency_unit'      => $this->frequency_unit,
-      'frequency_interval'  => $this->frequency_interval,
-      'installments'        => $this->installments,
+      'frequency_unit'      => $this->contributionRecur['frequency_unit'],
+      'frequency_interval'  => $this->contributionRecur['frequency_interval'],
+      'installments'        => $this->contributionRecur['installments'],
     ];
 
     $this->doPayment($payment_extra_params);
