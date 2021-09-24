@@ -71,6 +71,7 @@ function civicrm_api3_stripe_importsubscription($params) {
       'financial_type_id' => !empty($params['financial_type_id']) ? $params['financial_type_id'] : 'Donation',
       'is_email_receipt' => !empty($params['is_email_receipt']) ? 1 : 0,
       'is_test' => isset($paymentProcessor['is_test']) && $paymentProcessor['is_test'] ? 1 : 0,
+      'contribution_source' => !empty($params['contribution_source']) ? $params['contribution_source'] : '',
     ];
     if ($params['recur_id']) {
       $contributionRecurParams['id'] = $params['recur_id'];
