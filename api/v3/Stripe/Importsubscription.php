@@ -47,7 +47,7 @@ function civicrm_api3_stripe_importsubscription($params) {
   }
   $customer = array_pop($custresult['values']);
   if ($customer['contact_id'] != $params['contact_id']) {
-    throw new API_Exception(E::ts("There is a mismatch between the contact id for the customer indicated by the subscription (%1) and the contact id provided via the API params (%2).", [ 1 => $customer['contact_id'], 2 => $params['contact_id']])); 
+    throw new API_Exception(E::ts("There is a mismatch between the contact id for the customer indicated by the subscription (%1) and the contact id provided via the API params (%2).", [ 1 => $customer['contact_id'], 2 => $params['contact_id']]));
   }
 
   // Create the recur record in CiviCRM if it doesn't exist.
@@ -73,7 +73,7 @@ function civicrm_api3_stripe_importsubscription($params) {
       'is_test' => isset($paymentProcessor['is_test']) && $paymentProcessor['is_test'] ? 1 : 0,
       'contribution_source' => !empty($params['contribution_source']) ? $params['contribution_source'] : '',
     ];
-    if ($params['recur_id']) {
+    if (isset($params['recur_id']) && $params['recur_id']) {
       $contributionRecurParams['id'] = $params['recur_id'];
     }
     $contributionRecur = civicrm_api3('ContributionRecur', 'create', $contributionRecurParams);

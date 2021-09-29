@@ -83,7 +83,7 @@ function civicrm_api3_stripe_importcharge($params) {
     $sourceText = 'Stripe: Manual import via API';
   }
 
-  $is_test = isset($paymentProcessor['is_test']) && $paymentProcessor['is_test'] ? 1 : 0;
+  $is_test = isset($payment_processor['is_test']) && $payment_processor['is_test'] ? 1 : 0;
 
   // Check for a subscription.
   $subscription = CRM_Stripe_Api::getObjectParam('subscription_id', $stripeInvoice);
@@ -92,6 +92,7 @@ function civicrm_api3_stripe_importcharge($params) {
     // Lookup the contribution_recur_id.
     $cr_results = \Civi\Api4\ContributionRecur::get()
       ->addWhere('trxn_id', '=', $subscription)
+      ->addWhere('is_test', '=', $is_test)
       ->setCheckPermissions(FALSE)
       ->execute();
     $contribution_recur = $cr_results->first();
@@ -113,7 +114,7 @@ function civicrm_api3_stripe_importcharge($params) {
 
   // Check if a contribution already exists.
   $contribution_id = NULL;
-  if ($params['contribution_id']) {
+  if (isset($params['contribution_id'])) {
     // From user input.
     $contribution_id = $params['contribution_id'];
   }
@@ -130,7 +131,7 @@ function civicrm_api3_stripe_importcharge($params) {
     }
   }
 
-  // If it exists, we update by adding the id. 
+  // If it exists, we update by adding the id.
   if ($contribution_id) {
     $contributionParams['id'] = $contribution_id;
   }
@@ -150,7 +151,7 @@ function civicrm_api3_stripe_importcharge($params) {
     if ($contribution_recur_id) {
       $contributionParams['contribution_recur_id'] = $contribution_recur_id;
     }
-  } 
+  }
 
   $contribution = civicrm_api3('Contribution', 'create', $contributionParams);
   return civicrm_api3_create_success($contribution['values']);
