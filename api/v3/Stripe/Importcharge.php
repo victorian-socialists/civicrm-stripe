@@ -114,7 +114,7 @@ function civicrm_api3_stripe_importcharge($params) {
 
   // Check if a contribution already exists.
   $contribution_id = NULL;
-  if (isset($params['contribution_id'])) {
+  if (isset($params['contribution_id']) && $params['contribution_id']) {
     // From user input.
     $contribution_id = $params['contribution_id'];
   }
