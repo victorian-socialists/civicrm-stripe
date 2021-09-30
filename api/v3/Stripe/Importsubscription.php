@@ -104,6 +104,7 @@ function civicrm_api3_stripe_importsubscription($params) {
 	  'payment_instrument_id' => $params['payment_instrument_id'],
 	  'ppid' => $params['ppid'],
 	  'contact_id' => $params['contact_id'],
+      'contribution_source' => ($params['contribution_source'] ?? ''),
 	];
 	$contribution = civicrm_api3('Stripe', 'Importcharge', $charge_params);
 
