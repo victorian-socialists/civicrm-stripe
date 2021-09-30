@@ -44,6 +44,7 @@ function civicrm_api3_stripe_importsubscription($params) {
     // Create the customer.
     $customerParams['contact_id'] = $params['contact_id'];
     $custresult = civicrm_api3('StripeCustomer', 'create', $customerParams);
+    $custresult = civicrm_api3('StripeCustomer', 'get', $customerParams);
   }
   $customer = array_pop($custresult['values']);
   if ($customer['contact_id'] != $params['contact_id']) {
