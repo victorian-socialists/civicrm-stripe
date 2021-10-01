@@ -622,7 +622,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       $this->handleError($e->getCode(), $e->getMessage(), $params['error_url']);
     }
 
-    list($params, $newParams) = $this->processPaymentIntent($params, $intent);
+    $params = $this->processPaymentIntent($params, $intent);
 
     // For a single charge there is no stripe invoice, we set OrderID to the ChargeID.
     if (empty($this->getPaymentProcessorOrderID())) {
@@ -631,7 +631,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
 
     // For contribution workflow we have a contributionId so we can set parameters directly.
     // For events/membership workflow we have to return the parameters and they might get set...
-    return $this->endDoPayment($params, $newParams);
+    return $this->endDoPayment($params);
   }
 
   /**
@@ -741,7 +741,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     if ($stripeSubscription->latest_invoice) {
       // Get the paymentIntent for the latest invoice
       $intent = $stripeSubscription->latest_invoice['payment_intent'];
-      list($params, $newParams) = $this->processPaymentIntent($params, $intent);
+      $params = $this->processPaymentIntent($params, $intent);
 
       // Set the orderID (trxn_id) to the invoice ID
       // The IPN will change it to the charge_id
@@ -773,7 +773,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       $this->setPaymentProcessorOrderID($stripeSubscription->id);
     }
 
-    return $this->endDoPayment($params, $newParams ?? []);
+    return $this->endDoPayment($params);
   }
 
   /**
@@ -800,12 +800,11 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @param array $params
    * @param \Stripe\PaymentIntent $intent
    *
-   * @return array [$params, $newParams]
+   * @return array $params
    */
   private function processPaymentIntent($params, $intent) {
     $contactId = $params['contactID'];
     $email = $this->getBillingEmail($params, $contactId);
-    $newParams = [];
 
     try {
       if ($intent->status === 'requires_confirmation') {
@@ -828,12 +827,12 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
           }
           if (($stripeCharge['currency'] !== $stripeBalanceTransaction->currency)
               && (!empty($stripeBalanceTransaction->exchange_rate))) {
-            $newParams['fee_amount'] = CRM_Stripe_Api::currencyConversion($stripeBalanceTransaction->fee, $stripeBalanceTransaction['exchange_rate'], $stripeCharge['currency']);
+            $params['fee_amount'] = CRM_Stripe_Api::currencyConversion($stripeBalanceTransaction->fee, $stripeBalanceTransaction['exchange_rate'], $stripeCharge['currency']);
           }
           else {
             // We must round to currency precision otherwise payments may fail because Contribute BAO saves but then
             // can't retrieve because it tries to use the full unrounded number when it only got saved with 2dp.
-            $newParams['fee_amount'] = round($stripeBalanceTransaction->fee / 100, CRM_Utils_Money::getCurrencyPrecision($stripeCharge['currency']));
+            $params['fee_amount'] = round($stripeBalanceTransaction->fee / 100, CRM_Utils_Money::getCurrencyPrecision($stripeCharge['currency']));
           }
           // Success!
           // Set the desired contribution status which will be set later (do not set on the contribution here!)
@@ -872,7 +871,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     }
     CRM_Stripe_BAO_StripePaymentintent::create($intentParams);
 
-    return [$params, $newParams];
+    return $params;
   }
 
   /**

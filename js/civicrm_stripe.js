@@ -359,8 +359,8 @@
       function submitButtonClick(clickEvent) {
         // Take over the click function of the form.
         if (typeof CRM.vars[script.name] === 'undefined') {
-          // Submit the form
-          return CRM.payment.doStandardFormSubmit();
+          // Do nothing. Not our payment processor
+          return false;
         }
         script.debugging('clearing submitdontprocess');
         CRM.payment.form.dataset.submitdontprocess = 'false';
@@ -397,8 +397,8 @@
       }
 
       if (script.checkPaymentElementsAreValid()) {
-        CRM.payment.triggerEvent('crmBillingFormReloadComplete');
-        CRM.payment.triggerEvent('crmStripeBillingFormReloadComplete');
+        CRM.payment.triggerEvent('crmBillingFormReloadComplete', script.name);
+        CRM.payment.triggerEvent('crmStripeBillingFormReloadComplete', script.name);
       }
       else {
         script.debugging('Failed to load payment elements');
@@ -795,8 +795,10 @@
 
   // Currently this just flags that we've already loaded
   var crmPaymentObject = {};
-  crmPaymentObject[script.name] = true;
+  crmPaymentObject[script.name] = script;
   $.extend(CRM.payment, crmPaymentObject);
+
+  CRM.payment.registerScript(script.name);
 
   // Re-prep form when we've loaded a new payproc via ajax or via webform
   $(document).ajaxComplete(function (event, xhr, settings) {
@@ -853,7 +855,7 @@
     }
     else {
       script.notScriptProcessor();
-      CRM.payment.triggerEvent('crmBillingFormReloadComplete');
+      CRM.payment.triggerEvent('crmBillingFormReloadComplete', script.name);
     }
   };
 

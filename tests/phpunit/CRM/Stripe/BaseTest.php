@@ -205,7 +205,6 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
     }
 
     $this->assertTrue($found, 'Assigned trxn_id is valid.');
-
   }
   /**
    * Create contribition
