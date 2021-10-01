@@ -9,10 +9,10 @@ created outside of CiviCRM (eg. via WooCommerce, Stripe Dashboard).
 ### Specification
 1. Add a setting to control whether import should happen automatically.
 2. Update Stripe IPN code to automatically create:
-  - A recurring contribution when an unknown Stripe subscription ID is received.
-  - A contribution linked to a recurring contribution when an unknown invoice ID is received.
-  - A contribution when an unknown charge ID is received (that does not have an associated invoice ID).
-  - A payment linked to a contribution via charge ID / invoice ID.
+    - A recurring contribution when an unknown Stripe subscription ID is received.
+    - A contribution linked to a recurring contribution when an unknown invoice ID is received.
+    - A contribution when an unknown charge ID is received (that does not have an associated invoice ID).
+    - A payment linked to a contribution via charge ID / invoice ID.
 
 ### Estimate
 
@@ -27,9 +27,9 @@ confirm and map Stripe customer IDs to CiviCRM contacts.
 
 1. Build a UI that lists Stripe customers which do not exist in CiviCRM.
 2. Provide options to:
-  - Confirm the auto-detected mapping.
-  - Manually find and map contact.
-  - Import all missing subscriptions/contributions for customer (up to certain date?).
+    - Confirm the auto-detected mapping.
+    - Manually find and map contact.
+    - Import all missing subscriptions/contributions for customer (up to certain date?).
 
 ### Estimate
 
@@ -47,9 +47,11 @@ We would like to provide support for re-using saved cards in CiviCRM.
 #### 1. Allow users to update card details (edit current or add new)
 
 Implement API to retrieve all cards for customer and build UI to display cards.
+
 * Stripe API to list cards: https://stripe.com/docs/api/cards/list
 
 Implement API and UI to update card details.
+
 * Use stripe card element with SetupIntent: https://support.stripe.com/questions/update-card-details-with-a-setupintent
 
 Add form to CiviCRM specifically for card updates.
