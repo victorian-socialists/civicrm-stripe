@@ -10,7 +10,11 @@
  */
 
 require_once 'stripe.civix.php';
-require_once __DIR__ . '/vendor/autoload.php';
+$autoload = __DIR__ . '/vendor/autoload.php';
+if (file_exists($autoload)) {
+  require_once $autoload;
+}
+
 
 use CRM_Stripe_ExtensionUtil as E;
 
@@ -72,7 +76,6 @@ function stripe_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
   return _stripe_civix_civicrm_upgrade($op, $queue);
 }
 
-
 /**
  * Implementation of hook_civicrm_managed().
  *
@@ -82,7 +85,6 @@ function stripe_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
 function stripe_civicrm_managed(&$entities) {
   _stripe_civix_civicrm_managed($entities);
 }
-
 
 /**
  * Implements hook_civicrm_entityTypes().
@@ -160,7 +162,7 @@ function stripe_civicrm_buildForm($formName, &$form) {
           'country' => CRM_Core_BAO_Country::defaultContactCountry(),
         ];
 
-        switch(substr($paymentIntent['stripe_intent_id'], 0, 2)) {
+        switch (substr($paymentIntent['stripe_intent_id'], 0, 2)) {
           case 'pi':
             // pi_ Stripe PaymentIntent
             $stripePaymentIntent = \Stripe\PaymentIntent::retrieve($paymentIntent['stripe_intent_id']);
