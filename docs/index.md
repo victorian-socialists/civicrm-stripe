@@ -14,7 +14,7 @@ View/Download this extension in the [Extension Directory](https://civicrm.org/ex
 * Updating Stripe subscriptions from CiviCRM.
 
 ## Compatibility / Requirements
-* CiviCRM 5.28+
+* CiviCRM 5.35+
 * PHP 7.2+
 * Jquery 1.10+ (Use jquery_update module on Drupal 7).
 * Drupal 7 / Drupal 8 / Joomla / Wordpress (latest supported release).
@@ -23,13 +23,13 @@ View/Download this extension in the [Extension Directory](https://civicrm.org/ex
 
 #### Required extensions
 
-* [MJWShared extension](https://civicrm.org/extensions/mjwshared) version 0.9.10.
-* [SweetAlert extension](https://civicrm.org/extensions/sweetalert) version 1.4+.
+* [MJWShared extension](https://civicrm.org/extensions/mjwshared).
+* [SweetAlert extension](https://civicrm.org/extensions/sweetalert).
 
 #### Recommended extensions
 
-* [Firewall extension](https://civicrm.org/extensions/firewall) version 1.1+.
-* [contributiontransactlegacy extension](https://civicrm.org/extensions/contribution-transact-api) version 1.3+.
+* [Firewall extension](https://civicrm.org/extensions/firewall).
+* [contributiontransactlegacy extension](https://civicrm.org/extensions/contribution-transact-api) if using drupal 7 webform.
 
 **Please ensure that you are running the "Stripe: Cleanup" scheduled job every hour or you will have issues with failed/uncaptured payments appearing on customer credit cards and blocking their balance for up to a week!**
 
