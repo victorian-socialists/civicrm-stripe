@@ -9,6 +9,13 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
+## Release 6.6.3
+
+* Fix [!170](https://lab.civicrm.org/extensions/stripe/-/merge_requests/170) Stripe.importsubscription API tweaks.
+* Fix [!171](https://lab.civicrm.org/extensions/stripe/-/merge_requests/171) Fix Stripe.importcharge API for is_test support and some notices.
+* Feature [!172](https://lab.civicrm.org/extensions/stripe/-/merge_requests/172) Add composer's package name (for CiviCRM-level composer deployment).
+* Compatibility with Payment Shared 1.1.
+
 ## Release 6.6.2
 
 * SweetAlert 10/11 compatibility - require SweetAlert extension 1.5.
