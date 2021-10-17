@@ -815,6 +815,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       switch ($intent->status) {
         case 'requires_capture':
           $intent->capture();
+        case 'succeeded':
           // Return fees & net amount for Civi reporting.
           $stripeCharge = $intent->charges->data[0];
           try {
@@ -839,6 +840,8 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
           $params = $this->setStatusPaymentCompleted($params);
           // Transaction ID is always stripe Charge ID.
           $this->setPaymentProcessorTrxnID($stripeCharge->id);
+          // @fixme: This is for compatibility with mjwshared 1.0 - drop once we require 1.1
+          $params['fee_amount'] = $newParams['fee_amount'];
 
         case 'requires_action':
           // We fall through to this in requires_capture / requires_action so we always set a receipt_email
