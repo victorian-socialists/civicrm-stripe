@@ -11,19 +11,19 @@
 
 return [
   0 =>
-  [
-    'name' => 'ProcessStripe',
-    'entity' => 'Job',
-    'params' =>
     [
-      'version' => 3,
-      'name' => 'Stripe: Cleanup',
-      'description' => 'Cleanup Stripe PaymentIntents',
-      'run_frequency' => 'Hourly',
-      'api_entity' => 'Job',
-      'api_action' => 'process_stripe',
-      'parameters' => 'delete_old=-3 month
+      'name' => 'ProcessStripe',
+      'entity' => 'Job',
+      'params' =>
+        [
+          'version' => 3,
+          'name' => 'Stripe: Cleanup',
+          'description' => 'Cleanup Stripe PaymentIntents',
+          'run_frequency' => 'Hourly',
+          'api_entity' => 'Job',
+          'api_action' => 'process_stripe',
+          'parameters' => 'delete_old=-3 month
 cancel_incomplete=-1 hour',
+        ],
     ],
-  ],
 ];

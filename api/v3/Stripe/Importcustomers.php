@@ -118,12 +118,12 @@ function civicrm_api3_stripe_importcustomers($params) {
     $c_result = civicrm_api3('Stripe', 'Importcustomer', $c_params );
     $c_value = array_pop($c_result['values']);
     $data = [
-        'contact_id' => $c_value['contact_id'],
-        'email' => $c_value['email'],
-        'stripe_id' => $c_value['stripe_id'],
+      'contact_id' => $c_value['contact_id'],
+      'email' => $c_value['email'],
+      'stripe_id' => $c_value['stripe_id'],
     ];
     if (array_key_exists('skipped', $c_value)) {
-      $index = 'skipped';   
+      $index = 'skipped';
     }
     elseif (array_key_exists('dupes', $c_value)) {
       $index = 'errors';

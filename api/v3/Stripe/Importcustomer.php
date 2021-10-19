@@ -138,9 +138,9 @@ function civicrm_api3_stripe_importcustomer($params) {
       try {
         civicrm_api3('StripeCustomer', 'create',
           [
-          'contact_id' => $contact_id,
-          'id' => $customer->id,
-          'processor_id' => $ppid
+            'contact_id' => $contact_id,
+            'id' => $customer->id,
+            'processor_id' => $ppid
           ]
         );
       } catch(Exception $e) {

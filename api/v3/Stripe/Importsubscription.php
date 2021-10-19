@@ -92,48 +92,48 @@ function civicrm_api3_stripe_importsubscription($params) {
         continue;
       }
       $exists_params = [
-	'contribution_test' => $processor->getIsTestMode(),
-	'trxn_id' => $charge
+        'contribution_test' => $processor->getIsTestMode(),
+        'trxn_id' => $charge
       ];
       $contribution = civicrm_api3('Mjwpayment', 'get_contribution', $exists_params);
       if ($contribution['count'] == 0) {
-	// It has not been imported, so import it now.
-	$charge_params = [
-	  'charge' => $charge,
-	  'financial_type_id' => $params['financial_type_id'],
-	  'payment_instrument_id' => $params['payment_instrument_id'],
-	  'ppid' => $params['ppid'],
-	  'contact_id' => $params['contact_id'],
-      'contribution_source' => ($params['contribution_source'] ?? ''),
-	];
-	$contribution = civicrm_api3('Stripe', 'Importcharge', $charge_params);
+        // It has not been imported, so import it now.
+        $charge_params = [
+          'charge' => $charge,
+          'financial_type_id' => $params['financial_type_id'],
+          'payment_instrument_id' => $params['payment_instrument_id'],
+          'ppid' => $params['ppid'],
+          'contact_id' => $params['contact_id'],
+          'contribution_source' => ($params['contribution_source'] ?? ''),
+        ];
+        $contribution = civicrm_api3('Stripe', 'Importcharge', $charge_params);
 
         // Link to membership record
-	// By default we'll match the latest active membership, unless membership_id is passed in.
-	if (!empty($params['membership_id'])) {
-	  $membershipParams = [
-	    'id' => $params['membership_id'],
-	    'contribution_recur_id' => $contributionRecur['id'],
-	  ];
-	  $membership = civicrm_api3('Membership', 'create', $membershipParams);
-	}
-	elseif (!empty($params['membership_auto'])) {
-	  $membershipParams = [
-	    'contact_id' => $params['contact_id'],
-	    'options' => ['limit' => 1, 'sort' => "id DESC"],
-	    'contribution_recur_id' => ['IS NULL' => 1],
-	    'is_test' => !empty($paymentProcessor['is_test']) ? 1 : 0,
-	    'active_only' => 1,
-	  ];
-	  $membership = civicrm_api3('Membership', 'get', $membershipParams);
-	  if (!empty($membership['id'])) {
-	    $membershipParams = [
-	      'id' => $membership['id'],
-	      'contribution_recur_id' => $contributionRecur['id'],
-	    ];
-	    $membership = civicrm_api3('Membership', 'create', $membershipParams);
-	  }
-	}
+        // By default we'll match the latest active membership, unless membership_id is passed in.
+        if (!empty($params['membership_id'])) {
+          $membershipParams = [
+            'id' => $params['membership_id'],
+            'contribution_recur_id' => $contributionRecur['id'],
+          ];
+          $membership = civicrm_api3('Membership', 'create', $membershipParams);
+        }
+        elseif (!empty($params['membership_auto'])) {
+          $membershipParams = [
+            'contact_id' => $params['contact_id'],
+            'options' => ['limit' => 1, 'sort' => "id DESC"],
+            'contribution_recur_id' => ['IS NULL' => 1],
+            'is_test' => !empty($paymentProcessor['is_test']) ? 1 : 0,
+            'active_only' => 1,
+          ];
+          $membership = civicrm_api3('Membership', 'get', $membershipParams);
+          if (!empty($membership['id'])) {
+            $membershipParams = [
+              'id' => $membership['id'],
+              'contribution_recur_id' => $contributionRecur['id'],
+            ];
+            $membership = civicrm_api3('Membership', 'create', $membershipParams);
+          }
+        }
       }
     }
   }

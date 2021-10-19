@@ -121,10 +121,10 @@ function civicrm_api3_stripe_importcharge($params) {
   else {
     // Check database.
     $c_results = \Civi\Api4\Contribution::get()
-        ->addWhere('trxn_id', 'LIKE', '%'. $params['charge'].'%')
-        ->addWhere('is_test', '=', $is_test)
-        ->setCheckPermissions(FALSE)
-        ->execute();
+      ->addWhere('trxn_id', 'LIKE', '%'. $params['charge'].'%')
+      ->addWhere('is_test', '=', $is_test)
+      ->setCheckPermissions(FALSE)
+      ->execute();
     $contribution = $c_results->first();
     if ($contribution) {
       $contribution_id = $contribution['id'];

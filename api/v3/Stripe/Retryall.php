@@ -12,7 +12,7 @@
 /**
  * This api retries all non-processed webhooks for a given payment processor.
  *
- 
+
 /**
  * Stripe.Ipn API specification
  *
@@ -52,8 +52,8 @@ function civicrm_api3_stripe_Retryall($params) {
       $values[] = 'system_log_id is not set for charge: ' . $value['charge'];
     }
     else {
-      $params = [ 
-        'ppid' => $ppid, 
+      $params = [
+        'ppid' => $ppid,
         'id' => $value['system_log_id'],
         'suppressreceipt' => 1,
       ];
@@ -63,7 +63,7 @@ function civicrm_api3_stripe_Retryall($params) {
       }
       else {
         $values[] = 'Failed to process charge: ' . $value['charge'] . 'Results follows. ' . print_r($ipn_results, TRUE);
-      }	
+      }
     }
   }
   return civicrm_api3_create_success($values);
