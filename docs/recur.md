@@ -49,8 +49,8 @@ Recurring contributions start in the status "Pending".
 
 The Stripe subscription status is mapped to the recurring contribution status as follows:
 
-STATUS_INCOMPLETE => Pending
-STATUS_ACTIVE => In Progress
-STATUS_TRIALING => In Progress
-STATUS_PAST_DUE => Overdue
-STATUS_CANCELED / STATUS_UNPAID / STATUS_INCOMPLETE_EXPIRED => Cancelled
+* STATUS_INCOMPLETE => Pending
+* STATUS_ACTIVE => In Progress
+* STATUS_TRIALING => In Progress
+* STATUS_PAST_DUE => Overdue
+* STATUS_CANCELED / STATUS_UNPAID / STATUS_INCOMPLETE_EXPIRED => Cancelled

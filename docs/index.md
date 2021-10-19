@@ -1,17 +1,17 @@
 # Stripe Payment Processor for CiviCRM.
-Integrates the Stripe payment processor (for Credit/Debit cards) into CiviCRM so you can use it to accept Credit / Debit card payments on your site.
+Integrates the Stripe payment processor into CiviCRM so you can use it to handle payments on your site.
 
 [![Stripe Logo](images/stripe.png)](https://stripe.com/)
 
 View/Download this extension in the [Extension Directory](https://civicrm.org/extensions/stripe-payment-processor).
 
 ## Supports
-* PSD2 / SCA payments on one-off payments, partial support for recurring payments (may not be able to authorise card in some cases).
+* Credit/Debit Card payments using Stripe.js for simple [PCI compliance](https://stripe.com/docs/security/guide).
+* Google/Microsoft/Apple Pay via [PaymentRequest](https://www.w3.org/TR/payment-request/) web API.
 * Cancellation of subscriptions from Stripe / CiviCRM.
 * Refund of payments from Stripe.
 
-### Does not support
-* Updating Stripe subscriptions from CiviCRM.
+There are a number of planned features that depend on funding/resources. See [Roadmap](./roadmap.md).
 
 ## Compatibility / Requirements
 * CiviCRM 5.35+
