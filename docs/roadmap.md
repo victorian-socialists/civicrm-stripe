@@ -1,6 +1,13 @@
 # Roadmap of planned features
 This roadmap may not always be up to date but gives an idea of what is planned and where funding/support is required.
 
+## Implement Overdue/Failed statuses for Stripe recur
+
+For recurring contributions we currently only implement `In Progress`, `Cancelled` and I think `Completed`
+but we need to change that to support `Overdue` and `Failed` status like is implemented and described in GoCardless here: https://docs.civicrm.org/gocardless/en/latest/reference/technical/
+
+### Estimate: 6 hours.
+
 ## Automatic import of subscriptions / payments
 
 If we already have the Stripe customer in CiviCRM we can import subscriptions and one-off contributions that were
@@ -14,9 +21,7 @@ created outside of CiviCRM (eg. via WooCommerce, Stripe Dashboard).
     - A contribution when an unknown charge ID is received (that does not have an associated invoice ID).
     - A payment linked to a contribution via charge ID / invoice ID.
 
-### Estimate
-
-This would require funding for approximately 12 hours work.
+### Estimate: 16 hours.
 
 ## UI to map customers to CiviCRM contacts
 
@@ -31,9 +36,7 @@ confirm and map Stripe customer IDs to CiviCRM contacts.
     - Manually find and map contact.
     - Import all missing subscriptions/contributions for customer (up to certain date?).
 
-### Estimate
-
-This would require funding for approximately 16 hours work.
+### Estimate: 16 hours.
 
 ## Card on File / Updating card details
 
@@ -73,9 +76,7 @@ is probably a priority for civi?
 See: eg. [stripe-payments-demo/issues/45](https://github.com/stripe/stripe-payments-demo/issues/45).
 Cards are duplicated by default and we need to clean this up before we can provide a UI to retrieve cards in CiviCRM.
 
-### Estimate
-
-Approximately 24-30 hours.
+### Estimate: 24-30 hours.
 
 # Payment Methods
 
@@ -141,6 +142,4 @@ We create plans based on the frequency interval, unit, amount + currency and re-
 $planId = "every-{$params['recurFrequencyInterval']}-{$params['recurFrequencyUnit']}-{$amount}-" . strtolower($currency);
 ```
 
-### Estimate
-
-Approximately 12-16 hours.
+### Estimate: 12-16 hours.
