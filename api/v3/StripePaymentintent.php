@@ -9,6 +9,7 @@
  +--------------------------------------------------------------------+
  */
 
+use Civi\Firewall\Firewall;
 use CRM_Stripe_ExtensionUtil as E;
 
 /**
@@ -31,8 +32,9 @@ function civicrm_api3_stripe_paymentintent_create($params) {
  */
 function civicrm_api3_stripe_paymentintent_createorupdate($params) {
   if (class_exists('\Civi\Firewall\Firewall')) {
-    if (!\Civi\Firewall\Firewall::isCSRFTokenValid(CRM_Utils_Type::validate($params['csrfToken'], 'String'))) {
-      _civicrm_api3_stripe_paymentintent_returnInvalid();
+    $firewall = new Firewall();
+    if (!$firewall->checkIsCSRFTokenValid(CRM_Utils_Type::validate($params['csrfToken'], 'String'))) {
+      _civicrm_api3_stripe_paymentintent_returnInvalid($firewall->getReasonDescription());
     }
   }
   if (!empty($params['stripe_intent_id'])) {
@@ -156,8 +158,9 @@ function _civicrm_api3_stripe_paymentintent_process_spec(&$spec) {
  */
 function civicrm_api3_stripe_paymentintent_process($params) {
   if (class_exists('\Civi\Firewall\Firewall')) {
-    if (!\Civi\Firewall\Firewall::isCSRFTokenValid(CRM_Utils_Type::validate($params['csrfToken'], 'String'))) {
-      _civicrm_api3_stripe_paymentintent_returnInvalid();
+    $firewall = new Firewall();
+    if (!$firewall->checkIsCSRFTokenValid(CRM_Utils_Type::validate($params['csrfToken'], 'String'))) {
+      _civicrm_api3_stripe_paymentintent_returnInvalid($firewall->getReasonDescription());
     }
   }
   $paymentMethodID = CRM_Utils_Type::validate($params['payment_method_id'] ?? '', 'String');
@@ -302,7 +305,10 @@ function civicrm_api3_stripe_paymentintent_process($params) {
 /**
  * Passed parameters were invalid
  */
-function _civicrm_api3_stripe_paymentintent_returnInvalid() {
-  http_response_code(400);
+function _civicrm_api3_stripe_paymentintent_returnInvalid($message = '') {
+  if (empty($message)) {
+    $message = E::ts('Bad Request');
+  }
+  header("HTTP/1.1 400 {$message}");
   exit(1);
 }
