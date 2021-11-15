@@ -19,19 +19,19 @@ use CRM_Stripe_ExtensionUtil as E;
  *
  * @return array
  * @throws \API_Exception
+ * @throws \CRM_Core_Exception
  * @throws \CiviCRM_API3_Exception
- * @throws \Stripe\Exception\UnknownApiErrorException
+ * @throws \Stripe\Exception\ApiErrorException
  */
 function civicrm_api3_stripe_importsubscription($params) {
   civicrm_api3_verify_mandatory($params, NULL, ['subscription', 'contact_id', 'ppid']);
 
-  $paymentProcessor = \Civi\Payment\System::singleton()->getById($params['ppid'])->getPaymentProcessor();
-
-  $processor = new CRM_Core_Payment_Stripe('', $paymentProcessor);
-  $processor->setAPIParams();
+  /** @var \CRM_Core_Payment_Stripe $paymentProcessor */
+  $paymentProcessor = \Civi\Payment\System::singleton()->getById($params['ppid']);
+  $paymentProcessor->setAPIParams();
 
   // Now re-retrieve the data from Stripe to ensure it's legit.
-  $stripeSubscription = \Stripe\Subscription::retrieve($params['subscription']);
+  $stripeSubscription = $paymentProcessor->stripeClient->subscriptions->retrieve($params['subscription']);
 
   // Create the stripe customer in CiviCRM if it doesn't exist already.
   $customerParams = [
@@ -48,7 +48,7 @@ function civicrm_api3_stripe_importsubscription($params) {
   }
   $customer = array_pop($custresult['values']);
   if ($customer['contact_id'] != $params['contact_id']) {
-    throw new API_Exception(E::ts("There is a mismatch between the contact id for the customer indicated by the subscription (%1) and the contact id provided via the API params (%2).", [ 1 => $customer['contact_id'], 2 => $params['contact_id']]));
+    throw new API_Exception(E::ts('There is a mismatch between the contact id for the customer indicated by the subscription (%1) and the contact id provided via the API params (%2).', [ 1 => $customer['contact_id'], 2 => $params['contact_id']]));
   }
 
   // Create the recur record in CiviCRM if it doesn't exist.
@@ -71,7 +71,7 @@ function civicrm_api3_stripe_importsubscription($params) {
       'payment_instrument_id' => !empty($params['payment_instrument_id']) ? $params['payment_instrument_id'] : 'Credit Card',
       'financial_type_id' => !empty($params['financial_type_id']) ? $params['financial_type_id'] : 'Donation',
       'is_email_receipt' => !empty($params['is_email_receipt']) ? 1 : 0,
-      'is_test' => isset($paymentProcessor['is_test']) && $paymentProcessor['is_test'] ? 1 : 0,
+      'is_test' => $paymentProcessor->getIsTestMode(),
       'contribution_source' => !empty($params['contribution_source']) ? $params['contribution_source'] : '',
     ];
     if (isset($params['recur_id']) && $params['recur_id']) {
@@ -84,7 +84,7 @@ function civicrm_api3_stripe_importsubscription($params) {
     'customer' => CRM_Stripe_Api::getObjectParam('customer_id', $stripeSubscription),
     'limit' => 100,
   ];
-  $stripeInvoices = \Stripe\Invoice::all($invoiceParams);
+  $stripeInvoices = $paymentProcessor->stripeClient->invoices->all($invoiceParams);
   foreach ($stripeInvoices->data as $stripeInvoice) {
     if (CRM_Stripe_Api::getObjectParam('subscription_id', $stripeInvoice) === $params['subscription']) {
       $charge = CRM_Stripe_Api::getObjectParam('charge_id', $stripeInvoice);
@@ -92,7 +92,7 @@ function civicrm_api3_stripe_importsubscription($params) {
         continue;
       }
       $exists_params = [
-        'contribution_test' => $processor->getIsTestMode(),
+        'contribution_test' => $paymentProcessor->getIsTestMode(),
         'trxn_id' => $charge
       ];
       $contribution = civicrm_api3('Mjwpayment', 'get_contribution', $exists_params);
@@ -122,7 +122,7 @@ function civicrm_api3_stripe_importsubscription($params) {
             'contact_id' => $params['contact_id'],
             'options' => ['limit' => 1, 'sort' => "id DESC"],
             'contribution_recur_id' => ['IS NULL' => 1],
-            'is_test' => !empty($paymentProcessor['is_test']) ? 1 : 0,
+            'is_test' => $paymentProcessor->getIsTestMode(),
             'active_only' => 1,
           ];
           $membership = civicrm_api3('Membership', 'get', $membershipParams);
@@ -153,23 +153,23 @@ function civicrm_api3_stripe_importsubscription($params) {
  * @param array $spec
  */
 function _civicrm_api3_stripe_importsubscription_spec(&$spec) {
-  $spec['subscription']['title'] = ts("Stripe Subscription ID");
+  $spec['subscription']['title'] = E::ts('Stripe Subscription ID');
   $spec['subscription']['type'] = CRM_Utils_Type::T_STRING;
   $spec['subscription']['api.required'] = TRUE;
-  $spec['contact_id']['title'] = ts("Contact ID");
+  $spec['contact_id']['title'] = E::ts('Contact ID');
   $spec['contact_id']['type'] = CRM_Utils_Type::T_INT;
   $spec['contact_id']['api.required'] = TRUE;
-  $spec['ppid']['title'] = ts("Payment Processor ID");
+  $spec['ppid']['title'] = E::ts('Payment Processor ID');
   $spec['ppid']['type'] = CRM_Utils_Type::T_INT;
   $spec['ppid']['api.required'] = TRUE;
 
-  $spec['recur_id']['title'] = ts("Contribution Recur ID");
+  $spec['recur_id']['title'] = E::ts('Contribution Recur ID');
   $spec['recur_id']['type'] = CRM_Utils_Type::T_INT;
-  $spec['contribution_id']['title'] = ts("Contribution ID");
+  $spec['contribution_id']['title'] = E::ts('Contribution ID');
   $spec['contribution_id']['type'] = CRM_Utils_Type::T_INT;
-  $spec['membership_id']['title'] = ts("Membership ID");
+  $spec['membership_id']['title'] = E::ts('Membership ID');
   $spec['membership_id']['type'] = CRM_Utils_Type::T_INT;
-  $spec['membership_auto']['title'] = ts("Link to existing membership automatically");
+  $spec['membership_auto']['title'] = E::ts('Link to existing membership automatically');
   $spec['membership_auto']['type'] = CRM_Utils_Type::T_BOOLEAN;
   $spec['membership_auto']['api.default'] = TRUE;
   $spec['financial_type_id'] = [

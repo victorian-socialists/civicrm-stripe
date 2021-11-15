@@ -17,10 +17,10 @@ use CRM_Stripe_ExtensionUtil as E;
  * @param array $spec description of fields supported by this API call
  */
 function _civicrm_api3_stripe_importcustomer_spec(&$spec) {
-  $spec['ppid']['title'] = ts("Use the given Payment Processor ID");
+  $spec['ppid']['title'] = E::ts('Use the given Payment Processor ID');
   $spec['ppid']['type'] = CRM_Utils_Type::T_INT;
   $spec['ppid']['api.required'] = TRUE;
-  $spec['customer']['title'] = ts('Import a specific customer');
+  $spec['customer']['title'] = E::ts('Import a specific customer');
   $spec['customer']['type'] = CRM_Utils_Type::T_STRING;
   $spec['customer']['api.required'] = TRUE;
 }
@@ -35,14 +35,12 @@ function _civicrm_api3_stripe_importcustomer_spec(&$spec) {
  * @throws \Stripe\Exception\UnknownApiErrorException
  */
 function civicrm_api3_stripe_importcustomer($params) {
-  $ppid = $params['ppid'];
-
   // Get the payment processor and activate the Stripe API
-  $payment_processor = civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $ppid]);
-  $processor = new CRM_Core_Payment_Stripe('', $payment_processor);
-  $processor->setAPIParams();
+  /** @var \CRM_Core_Payment_Stripe $paymentProcessor */
+  $paymentProcessor = \Civi\Payment\System::singleton()->getById($params['ppid']);
+  $paymentProcessor->setAPIParams();
 
-  $customer = \Stripe\Customer::retrieve($params['customer']);
+  $customer = $paymentProcessor->stripeClient->customers->retrieve($params['customer']);
 
   $return = [
     'stripe_id' => $customer->id,
@@ -140,7 +138,7 @@ function civicrm_api3_stripe_importcustomer($params) {
           [
             'contact_id' => $contact_id,
             'id' => $customer->id,
-            'processor_id' => $ppid
+            'processor_id' => $params['ppid']
           ]
         );
       } catch(Exception $e) {

@@ -9,6 +9,8 @@
  +--------------------------------------------------------------------+
  */
 
+use CRM_Stripe_ExtensionUtil as E;
+
 /**
  * This api retries all non-processed webhooks for a given payment processor.
  *
@@ -19,9 +21,9 @@
  * @param array $spec description of fields supported by this API call
  */
 function _civicrm_api3_stripe_Retryall_spec(&$spec) {
-  $spec['ppid']['title'] = ts("The payment processor to use.");
+  $spec['ppid']['title'] = E::ts('The payment processor to use.');
   $spec['ppid']['required'] = TRUE;
-  $spec['limit']['title'] = ts("Limit the number of unprocessed events to retry.");
+  $spec['limit']['title'] = E::ts('Limit the number of unprocessed events to retry.');
   $spec['limit']['api.default'] = 25;
 
 }

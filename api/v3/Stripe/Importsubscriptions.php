@@ -9,19 +9,21 @@
  +--------------------------------------------------------------------+
  */
 
+use CRM_Stripe_ExtensionUtil as E;
+
 /**
  * Stripe.Importsubscriptions
  *
  * @param array $spec description of fields supported by this API call
  */
 function _civicrm_api3_stripe_importsubscriptions_spec(&$spec) {
-  $spec['ppid']['title'] = ts('Use the given Payment Processor ID');
+  $spec['ppid']['title'] = E::ts('Use the given Payment Processor ID');
   $spec['ppid']['type'] = CRM_Utils_Type::T_INT;
   $spec['ppid']['api.required'] = TRUE;
-  $spec['limit']['title'] = ts('Limit number of Customers/Subscriptions to be imported');
+  $spec['limit']['title'] = E::ts('Limit number of Customers/Subscriptions to be imported');
   $spec['limit']['type'] = CRM_Utils_Type::T_INT;
   $spec['limit']['api.required'] = FALSE;
-  $spec['starting_after']['title'] = ts('Start importing subscriptions after this one');
+  $spec['starting_after']['title'] = E::ts('Start importing subscriptions after this one');
   $spec['starting_after']['type'] = CRM_Utils_Type::T_STRING;
   $spec['starting_after']['api.required'] = FALSE;
 }
@@ -36,14 +38,13 @@ function _civicrm_api3_stripe_importsubscriptions_spec(&$spec) {
  * @throws \Stripe\Exception\UnknownApiErrorException
  */
 function civicrm_api3_stripe_importsubscriptions($params) {
-  $ppid = $params['ppid'];
   $limit = isset($params['limit']) ? $params['limit'] : 100;
   $starting_after = $params['starting_after'];
 
   // Get the payment processor and activate the Stripe API
-  $payment_processor = civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $ppid]);
-  $processor = new CRM_Core_Payment_Stripe('', $payment_processor);
-  $processor->setAPIParams();
+  /** @var \CRM_Core_Payment_Stripe $paymentProcessor */
+  $paymentProcessor = \Civi\Payment\System::singleton()->getById($params['ppid']);
+  $paymentProcessor->setAPIParams();
 
   // Get the subscriptions from Stripe
   $args = [
@@ -53,7 +54,7 @@ function civicrm_api3_stripe_importsubscriptions($params) {
   if ($starting_after) {
     $args['starting_after'] = $starting_after;
   }
-  $stripe_subscriptions = \Stripe\Subscription::all($args);
+  $stripe_subscriptions = $paymentProcessor->stripeClient->subscriptions->all($args);
 
   $stripe_subscription_ids = array_map(
     function ($subscription) { return $subscription->id; },
@@ -77,7 +78,7 @@ function civicrm_api3_stripe_importsubscriptions($params) {
   $recurring_contributions = civicrm_api3('ContributionRecur', 'get', [
     'sequential' => 1,
     'options' => [ 'limit' => 0 ],
-    'payment_processor_id' => $ppid,
+    'payment_processor_id' => $params['ppid'],
     'trxn_id' => [ 'IN' => $stripe_subscription_ids ]
   ]);
 
@@ -97,8 +98,8 @@ function civicrm_api3_stripe_importsubscriptions($params) {
     $results['continue_after'] = $stripe_subscription->id;
 
     $new_subscription = [
-      'is_test' => $payment_processor['is_test'],
-      'payment_processor_id' => $ppid,
+      'is_test' => $paymentProcessor->getIsTestMode(),
+      'payment_processor_id' => $params['ppid'],
       'subscription_id' => $stripe_subscription->id,
     ];
 

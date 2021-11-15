@@ -9,13 +9,15 @@
  +--------------------------------------------------------------------+
  */
 
+use CRM_Stripe_ExtensionUtil as E;
+
 /**
  * Stripe.Importallsubscriptions
  *
  * @param array $spec description of fields supported by this API call
  */
 function _civicrm_api3_stripe_importallsubscriptions_spec(&$spec) {
-  $spec['ppid']['title'] = ts("Use the given Payment Processor ID");
+  $spec['ppid']['title'] = E::ts('Use the given Payment Processor ID');
   $spec['ppid']['type'] = CRM_Utils_Type::T_INT;
   $spec['ppid']['api.required'] = TRUE;
 }

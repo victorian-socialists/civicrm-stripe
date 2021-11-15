@@ -24,19 +24,19 @@ use CRM_Stripe_ExtensionUtil as E;
  * @param array $spec description of fields supported by this API call
  */
 function _civicrm_api3_stripe_ListEvents_spec(&$spec) {
-  $spec['ppid']['title'] = ts("Use the given Payment Processor ID");
+  $spec['ppid']['title'] = E::ts('Use the given Payment Processor ID');
   $spec['ppid']['type'] = CRM_Utils_Type::T_INT;
   $spec['ppid']['api.required'] = TRUE;
-  $spec['type']['title'] = ts("Limit to the given Stripe events type, defaults to invoice.payment_succeeded.");
+  $spec['type']['title'] = E::ts('Limit to the given Stripe events type, defaults to invoice.payment_succeeded.');
   $spec['type']['api.default'] = 'invoice.payment_succeeded';
-  $spec['limit']['title'] = ts("Limit number of results returned (100 is max, 25 default)");
-  $spec['starting_after']['title'] = ts("Only return results after this id.");
+  $spec['limit']['title'] = E::ts('Limit number of results returned (100 is max, 25 default)');
+  $spec['starting_after']['title'] = E::ts('Only return results after this id.');
   $spec['output']['api.default'] = 'brief';
-  $spec['output']['title'] = ts("How to format the output, brief or raw. Defaults to brief.");
-  $spec['source']['title'] = ts("List events via the Stripe API (default: stripe) or via the CiviCRM System Log (systemlog).");
-  $spec['filter_processed']['title'] = ts("If set to 1, filter out all transactions that have been processed already.");
+  $spec['output']['title'] = E::ts('How to format the output, brief or raw. Defaults to brief.');
+  $spec['source']['title'] = E::ts('List events via the Stripe API (default: stripe) or via the CiviCRM System Log (systemlog).');
+  $spec['filter_processed']['title'] = E::ts('If set to 1, filter out all transactions that have been processed already.');
   $spec['filter_processed']['type'] = CRM_Utils_Type::T_INT;
-  $spec['subscription']['title'] = ts("Pass a Stripe subscription id to filter results to charges to that subscription id.");
+  $spec['subscription']['title'] = E::ts('Pass a Stripe subscription id to filter results to charges to that subscription id.');
 }
 
 /**
@@ -180,7 +180,7 @@ function civicrm_api3_stripe_ProcessParams($params) {
   if (array_key_exists('source', $params)) {
     $allowed = [ 'stripe', 'systemlog' ];
     if (!in_array($params['source'], $allowed)) {
-      throw new API_Exception(E::ts("Source can only be set to %1 or %2.", [ 1 => 'stripe', 2 => 'systemlog' ]), 1238);
+      throw new API_Exception(E::ts('Source can only be set to %1 or %2.', [ 1 => 'stripe', 2 => 'systemlog' ]), 1238);
     }
     $source = $params['source'];
   }
@@ -188,18 +188,18 @@ function civicrm_api3_stripe_ProcessParams($params) {
   if (array_key_exists('filter_processed', $params)) {
     $allowed = [ 0, 1 ];
     if (!in_array($params['filter_processed'], $allowed)) {
-      throw new API_Exception(E::ts("Filter processed can only be set to 0 or 1."), 1239);
+      throw new API_Exception(E::ts('Filter processed can only be set to 0 or 1.'), 1239);
     }
     $filter_processed = $params['filter_processed'];
   }
 
   if (array_key_exists('subscription', $params)) {
     if (!preg_match('/^sub_/', $params['subscription'])) {
-      throw new API_Exception(E::ts("Subscription should start with sub_."), 1240);
+      throw new API_Exception(E::ts('Subscription should start with sub_.'), 1240);
     }
 
     if (array_key_exists('source', $params)) {
-      throw new API_Exception(E::ts("Subscription and source are incompatible. Please choose one or the other."), 1241);
+      throw new API_Exception(E::ts('Subscription and source are incompatible. Please choose one or the other.'), 1241);
     }
     else {
       $source = NULL;

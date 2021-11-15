@@ -18,6 +18,7 @@
  * Once added, they will be automatically processed by the Job.process_paymentprocessor_webhooks api call.
  */
 
+use CRM_Stripe_ExtensionUtil as E;
 use Civi\Api4\PaymentProcessor;
 use Civi\Api4\PaymentprocessorWebhook;
 
@@ -27,8 +28,8 @@ use Civi\Api4\PaymentprocessorWebhook;
  * @param array $spec description of fields supported by this API call
  */
 function _civicrm_api3_stripe_Populatewebhookqueue_spec(&$spec) {
-  $spec['ppid']['title'] = ts("The id of the payment processor.");
-  $spec['type']['title'] = ts("The event type - defaults to invoice.payment_succeeded.");
+  $spec['ppid']['title'] = E::ts('The id of the payment processor.');
+  $spec['type']['title'] = E::ts('The event type - defaults to invoice.payment_succeeded.');
   $spec['type']['api.default'] = 'invoice.payment_succeeded';
 }
 

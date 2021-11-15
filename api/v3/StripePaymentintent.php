@@ -101,25 +101,25 @@ function civicrm_api3_stripe_paymentintent_get($params) {
  * @return void
  */
 function _civicrm_api3_stripe_paymentintent_process_spec(&$spec) {
-  $spec['payment_method_id']['title'] = E::ts("Payment Method ID");
+  $spec['payment_method_id']['title'] = E::ts('Payment Method ID');
   $spec['payment_method_id']['type'] = CRM_Utils_Type::T_STRING;
   $spec['payment_method_id']['api.default'] = NULL;
-  $spec['payment_intent_id']['title'] = E::ts("Payment Intent ID.");
+  $spec['payment_intent_id']['title'] = E::ts('Payment Intent ID');
   $spec['payment_intent_id']['type'] = CRM_Utils_Type::T_STRING;
   $spec['payment_intent_id']['api.default'] = NULL;
-  $spec['amount']['title'] = E::ts("Payment amount.");
+  $spec['amount']['title'] = E::ts('Payment amount');
   $spec['amount']['type'] = CRM_Utils_Type::T_STRING;
   $spec['amount']['api.default'] = NULL;
-  $spec['capture']['title'] = E::ts("Whether we should try to capture the amount, not just confirm it.");
+  $spec['capture']['title'] = E::ts('Whether we should try to capture the amount, not just confirm it');
   $spec['capture']['type'] = CRM_Utils_Type::T_BOOLEAN;
   $spec['capture']['api.default'] = FALSE;
-  $spec['description']['title'] = E::ts("Describe the payment.");
+  $spec['description']['title'] = E::ts('Describe the payment');
   $spec['description']['type'] = CRM_Utils_Type::T_STRING;
   $spec['description']['api.default'] = NULL;
-  $spec['currency']['title'] = E::ts("Currency (eg. EUR)");
+  $spec['currency']['title'] = E::ts('Currency (eg. EUR)');
   $spec['currency']['type'] = CRM_Utils_Type::T_STRING;
   $spec['currency']['api.default'] = CRM_Core_Config::singleton()->defaultCurrency;
-  $spec['payment_processor_id']['title'] = E::ts("The stripe payment processor id.");
+  $spec['payment_processor_id']['title'] = E::ts('The stripe payment processor id');
   $spec['payment_processor_id']['type'] = CRM_Utils_Type::T_INT;
   $spec['payment_processor_id']['api.required'] = TRUE;
   $spec['extra_data']['title'] = E::ts('Extra Data');
@@ -187,9 +187,9 @@ function civicrm_api3_stripe_paymentintent_process($params) {
   $paymentProcessorID = CRM_Utils_Type::validate((int)$params['payment_processor_id'], 'Positive');
 
   !empty($paymentProcessorID) ?: _civicrm_api3_stripe_paymentintent_returnInvalid();
+
   /** @var CRM_Core_Payment_Stripe $paymentProcessor */
   $paymentProcessor = \Civi\Payment\System::singleton()->getById($paymentProcessorID);
-
   ($paymentProcessor->getPaymentProcessor()['class_name'] === 'Payment_Stripe') ?: _civicrm_api3_stripe_paymentintent_returnInvalid();
   $paymentProcessor->setAPIParams();
 
@@ -201,7 +201,7 @@ function civicrm_api3_stripe_paymentintent_process($params) {
 
   if ($paymentIntentID) {
     // We already have a PaymentIntent, retrieve and attempt confirm.
-    $intent = \Stripe\PaymentIntent::retrieve($paymentIntentID);
+    $intent = $paymentProcessor->stripeClient->paymentIntents->retrieve($paymentIntentID);
     if ($intent->status === 'requires_confirmation') {
       $intent->confirm();
     }

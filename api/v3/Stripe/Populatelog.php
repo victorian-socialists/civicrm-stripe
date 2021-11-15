@@ -9,6 +9,7 @@
  +--------------------------------------------------------------------+
  */
 
+use CRM_Stripe_ExtensionUtil as E;
 /**
  * Populate the CiviCRM civicrm_system_log with Stripe events.
  *
@@ -25,8 +26,8 @@
  * @param array $spec description of fields supported by this API call
  */
 function _civicrm_api3_stripe_Populatelog_spec(&$spec) {
-  $spec['ppid']['title'] = ts("The id of the payment processor.");
-  $spec['type']['title'] = ts("The event type - defaults to invoice.payment_succeeded.");
+  $spec['ppid']['title'] = E::ts('The id of the payment processor.');
+  $spec['type']['title'] = E::ts('The event type - defaults to invoice.payment_succeeded.');
   $spec['type']['api.default'] = 'invoice.payment_succeeded';
 }
 

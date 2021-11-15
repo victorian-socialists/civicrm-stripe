@@ -17,13 +17,13 @@ use CRM_Stripe_ExtensionUtil as E;
  * @param array $spec description of fields supported by this API call
  */
 function _civicrm_api3_stripe_importcharge_spec(&$spec) {
-  $spec['ppid']['title'] = ts("Use the given Payment Processor ID");
+  $spec['ppid']['title'] = E::ts('Use the given Payment Processor ID');
   $spec['ppid']['type'] = CRM_Utils_Type::T_INT;
   $spec['ppid']['api.required'] = TRUE;
-  $spec['contact_id']['title'] = ts("Contact ID");
+  $spec['contact_id']['title'] = E::ts('Contact ID');
   $spec['contact_id']['type'] = CRM_Utils_Type::T_INT;
   $spec['contact_id']['api.required'] = TRUE;
-  $spec['charge']['title'] = ts('Import a specific charge');
+  $spec['charge']['title'] = E::ts('Import a specific charge');
   $spec['charge']['type'] = CRM_Utils_Type::T_STRING;
   $spec['charge']['api.required'] = FALSE;
   $spec['financial_type_id'] = [
@@ -41,7 +41,7 @@ function _civicrm_api3_stripe_importcharge_spec(&$spec) {
     'title' => 'Contribution Source (optional description for contribution)',
     'type' => CRM_Utils_Type::T_STRING,
   ];
-  $spec['contribution_id']['title'] = ts("Optionally, provide contribution ID of existing contribution you want to link to.");
+  $spec['contribution_id']['title'] = E::ts('Optionally, provide contribution ID of existing contribution you want to link to.');
   $spec['contribution_id']['type'] = CRM_Utils_Type::T_INT;
 
 }
@@ -56,20 +56,18 @@ function _civicrm_api3_stripe_importcharge_spec(&$spec) {
  * @throws \Stripe\Exception\UnknownApiErrorException
  */
 function civicrm_api3_stripe_importcharge($params) {
-  $ppid = $params['ppid'];
-
   // Get the payment processor and activate the Stripe API
-  $payment_processor = civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $ppid]);
-  $processor = new CRM_Core_Payment_Stripe('', $payment_processor);
-  $processor->setAPIParams();
+  /** @var \CRM_Core_Payment_Stripe $paymentProcessor */
+  $paymentProcessor = \Civi\Payment\System::singleton()->getById($params['ppid']);
+  $paymentProcessor->setAPIParams();
 
   // Retrieve the Stripe charge.
-  $charge = \Stripe\Charge::retrieve($params['charge']);
+  $charge = $paymentProcessor->stripeClient->charges->retrieve($params['charge']);
 
   // Get the related invoice.
-  $stripeInvoice = \Stripe\Invoice::retrieve($charge->invoice);
+  $stripeInvoice = $paymentProcessor->stripeClient->invoices->retrieve($charge->invoice);
   if (!$stripeInvoice) {
-    throw new \CiviCRM_API3_Exception(E::ts("The charge does not have an invoice, it cannot be imported."));
+    throw new \CiviCRM_API3_Exception(E::ts('The charge does not have an invoice, it cannot be imported.'));
   }
 
   // Determine source text.
@@ -83,7 +81,7 @@ function civicrm_api3_stripe_importcharge($params) {
     $sourceText = 'Stripe: Manual import via API';
   }
 
-  $is_test = isset($payment_processor['is_test']) && $payment_processor['is_test'] ? 1 : 0;
+  $is_test = $paymentProcessor->getIsTestMode();
 
   // Check for a subscription.
   $subscription = CRM_Stripe_Api::getObjectParam('subscription_id', $stripeInvoice);
@@ -97,7 +95,7 @@ function civicrm_api3_stripe_importcharge($params) {
       ->execute();
     $contribution_recur = $cr_results->first();
     if (!$contribution_recur) {
-      throw new \CiviCRM_API3_Exception(E::ts("The charge has a subscription, but the subscription is not in CiviCRM. Please import the subscription and try again."));
+      throw new \CiviCRM_API3_Exception(E::ts('The charge has a subscription, but the subscription is not in CiviCRM. Please import the subscription and try again.'));
     }
     $contribution_recur_id = $contribution_recur['id'];
   }

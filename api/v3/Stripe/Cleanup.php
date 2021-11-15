@@ -9,6 +9,7 @@
  +--------------------------------------------------------------------+
  */
 
+use CRM_Stripe_ExtensionUtil as E;
 /**
  * This api cleans up old data / tables in Stripe.
  *
@@ -24,7 +25,7 @@ function _civicrm_api3_stripe_Cleanup_spec(&$spec) {
   $spec['confirm'] = [
     'api.required' => TRUE,
     'type' => CRM_Utils_Type::T_BOOLEAN,
-    'title' => 'Set this to TRUE to execute this API function',
+    'title' => E::ts('Set this to TRUE to execute this API function'),
   ];
 }
 

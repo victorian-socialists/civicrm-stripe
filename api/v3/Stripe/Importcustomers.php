@@ -17,13 +17,13 @@ use CRM_Stripe_ExtensionUtil as E;
  * @param array $spec description of fields supported by this API call
  */
 function _civicrm_api3_stripe_importcustomers_spec(&$spec) {
-  $spec['ppid']['title'] = ts("Use the given Payment Processor ID");
+  $spec['ppid']['title'] = E::ts('Use the given Payment Processor ID');
   $spec['ppid']['type'] = CRM_Utils_Type::T_INT;
   $spec['ppid']['api.required'] = TRUE;
-  $spec['limit']['title'] = ts("Limit number of Customers/Subscriptions to be imported");
+  $spec['limit']['title'] = E::ts('Limit number of Customers/Subscriptions to be imported');
   $spec['limit']['type'] = CRM_Utils_Type::T_INT;
   $spec['limit']['api.required'] = FALSE;
-  $spec['starting_after']['title'] = ts('Start importing customers after this one');
+  $spec['starting_after']['title'] = E::ts('Start importing customers after this one');
   $spec['starting_after']['type'] = CRM_Utils_Type::T_STRING;
   $spec['starting_after']['api.required'] = FALSE;
 }
@@ -38,14 +38,13 @@ function _civicrm_api3_stripe_importcustomers_spec(&$spec) {
  * @throws \Stripe\Exception\UnknownApiErrorException
  */
 function civicrm_api3_stripe_importcustomers($params) {
-  $ppid = $params['ppid'];
   $limit = isset($params['limit']) ? $params['limit'] : 100;
   $starting_after = $params['starting_after'];
 
   // Get the payment processor and activate the Stripe API
-  $payment_processor = civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $ppid]);
-  $processor = new CRM_Core_Payment_Stripe('', $payment_processor);
-  $processor->setAPIParams();
+  /** @var \CRM_Core_Payment_Stripe $paymentProcessor */
+  $paymentProcessor = \Civi\Payment\System::singleton()->getById($params['ppid']);
+  $paymentProcessor->setAPIParams();
 
   // Prepare an array to collect the results
   $results = [
@@ -61,7 +60,7 @@ function civicrm_api3_stripe_importcustomers($params) {
     $args['starting_after'] = $starting_after;
   }
 
-  $customers_stripe = \Stripe\Customer::all($args);
+  $customers_stripe = $paymentProcessor->stripeClient->customers->all($args);
 
   // Exit if there aren't records to process
   if (!count($customers_stripe->data)) {
@@ -99,7 +98,6 @@ function civicrm_api3_stripe_importcustomers($params) {
 
   foreach ($customers_stripe_clean as $customer) {
     $results['continue_after'] = $customer->id;
-    $contact_id = NULL;
 
     // Return if contact was found
     if (array_search($customer->id, $customer_ids) !== FALSE) {
@@ -114,8 +112,8 @@ function civicrm_api3_stripe_importcustomers($params) {
       continue;
     }
 
-    $c_params = [ 'ppid' => $params['ppid'], 'customer' => $customer->id  ];
-    $c_result = civicrm_api3('Stripe', 'Importcustomer', $c_params );
+    $c_params = ['ppid' => $params['ppid'], 'customer' => $customer->id];
+    $c_result = civicrm_api3('Stripe', 'Importcustomer', $c_params);
     $c_value = array_pop($c_result['values']);
     $data = [
       'contact_id' => $c_value['contact_id'],

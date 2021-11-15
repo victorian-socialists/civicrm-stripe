@@ -22,12 +22,12 @@ use CRM_Stripe_ExtensionUtil as E;
  * @param array $spec description of fields supported by this API call
  */
 function _civicrm_api3_stripe_customer_get_spec(&$spec) {
-  $spec['id']['title'] = ts("Stripe Customer ID");
+  $spec['id']['title'] = E::ts('Stripe Customer ID');
   $spec['id']['type'] = CRM_Utils_Type::T_STRING;
   $spec['id']['api.aliases'] = ['customer_id'];
-  $spec['contact_id']['title'] = ts("CiviCRM Contact ID");
+  $spec['contact_id']['title'] = E::ts('CiviCRM Contact ID');
   $spec['contact_id']['type'] = CRM_Utils_Type::T_INT;
-  $spec['processor_id']['title'] = ts("Payment Processor ID");
+  $spec['processor_id']['title'] = E::ts('Payment Processor ID');
   $spec['processor_id']['type'] = CRM_Utils_Type::T_INT;
 }
 
@@ -84,12 +84,12 @@ function civicrm_api3_stripe_customer_get($params) {
  * @param array $spec description of fields supported by this API call
  */
 function _civicrm_api3_stripe_customer_delete_spec(&$spec) {
-  $spec['id']['title'] = ts("Stripe Customer ID");
+  $spec['id']['title'] = E::ts('Stripe Customer ID');
   $spec['id']['type'] = CRM_Utils_Type::T_STRING;
   $spec['id']['api.aliases'] = ['customer_id'];
-  $spec['contact_id']['title'] = ts("CiviCRM Contact ID");
+  $spec['contact_id']['title'] = E::ts('CiviCRM Contact ID');
   $spec['contact_id']['type'] = CRM_Utils_Type::T_INT;
-  $spec['processor_id']['title'] = ts("Payment Processor ID");
+  $spec['processor_id']['title'] = E::ts('Payment Processor ID');
   $spec['processor_id']['type'] = CRM_Utils_Type::T_INT;
   $spec['processor_id']['api.required'] = TRUE;
 }
@@ -115,14 +115,14 @@ function civicrm_api3_stripe_customer_delete($params) {
  * @param array $spec description of fields supported by this API call
  */
 function _civicrm_api3_stripe_customer_create_spec(&$spec) {
-  $spec['id']['title'] = ts("Stripe Customer ID");
+  $spec['id']['title'] = E::ts('Stripe Customer ID');
   $spec['id']['type'] = CRM_Utils_Type::T_STRING;
   $spec['id']['api.required'] = TRUE;
   $spec['id']['api.aliases'] = ['customer_id'];
-  $spec['contact_id']['title'] = ts("CiviCRM Contact ID");
+  $spec['contact_id']['title'] = E::ts('CiviCRM Contact ID');
   $spec['contact_id']['type'] = CRM_Utils_Type::T_INT;
   $spec['contact_id']['api.required'] = TRUE;
-  $spec['processor_id']['title'] = ts("Payment Processor ID");
+  $spec['processor_id']['title'] = E::ts('Payment Processor ID');
   $spec['processor_id']['type'] = CRM_Utils_Type::T_INT;
   $spec['processor_id']['api.required'] = TRUE;
 }
@@ -205,7 +205,7 @@ function civicrm_api3_stripe_customer_updatecontactids($params) {
  * @param array $spec
  */
 function _civicrm_api3_stripe_customer_updatestripemetadata_spec(&$spec) {
-  $spec['id']['title'] = E::ts("Stripe Customer ID");
+  $spec['id']['title'] = E::ts('Stripe Customer ID');
   $spec['id']['description'] = E::ts('If set only this customer will be updated, otherwise we try and update ALL customers');
   $spec['id']['type'] = CRM_Utils_Type::T_STRING;
   $spec['id']['api.required'] = FALSE;
@@ -248,12 +248,13 @@ function civicrm_api3_stripe_customer_updatestripemetadata($params) {
       throw new CiviCRM_API3_Exception('Could not find contact ID for stripe customer: ' . $customerId);
     }
 
+    /** @var \CRM_Core_Payment_Stripe $paymentProcessor */
     $paymentProcessor = \Civi\Payment\System::singleton()->getById($customerParams['processor_id']);
     $paymentProcessor->setAPIParams();
 
     // Get the stripe customer from stripe
     try {
-      $stripeCustomer = \Stripe\Customer::retrieve($customerId);
+      $stripeCustomer = $paymentProcessor->stripeClient->customers->retrieve($customerId);
     } catch (Exception $e) {
       $err = CRM_Core_Payment_Stripe::parseStripeException('retrieve_customer', $e, FALSE);
       $errorMessage = $paymentProcessor->handleErrorNotification($err, NULL);
@@ -274,7 +275,7 @@ function civicrm_api3_stripe_customer_updatestripemetadata($params) {
 
     // Update the stripe customer object at stripe
     if (!$params['dryrun']) {
-      \Stripe\Customer::update($customerId, $stripeCustomerParams);
+      $paymentProcessor->stripeClient->customers->update($customerId, $stripeCustomerParams);
       $results[] = $stripeCustomerParams;
     }
     else {
