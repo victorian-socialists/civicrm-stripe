@@ -76,7 +76,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       'contribution_status_id' => 'Completed',
       'trxn_id'                => 'in_mock,ch_mock',
     ]);
-    $this->checkContribRecur([ 'contribution_status_id' => 'In Progress' ]);
+    $this->checkContribRecur(['contribution_status_id' => 'In Progress']);
   }
   /**
    * Test creating a recurring contribution and
@@ -682,49 +682,6 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
   }
 
   /**
-   * Sugar for checking things on the contribution.
-   *
-   * @param array $expectations key => value pairs.
-   * @param mixed $contribution
-   *   - if null, use this->contributionID
-   *   - if array, assume it's the result of a contribution.getsingle
-   *   - if int, load that contrib.
-   */
-  protected function checkContrib(array $expectations, $contribution = NULL) {
-    if (!empty($expectations['contribution_status_id'])) {
-      $expectations['contribution_status_id'] = CRM_Core_PseudoConstant::getKey(
-        'CRM_Contribute_BAO_Contribution', 'contribution_status_id', $expectations['contribution_status_id']);
-    }
-
-    if (!is_array($contribution)) {
-      $contributionID = $contribution ?? $this->contributionID;
-      $this->assertGreaterThan(0, $contributionID);
-      $contribution = civicrm_api3('Contribution', 'getsingle', ['id' => $contributionID]);
-    }
-
-    foreach ($expectations as $field => $expect) {
-      $this->assertArrayHasKey($field, $contribution);
-      $this->assertEquals($expect, $contribution[$field], "Expected Contribution.$field = " . json_encode($expect));
-    }
-  }
-
-  /**
-   * Sugar for checking things on the contribution recur.
-   */
-  protected function checkContribRecur(array $expectations) {
-    if (!empty($expectations['contribution_status_id'])) {
-      $expectations['contribution_status_id'] = CRM_Core_PseudoConstant::getKey(
-        'CRM_Contribute_BAO_ContributionRecur', 'contribution_status_id', $expectations['contribution_status_id']);
-    }
-    $this->assertGreaterThan(0, $this->contributionRecurID);
-    $contribution = civicrm_api3('ContributionRecur', 'getsingle', ['id' => $this->contributionRecurID]);
-    foreach ($expectations as $field => $expect) {
-      $this->assertArrayHasKey($field, $contribution);
-      $this->assertEquals($expect, $contribution[$field]);
-    }
-  }
-
-  /**
    * Returns an array of arrays of contributions.
    */
   protected function getContributionsAndAssertCount(int $expectedCount):array {
@@ -864,7 +821,6 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       ->method('retrieve')
       ->willReturn($mockPlan);
 
-
     // Need a mock intent with id and status
     $mockCharge = $this->createMock('Stripe\\Charge');
     $mockCharge
@@ -875,23 +831,27 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
         ['status', 'succeeded'],
         ['balance_transaction', 'txn_mock'],
       ]));
+    $mockChargesCollection = new \Stripe\Collection();
+    $mockChargesCollection->data = [$mockCharge];
+
     $mockPaymentIntent = $this->createMock('Stripe\\PaymentIntent');
     $mockPaymentIntent
       ->method('__get')
       ->will($this->returnValueMap([
         ['id', 'pi_mock'],
         ['status', 'succeeded'],
-        ['charges', (object) ['data' => [ $mockCharge ]]]
+        ['charges', $mockChargesCollection]
       ]));
 
     $mockSubscription = new PropertySpy('subscription.create', [
       'id' => 'sub_mock',
+      'object' => 'subscription',
       'current_period_end' => time()+60*60*24,
+      'pending_setup_intent' => '',
       'latest_invoice' => [
         'id' => 'in_mock',
         'payment_intent' => $mockPaymentIntent,
       ],
-      'pending_setup_intent' => '',
     ]);
     $stripeClient->subscriptions = $this->createMock('Stripe\\Service\\SubscriptionService');
     $stripeClient->subscriptions
@@ -901,6 +861,15 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       ->method('retrieve')
       ->with($this->equalTo('sub_mock'))
       ->willReturn($mockSubscription);
+
+    $stripeClient->paymentIntents = $this->createMock('Stripe\\Service\\PaymentIntentService');
+    $stripeClient->paymentIntents
+      ->method('retrieve')
+      ->with($this->equalTo('pi_mock'))
+      ->willReturn($mockPaymentIntent);
+    $stripeClient->paymentIntents
+      ->method('update')
+      ->willReturn($mockPaymentIntent);
 
     $stripeClient->balanceTransactions = $this->createMock('Stripe\\Service\\BalanceTransactionService');
     $stripeClient->balanceTransactions

@@ -173,6 +173,10 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
 
     if (array_key_exists('trxn_id', $ret)) {
       $this->trxn_id = $ret['trxn_id'];
+      $contribution = new CRM_Contribute_BAO_Contribution();
+      $contribution->id = $params['contribution_id'];
+      $contribution->trxn_id = $ret['trxn_id'];
+      $contribution->save();
     }
     if (array_key_exists('contributionRecurID', $ret)) {
       // Get processor id.
@@ -206,6 +210,7 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
 
     $this->assertTrue($found, 'Assigned trxn_id is valid.');
   }
+
   /**
    * Create contribition
    */
@@ -222,6 +227,81 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
      ], $params));
     $this->assertEquals(0, $contribution['is_error']);
     $this->contributionID = $contribution['id'];
+  }
+
+  /**
+   * Sugar for checking things on the contribution.
+   *
+   * @param array $expectations key => value pairs.
+   * @param mixed $contribution
+   *   - if null, use this->contributionID
+   *   - if array, assume it's the result of a contribution.getsingle
+   *   - if int, load that contrib.
+   */
+  protected function checkContrib(array $expectations, $contribution = NULL) {
+    if (!empty($expectations['contribution_status_id'])) {
+      $expectations['contribution_status_id'] = CRM_Core_PseudoConstant::getKey(
+        'CRM_Contribute_BAO_Contribution', 'contribution_status_id', $expectations['contribution_status_id']);
+    }
+
+    if (!is_array($contribution)) {
+      $contributionID = $contribution ?? $this->contributionID;
+      $this->assertGreaterThan(0, $contributionID);
+      $contribution = \Civi\Api4\Contribution::get(FALSE)
+        ->addWhere('id', '=', $contributionID)
+        ->execute()
+        ->first();
+    }
+
+    foreach ($expectations as $field => $expect) {
+      $this->assertArrayHasKey($field, $contribution);
+      $this->assertEquals($expect, $contribution[$field], "Expected Contribution.$field = " . json_encode($expect));
+    }
+  }
+
+  /**
+   * Sugar for checking things on the contribution recur.
+   */
+  protected function checkContribRecur(array $expectations) {
+    if (!empty($expectations['contribution_status_id'])) {
+      $expectations['contribution_status_id'] = CRM_Core_PseudoConstant::getKey(
+        'CRM_Contribute_BAO_ContributionRecur', 'contribution_status_id', $expectations['contribution_status_id']);
+    }
+    $this->assertGreaterThan(0, $this->contributionRecurID);
+    $contributionRecur = \Civi\Api4\ContributionRecur::get(FALSE)
+      ->addWhere('id', '=', $this->contributionRecurID)
+      ->execute()
+      ->first();
+    foreach ($expectations as $field => $expect) {
+      $this->assertArrayHasKey($field, $contributionRecur);
+      $this->assertEquals($expect, $contributionRecur[$field]);
+    }
+  }
+
+  /**
+   * Sugar for checking things on the payment (financial_trxn).
+   *
+   * @param array $expectations key => value pairs.
+   * @param int $contributionID
+   *   - if null, use this->contributionID
+   *   - Retrieve the payment(s) linked to the contributionID (currently expects one payment only)
+   */
+  protected function checkPayment(array $expectations, $contributionID = NULL) {
+    if (!empty($expectations['contribution_status_id'])) {
+      $expectations['contribution_status_id'] = CRM_Core_PseudoConstant::getKey(
+        'CRM_Contribute_BAO_Contribution', 'contribution_status_id', $expectations['contribution_status_id']);
+    }
+
+    $contributionID = $contributionID ?? $this->contributionID;
+    $this->assertGreaterThan(0, $contributionID);
+    // We (currently) only support the first payment if there are multiple
+    $payment = civicrm_api3('Payment', 'get', ['contribution_id' => $contributionID])['values'];
+    $payment = reset($payment);
+
+    foreach ($expectations as $field => $expect) {
+      $this->assertArrayHasKey($field, $payment);
+      $this->assertEquals($expect, $payment[$field], "Expected Payment.$field = " . json_encode($expect));
+    }
   }
 
 }

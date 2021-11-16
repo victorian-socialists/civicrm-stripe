@@ -62,10 +62,10 @@ function civicrm_api3_stripe_importcharge($params) {
   $paymentProcessor->setAPIParams();
 
   // Retrieve the Stripe charge.
-  $charge = $paymentProcessor->stripeClient->charges->retrieve($params['charge']);
+  $stripeCharge = $paymentProcessor->stripeClient->charges->retrieve($params['charge']);
 
   // Get the related invoice.
-  $stripeInvoice = $paymentProcessor->stripeClient->invoices->retrieve($charge->invoice);
+  $stripeInvoice = $paymentProcessor->stripeClient->invoices->retrieve($stripeCharge->invoice);
   if (!$stripeInvoice) {
     throw new \CiviCRM_API3_Exception(E::ts('The charge does not have an invoice, it cannot be imported.'));
   }
@@ -81,17 +81,14 @@ function civicrm_api3_stripe_importcharge($params) {
     $sourceText = 'Stripe: Manual import via API';
   }
 
-  $is_test = $paymentProcessor->getIsTestMode();
-
   // Check for a subscription.
   $subscription = CRM_Stripe_Api::getObjectParam('subscription_id', $stripeInvoice);
   $contribution_recur_id = NULL;
   if ($subscription) {
     // Lookup the contribution_recur_id.
-    $cr_results = \Civi\Api4\ContributionRecur::get()
+    $cr_results = \Civi\Api4\ContributionRecur::get(FALSE)
       ->addWhere('trxn_id', '=', $subscription)
-      ->addWhere('is_test', '=', $is_test)
-      ->setCheckPermissions(FALSE)
+      ->addWhere('is_test', '=', $paymentProcessor->getIsTestMode())
       ->execute();
     $contribution_recur = $cr_results->first();
     if (!$contribution_recur) {
@@ -107,7 +104,6 @@ function civicrm_api3_stripe_importcharge($params) {
   // We update these parameters regardless if it's a new contribution
   // or an existing contributions.
   $contributionParams['receive_date'] = CRM_Stripe_Api::getObjectParam('receive_date', $stripeInvoice);
-  $contributionParams['contribution_status_id'] = CRM_Stripe_Api::getObjectParam('status_id', $stripeInvoice);
   $contributionParams['total_amount'] = CRM_Stripe_Api::getObjectParam('total_amount', $stripeInvoice);
 
   // Check if a contribution already exists.
@@ -118,10 +114,9 @@ function civicrm_api3_stripe_importcharge($params) {
   }
   else {
     // Check database.
-    $c_results = \Civi\Api4\Contribution::get()
+    $c_results = \Civi\Api4\Contribution::get(FALSE)
       ->addWhere('trxn_id', 'LIKE', '%'. $params['charge'].'%')
-      ->addWhere('is_test', '=', $is_test)
-      ->setCheckPermissions(FALSE)
+      ->addWhere('is_test', '=', $paymentProcessor->getIsTestMode())
       ->execute();
     $contribution = $c_results->first();
     if ($contribution) {
@@ -140,17 +135,43 @@ function civicrm_api3_stripe_importcharge($params) {
     $contributionParams['currency'] = CRM_Stripe_Api::getObjectParam('currency', $stripeInvoice);
     $contributionParams['receive_date'] = CRM_Stripe_Api::getObjectParam('receive_date', $stripeInvoice);
     $contributionParams['trxn_id'] = CRM_Stripe_Api::getObjectParam('charge_id', $stripeInvoice);
-    $contributionParams['contribution_status_id'] = CRM_Stripe_Api::getObjectParam('status_id', $stripeInvoice);
     $contributionParams['payment_instrument_id'] = !empty($params['payment_instrument_id']) ? $params['payment_instrument_id'] : 'Credit Card';
     $contributionParams['financial_type_id'] = !empty($params['financial_type_id']) ? $params['financial_type_id'] : 'Donation';
-    $contributionParams['is_test'] = isset($paymentProcessor['is_test']) && $paymentProcessor['is_test'] ? 1 : 0;
+    $contributionParams['is_test'] = $paymentProcessor->getIsTestMode();
     $contributionParams['contribution_source'] = $sourceText;
-    $contributionParams['is_test'] = $is_test;
+    $contributionParams['contribution_status_id:name'] = 'Pending';
     if ($contribution_recur_id) {
       $contributionParams['contribution_recur_id'] = $contribution_recur_id;
     }
   }
 
-  $contribution = civicrm_api3('Contribution', 'create', $contributionParams);
-  return civicrm_api3_create_success($contribution['values']);
+  $contribution = \Civi\Api4\Contribution::create(FALSE)
+    ->setValues($contributionParams)
+    ->execute()
+    ->first();
+
+  if (CRM_Stripe_Api::getObjectParam('status_id', $stripeInvoice) === 'Completed') {
+    $paymentParams = [
+      'contribution_id' => $contribution['id'],
+      'total_amount' => $contributionParams['total_amount'],
+      'trxn_date' => $contributionParams['receive_date'],
+      'payment_processor_id' => $params['ppid'],
+      'is_send_contribution_notification' => FALSE,
+      'trxn_id' => CRM_Stripe_Api::getObjectParam('charge_id', $stripeInvoice),
+      'order_reference' => CRM_Stripe_Api::getObjectParam('invoice_id', $stripeInvoice),
+      'payment_instrument_id' => $contributionParams['payment_instrument_id'],
+    ];
+    if (!empty(CRM_Stripe_Api::getObjectParam('balance_transaction', $stripeCharge))) {
+      $stripeBalanceTransaction = $paymentProcessor->stripeClient->balanceTransactions->retrieve(
+        CRM_Stripe_Api::getObjectParam('balance_transaction', $stripeCharge)
+      );
+      $paymentParams['fee_amount'] = $stripeBalanceTransaction->fee / 100;
+    }
+    civicrm_api3('Payment', 'create', $paymentParams);
+  }
+  $contribution = \Civi\Api4\Contribution::get(FALSE)
+    ->addWhere('id', '=', $contribution['id'])
+    ->execute()
+    ->first();
+  return civicrm_api3_create_success($contribution);
 }

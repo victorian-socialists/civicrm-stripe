@@ -26,6 +26,9 @@ use CRM_Stripe_ExtensionUtil as E;
 function civicrm_api3_stripe_importsubscription($params) {
   civicrm_api3_verify_mandatory($params, NULL, ['subscription', 'contact_id', 'ppid']);
 
+  $params['payment_instrument_id'] = $params['payment_instrument_id'] ?? 1; // Credit Card
+  $params['financial_type_id'] = $params['financial_type_id'] ?? 1; // Donation
+
   /** @var \CRM_Core_Payment_Stripe $paymentProcessor */
   $paymentProcessor = \Civi\Payment\System::singleton()->getById($params['ppid']);
   $paymentProcessor->setAPIParams();
@@ -37,13 +40,14 @@ function civicrm_api3_stripe_importsubscription($params) {
   $customerParams = [
     'customer_id' => CRM_Stripe_Api::getObjectParam('customer_id', $stripeSubscription),
     'processor_id' => (int) $params['ppid'],
+    'contact_id' => $params['contact_id']
   ];
 
   $custresult = civicrm_api3('StripeCustomer', 'get', $customerParams);
   if ($custresult['count'] == 0) {
     // Create the customer.
     $customerParams['contact_id'] = $params['contact_id'];
-    $custresult = civicrm_api3('StripeCustomer', 'create', $customerParams);
+    civicrm_api3('StripeCustomer', 'create', $customerParams);
     $custresult = civicrm_api3('StripeCustomer', 'get', $customerParams);
   }
   $customer = array_pop($custresult['values']);
@@ -52,9 +56,12 @@ function civicrm_api3_stripe_importsubscription($params) {
   }
 
   // Create the recur record in CiviCRM if it doesn't exist.
-  $contributionRecur = civicrm_api3('ContributionRecur', 'get', ['trxn_id' => $params['subscription'] ]);
+  $contributionRecur = \Civi\Api4\ContributionRecur::get(FALSE)
+    ->addWhere('processor_id', '=', $params['subscription'])
+    ->execute()
+    ->first();
 
-  if ($contributionRecur['count'] == 0) {
+  if (empty($contributionRecur)) {
     $contributionRecurParams = [
       'contact_id' => $params['contact_id'],
       'amount' => CRM_Stripe_Api::getObjectParam('plan_amount', $stripeSubscription),
@@ -63,13 +70,11 @@ function civicrm_api3_stripe_importsubscription($params) {
       'frequency_interval' => CRM_Stripe_Api::getObjectParam('frequency_interval', $stripeSubscription),
       'start_date' => CRM_Stripe_Api::getObjectParam('plan_start', $stripeSubscription),
       'processor_id' => $params['subscription'],
-      'trxn_id' => $params['subscription'],
-      'contribution_status_id' => CRM_Stripe_Api::getObjectParam('status_id', $stripeSubscription),
       'cycle_day' => CRM_Stripe_Api::getObjectParam('cycle_day', $stripeSubscription),
       'auto_renew' => 1,
       'payment_processor_id' => $params['ppid'],
-      'payment_instrument_id' => !empty($params['payment_instrument_id']) ? $params['payment_instrument_id'] : 'Credit Card',
-      'financial_type_id' => !empty($params['financial_type_id']) ? $params['financial_type_id'] : 'Donation',
+      'payment_instrument_id' => $params['payment_instrument_id'],
+      'financial_type_id' => $params['financial_type_id'],
       'is_email_receipt' => !empty($params['is_email_receipt']) ? 1 : 0,
       'is_test' => $paymentProcessor->getIsTestMode(),
       'contribution_source' => !empty($params['contribution_source']) ? $params['contribution_source'] : '',
@@ -77,7 +82,10 @@ function civicrm_api3_stripe_importsubscription($params) {
     if (isset($params['recur_id']) && $params['recur_id']) {
       $contributionRecurParams['id'] = $params['recur_id'];
     }
-    $contributionRecur = civicrm_api3('ContributionRecur', 'create', $contributionRecurParams);
+    $contributionRecur = \Civi\Api4\ContributionRecur::create(FALSE)
+      ->setValues($contributionRecurParams)
+      ->execute()
+      ->first();
   }
   // Get the invoices for the subscription
   $invoiceParams = [
@@ -85,57 +93,80 @@ function civicrm_api3_stripe_importsubscription($params) {
     'limit' => 100,
   ];
   $stripeInvoices = $paymentProcessor->stripeClient->invoices->all($invoiceParams);
-  foreach ($stripeInvoices->data as $stripeInvoice) {
-    if (CRM_Stripe_Api::getObjectParam('subscription_id', $stripeInvoice) === $params['subscription']) {
-      $charge = CRM_Stripe_Api::getObjectParam('charge_id', $stripeInvoice);
-      if (empty($charge)) {
-        continue;
-      }
-      $exists_params = [
-        'contribution_test' => $paymentProcessor->getIsTestMode(),
-        'trxn_id' => $charge
-      ];
-      $contribution = civicrm_api3('Mjwpayment', 'get_contribution', $exists_params);
-      if ($contribution['count'] == 0) {
-        // It has not been imported, so import it now.
-        $charge_params = [
-          'charge' => $charge,
-          'financial_type_id' => $params['financial_type_id'],
-          'payment_instrument_id' => $params['payment_instrument_id'],
-          'ppid' => $params['ppid'],
-          'contact_id' => $params['contact_id'],
-          'contribution_source' => ($params['contribution_source'] ?? ''),
-        ];
-        $contribution = civicrm_api3('Stripe', 'Importcharge', $charge_params);
-
-        // Link to membership record
-        // By default we'll match the latest active membership, unless membership_id is passed in.
-        if (!empty($params['membership_id'])) {
-          $membershipParams = [
-            'id' => $params['membership_id'],
-            'contribution_recur_id' => $contributionRecur['id'],
-          ];
-          $membership = civicrm_api3('Membership', 'create', $membershipParams);
+  if ($stripeInvoices->count()) {
+    // We have one or more invoices to import (as contributions)
+    foreach ($stripeInvoices->data as $stripeInvoice) {
+      if (CRM_Stripe_Api::getObjectParam('subscription_id', $stripeInvoice) === $params['subscription']) {
+        $charge = CRM_Stripe_Api::getObjectParam('charge_id', $stripeInvoice);
+        if (empty($charge)) {
+          continue;
         }
-        elseif (!empty($params['membership_auto'])) {
-          $membershipParams = [
+        $exists_params = [
+          'contribution_test' => $paymentProcessor->getIsTestMode(),
+          'trxn_id' => $charge
+        ];
+        $contribution = civicrm_api3('Mjwpayment', 'get_contribution', $exists_params);
+        if ($contribution['count'] == 0) {
+          // It has not been imported, so import it now.
+          $charge_params = [
+            'charge' => $charge,
+            'financial_type_id' => $params['financial_type_id'],
+            'payment_instrument_id' => $params['payment_instrument_id'],
+            'ppid' => $params['ppid'],
             'contact_id' => $params['contact_id'],
-            'options' => ['limit' => 1, 'sort' => "id DESC"],
-            'contribution_recur_id' => ['IS NULL' => 1],
-            'is_test' => $paymentProcessor->getIsTestMode(),
-            'active_only' => 1,
+            'contribution_source' => ($params['contribution_source'] ?? ''),
           ];
-          $membership = civicrm_api3('Membership', 'get', $membershipParams);
-          if (!empty($membership['id'])) {
+          $contribution = civicrm_api3('Stripe', 'Importcharge', $charge_params);
+
+          // Link to membership record
+          // By default we'll match the latest active membership, unless membership_id is passed in.
+          if (!empty($params['membership_id'])) {
             $membershipParams = [
-              'id' => $membership['id'],
+              'id' => $params['membership_id'],
               'contribution_recur_id' => $contributionRecur['id'],
             ];
             $membership = civicrm_api3('Membership', 'create', $membershipParams);
           }
+          elseif (!empty($params['membership_auto'])) {
+            $membershipParams = [
+              'contact_id' => $params['contact_id'],
+              'options' => ['limit' => 1, 'sort' => "id DESC"],
+              'contribution_recur_id' => ['IS NULL' => 1],
+              'is_test' => $paymentProcessor->getIsTestMode(),
+              'active_only' => 1,
+            ];
+            $membership = civicrm_api3('Membership', 'get', $membershipParams);
+            if (!empty($membership['id'])) {
+              $membershipParams = [
+                'id' => $membership['id'],
+                'contribution_recur_id' => $contributionRecur['id'],
+              ];
+              civicrm_api3('Membership', 'create', $membershipParams);
+            }
+          }
         }
       }
     }
+  }
+  else {
+    // We have no invoices to import. This will be for one of the following reasons:
+    //   - Stripe subscription is in a free "trial" period.
+    //   - Stripe subscription has not yet reached the start date.
+    // In this case we have to create a template contribution (see https://lab.civicrm.org/dev/financial/-/issues/6)
+    //   because CiviCRM currently expects at least 1 contribution per ContributionRecur.
+    $contribution = \Civi\Api4\Contribution::create(FALSE)
+      ->addValue('contribution_recur_id', $contributionRecur['id'])
+      ->addValue('contact_id', $contributionRecur['contact_id'])
+      ->addValue('financial_type_id', $contributionRecur['financial_type_id'])
+      ->addValue('payment_instrument_id', $contributionRecur['payment_instrument_id'])
+      ->addValue('source', $params['contribution_source'] ?? '')
+      ->addValue('total_amount', $contributionRecur['amount'])
+      ->addValue('currency', $contributionRecur['currency'])
+      ->addValue('is_test', $paymentProcessor->getIsTestMode())
+      ->addValue('is_template', TRUE)
+      ->addValue('contribution_status_id:name', 'Template')
+      ->execute()
+      ->first();
   }
 
   $results = [
