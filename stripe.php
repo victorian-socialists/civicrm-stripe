@@ -15,7 +15,6 @@ if (file_exists($autoload)) {
   require_once $autoload;
 }
 
-
 use CRM_Stripe_ExtensionUtil as E;
 
 /**

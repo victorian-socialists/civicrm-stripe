@@ -215,8 +215,7 @@ class CRM_Core_Payment_StripeIPN {
     // This returns all webhooks that match the uniqueIdentifier above and have not been processed.
     // For example this would match both invoice.finalized and invoice.payment_succeeded events which must be
     // processed sequentially and not simultaneously.
-    $paymentProcessorWebhooks = PaymentprocessorWebhook::get()
-      ->setCheckPermissions(FALSE) // Replace with ::update(FALSE) when minversion = 5.29
+    $paymentProcessorWebhooks = PaymentprocessorWebhook::get(FALSE)
       ->addWhere('payment_processor_id', '=', $this->_paymentProcessor->getID())
       ->addWhere('identifier', '=', $uniqueIdentifier)
       ->addWhere('processed_date', 'IS NULL')
@@ -254,8 +253,8 @@ class CRM_Core_Payment_StripeIPN {
       // So we will record this webhook but will not process now (it will be processed later by the scheduled job).
     }
 
-    PaymentprocessorWebhook::create()
-      ->setCheckPermissions(FALSE) // Replace with ::update(FALSE) when minversion = 5.29
+    // In mjwshared 1.1 status defaults to NULL. In 1.2 status defaults to "new".
+    PaymentprocessorWebhook::create(FALSE)
       ->addValue('payment_processor_id', $this->_paymentProcessor->getID())
       ->addValue('trigger', $this->eventType)
       ->addValue('identifier', $uniqueIdentifier)
@@ -263,8 +262,7 @@ class CRM_Core_Payment_StripeIPN {
       ->execute();
 
     // Check the number of webhooks to be processed does not exceed connection-limit
-    $toBeProcessedWebhook = PaymentprocessorWebhook::get()
-        ->setCheckPermissions(FALSE) // Replace with ::update(FALSE) when minversion = 5.29
+    $toBeProcessedWebhook = PaymentprocessorWebhook::get(FALSE)
         ->addWhere('payment_processor_id', '=', $this->_paymentProcessor->getID())
         ->addWhere('processed_date', 'IS NULL')
         ->execute();
@@ -310,8 +308,7 @@ class CRM_Core_Payment_StripeIPN {
     // If for some reason we ended up with multiple webhooks with the same identifier and same eventType this would
     // update all of them as "processed". That is ok because we don't need to process the "same" webhook multiple
     // times. Even if they have different event IDs but the same identifier/eventType.
-    PaymentprocessorWebhook::update()
-      ->setCheckPermissions(FALSE) // Replace with ::update(FALSE) when minversion = 5.29
+    PaymentprocessorWebhook::update(FALSE)
       ->addWhere('identifier', '=', $uniqueIdentifier)
       ->addWhere('trigger', '=', $this->eventType)
       ->addValue('status', $success ? 'success' : 'error')

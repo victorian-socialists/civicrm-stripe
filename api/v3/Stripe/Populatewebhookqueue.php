@@ -96,6 +96,7 @@ function civicrm_api3_stripe_Populatewebhookqueue($params) {
     }
 
     $webhookUniqueIdentifier = ($item['charge'] ?? '') . ':' . ($item['invoice'] ?? '') . ':' . ($item['subscription'] ?? '');
+    // In mjwshared 1.1 status defaults to NULL. In 1.2 status defaults to "new".
     PaymentprocessorWebhook::create(FALSE)
       ->addValue('payment_processor_id', $params['ppid'])
       ->addValue('trigger', $item['type'])
