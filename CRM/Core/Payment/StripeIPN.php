@@ -311,9 +311,9 @@ class CRM_Core_Payment_StripeIPN {
    * @throws \Civi\API\Exception\UnauthorizedException
    */
   public function processWebhookEvent() :StdClass {
-    $this->setInputParameters();
     $return = (object) ['message' => NULL, 'ok' => FALSE, 'exception' => NULL];
     try {
+      $this->setInputParameters();
       $return->ok = $this->processEventType();
     }
     catch (Exception $e) {
@@ -331,15 +331,10 @@ class CRM_Core_Payment_StripeIPN {
       }
     }
 
-    $uniqueIdentifier = $this->getWebhookUniqueIdentifier();
-
     // Record that we have processed this webhook (success or error)
-    // If for some reason we ended up with multiple webhooks with the same identifier and same eventType this would
-    // update all of them as "processed". That is ok because we don't need to process the "same" webhook multiple
-    // times. Even if they have different event IDs but the same identifier/eventType.
     PaymentprocessorWebhook::update(FALSE)
-      ->addWhere('identifier', '=', $uniqueIdentifier)
-      ->addWhere('trigger', '=', $this->eventType)
+      ->addWhere('event_id', '=', $this->getEventID())
+      ->addWhere('trigger', '=', $this->getEventType())
       ->addValue('status', $return->ok ? 'success' : 'error')
       ->addValue('message', preg_replace('/^(.{250}).*/su', '$1 ...', $return->message))
       ->addValue('processed_date', 'now')
