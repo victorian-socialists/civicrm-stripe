@@ -650,7 +650,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     //   $ipnClass->setSendEmailReceipt($emailReceipt);
     // }
 
-    return $ipnClass->processWebhook();
+    return $ipnClass->processWebhookEvent()->ok;
   }
 
   /**

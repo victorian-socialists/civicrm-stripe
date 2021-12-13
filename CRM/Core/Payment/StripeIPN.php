@@ -75,6 +75,14 @@ class CRM_Core_Payment_StripeIPN {
    */
   public $exceptionOnFailure = FALSE;
 
+  public function __construct(?CRM_Core_Payment_Stripe $paymentObject = NULL) {
+    if ($paymentObject !== NULL && !($paymentObject instanceof CRM_Core_Payment_Stripe)) {
+      // This would be a coding error.
+      throw new Exception(__CLASS__ . " constructor requires CRM_Core_Payment_Stripe object (or NULL for legacy use).");
+    }
+    $this->_paymentProcessor = $paymentObject;
+  }
+
   /**
    * Returns TRUE if we handle this event type, FALSE otherwise
    * @param string $eventType
@@ -268,7 +276,31 @@ class CRM_Core_Payment_StripeIPN {
         return TRUE;
     }
 
-    return $this->processWebhook();
+    return $this->processWebhookEvent()->ok;
+  }
+
+  /**
+   * Process a single queued event and update it.
+   *
+   * @param array $webhookEvent
+   *
+   * @return bool TRUE on success.
+   * @throws \API_Exception
+   * @throws \Civi\API\Exception\UnauthorizedException
+   */
+  public function processQueuedWebhookEvent(array $webhookEvent) :bool {
+    $this->setEventID($webhookEvent['event_id']);
+    if (!$this->setEventType($webhookEvent['trigger'])) {
+      // We don't handle this event
+      return FALSE;
+    };
+    // @todo consider storing webhook data when received.
+    $this->setVerifyData(TRUE);
+    $this->setExceptionMode(FALSE);
+    if (isset($emailReceipt)) {
+      $this->setSendEmailReceipt($emailReceipt);
+    }
+    return $this->processWebhookEvent()->ok;
   }
 
   /**
@@ -278,21 +310,24 @@ class CRM_Core_Payment_StripeIPN {
    * @throws \API_Exception
    * @throws \Civi\API\Exception\UnauthorizedException
    */
-  public function processWebhook() {
+  public function processWebhookEvent() :StdClass {
     $this->setInputParameters();
+    $return = (object) ['message' => NULL, 'ok' => FALSE, 'exception' => NULL];
     try {
-      $success = $this->processEventType();
+      $return->ok = $this->processEventType();
     }
     catch (Exception $e) {
       if ($this->exceptionOnFailure) {
         // Re-throw a modified exception. (Special case for phpunit testing).
-        $message = get_class($e) . ": " . $e->getMessage();
-        throw new RuntimeException($message, $e->getCode(), $e);
+        $return->message = get_class($e) . ": " . $e->getMessage();
+        throw new RuntimeException($return->message, $e->getCode(), $e);
       }
       else {
         // Normal use.
-        $success = FALSE;
-        \Civi::log()->error("StripeIPN: processEventType failed. EventID: {$this->eventID} : " . $e->getMessage() . "\n" . $e->getTraceAsString());
+        $return->ok = FALSE;
+        $return->message = $e->getMessage(). "\n" . $e->getTraceAsString();
+        $return->exception = $e;
+        \Civi::log()->error("StripeIPN: processEventType failed. EventID: {$this->eventID} : " . $return->message);
       }
     }
 
@@ -305,11 +340,12 @@ class CRM_Core_Payment_StripeIPN {
     PaymentprocessorWebhook::update(FALSE)
       ->addWhere('identifier', '=', $uniqueIdentifier)
       ->addWhere('trigger', '=', $this->eventType)
-      ->addValue('status', $success ? 'success' : 'error')
+      ->addValue('status', $return->ok ? 'success' : 'error')
+      ->addValue('message', preg_replace('/^(.{250}).*/su', '$1 ...', $return->message))
       ->addValue('processed_date', 'now')
       ->execute();
 
-    return $success;
+    return $return;
   }
 
   /**

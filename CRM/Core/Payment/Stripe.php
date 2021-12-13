@@ -1161,7 +1161,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     http_response_code(200);
     $rawData = file_get_contents("php://input");
     $event = json_decode($rawData);
-    $ipnClass = new CRM_Core_Payment_StripeIPN();
+    $ipnClass = new CRM_Core_Payment_StripeIPN($this);
     $ipnClass->setEventID($event->id);
     if (!$ipnClass->setEventType($event->type)) {
       // We don't handle this event
@@ -1207,7 +1207,36 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     if (isset($emailReceipt)) {
       $ipnClass->setSendEmailReceipt($emailReceipt);
     }
-    return $ipnClass->processWebhook();
+    return $ipnClass->processWebhookEvent()->ok;
+  }
+
+  /**
+   * Called by mjwshared extension's queue processor api3 Job.process_paymentprocessor_webhooks
+   *
+   * The array parameter contains a row of PaymentprocessorWebhook data, which represents a single GC event
+   *
+   * Return TRUE for success, FALSE if there's a problem
+   */
+  public function processWebhookEvent(array $webhookEvent) :bool {
+    // If there is another copy of this event in the table with a lower ID, then
+    // this is a duplicate that should be ignored. We do not worry if there is one with a higher ID
+    // because that means that while there are duplicates, we'll only process the one with the lowest ID.
+    $duplicates = PaymentprocessorWebhook::get(FALSE)
+      ->selectRowCount()
+      ->addWhere('event_id', '=', $webhookEvent['event_id'])
+      ->addWhere('id', '<', $webhookEvent['id'])
+      ->execute()->count();
+    if ($duplicates) {
+      PaymentprocessorWebhook::update(FALSE)
+        ->addWhere('id', '=', $webhookEvent['id'])
+        ->addValue('status', 'error')
+        ->addValue('message', 'Refusing to process this event as it is a duplicate.')
+        ->execute();
+      return FALSE;
+    }
+
+    $handler = new CRM_Core_Payment_StripeIPN($this);
+    return $handler->processQueuedWebhookEvent($webhookEvent);
   }
 
   /**
