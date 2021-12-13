@@ -46,7 +46,6 @@ class CRM_Stripe_Webhook {
         // This means we only configured live OR test and not both.
         continue;
       }
-      $processor->setAPIParams();
 
       try {
         $webhooks = $processor->stripeClient->webhookEndpoints->all(["limit" => 100]);
@@ -202,7 +201,6 @@ class CRM_Stripe_Webhook {
    */
   public static function createWebhook($paymentProcessorId) {
     $processor = \Civi\Payment\System::singleton()->getById($paymentProcessorId);
-    $processor->setAPIParams();
 
     $params = [
       'enabled_events' => self::getDefaultEnabledEvents(),

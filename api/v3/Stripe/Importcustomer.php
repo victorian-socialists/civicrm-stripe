@@ -38,7 +38,6 @@ function civicrm_api3_stripe_importcustomer($params) {
   // Get the payment processor and activate the Stripe API
   /** @var \CRM_Core_Payment_Stripe $paymentProcessor */
   $paymentProcessor = \Civi\Payment\System::singleton()->getById($params['ppid']);
-  $paymentProcessor->setAPIParams();
 
   $customer = $paymentProcessor->stripeClient->customers->retrieve($params['customer']);
 

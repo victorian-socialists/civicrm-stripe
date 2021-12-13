@@ -98,7 +98,6 @@ class CRM_Core_Payment_StripeIPN {
   public function setPaymentProcessor($paymentProcessorID) {
     try {
       $this->_paymentProcessor = \Civi\Payment\System::singleton()->getById($paymentProcessorID);
-      $this->_paymentProcessor->setAPIParams();
     }
     catch (Exception $e) {
       $this->exception('Failed to get payment processor');

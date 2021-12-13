@@ -60,9 +60,6 @@ class CRM_Stripe_ApiTest extends CRM_Stripe_BaseTest {
    */
   public function testImportSubscription() {
     $this->mockStripeSubscription();
-    /** @var \CRM_Core_Payment_Stripe $paymentProcessor */
-    $paymentProcessor = \Civi\Payment\System::singleton()->getById($this->paymentProcessorID);
-    $paymentProcessor->setAPIParams();
 
     $result = civicrm_api3('Stripe', 'importsubscription', [
       'subscription' => 'sub_mock',
@@ -111,9 +108,6 @@ class CRM_Stripe_ApiTest extends CRM_Stripe_BaseTest {
    */
   public function testImportSubscriptionWithNoInvoice() {
     $this->mockStripeSubscription(['hasPaidInvoice' => FALSE]);
-    /** @var \CRM_Core_Payment_Stripe $paymentProcessor */
-    $paymentProcessor = \Civi\Payment\System::singleton()->getById($this->paymentProcessorID);
-    $paymentProcessor->setAPIParams();
 
     $result = civicrm_api3('Stripe', 'importsubscription', [
       'subscription' => 'sub_mock',

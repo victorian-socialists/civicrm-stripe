@@ -109,8 +109,6 @@ class CRM_Stripe_PaymentIntent {
       }
     }
 
-    $stripe->setAPIParams();
-
     $intent = $stripe->stripeClient->paymentIntents->retrieve($params['id']);
     $intent->cancel();
   }
@@ -128,8 +126,6 @@ class CRM_Stripe_PaymentIntent {
         throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe PaymentIntent (getFromStripe): Missing required parameter: ' . $required);
       }
     }
-
-    $stripe->setAPIParams();
 
     $intent = $stripe->stripeClient->paymentIntents->retrieve($params['id']);
     $paymentIntent = self::get($params);

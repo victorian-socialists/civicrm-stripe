@@ -45,7 +45,6 @@ function civicrm_api3_job_process_stripe($params) {
       try {
         /** @var \CRM_Core_Payment_Stripe $paymentProcessor */
         $paymentProcessor = Civi\Payment\System::singleton()->getById($detail['payment_processor_id']);
-        $paymentProcessor->setAPIParams();
         $intent = $paymentProcessor->stripeClient->paymentIntents->retrieve($detail['stripe_intent_id']);
         $intent->cancel(['cancellation_reason' => 'abandoned']);
       } catch (Exception $e) {

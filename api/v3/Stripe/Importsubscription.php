@@ -31,7 +31,6 @@ function civicrm_api3_stripe_importsubscription($params) {
 
   /** @var \CRM_Core_Payment_Stripe $paymentProcessor */
   $paymentProcessor = \Civi\Payment\System::singleton()->getById($params['ppid']);
-  $paymentProcessor->setAPIParams();
 
   // Now re-retrieve the data from Stripe to ensure it's legit.
   $stripeSubscription = $paymentProcessor->stripeClient->subscriptions->retrieve($params['subscription']);

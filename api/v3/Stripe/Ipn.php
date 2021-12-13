@@ -61,7 +61,6 @@ function civicrm_api3_stripe_Ipn($params) {
     if (preg_match('/processor_id=([0-9]+)$/', $data['message'], $matches)) {
       $paymentProcessorID = $matches[1];
       $paymentProcessor = \Civi\Payment\System::singleton()->getById($paymentProcessorID);
-      $paymentProcessor->setAPIParams();
     }
     else {
       throw new API_Exception('Failed to find payment processor id in system log', 3235);
@@ -74,7 +73,6 @@ function civicrm_api3_stripe_Ipn($params) {
     }
     $paymentProcessorID = $params['ppid'];
     $paymentProcessor = \Civi\Payment\System::singleton()->getById($paymentProcessorID);
-    $paymentProcessor->setAPIParams();
     $stripeObject = $paymentProcessor->stripeClient->events->retrieve($params['evtid']);
   }
   else {

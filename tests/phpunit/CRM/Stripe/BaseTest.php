@@ -121,8 +121,6 @@ abstract class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implement
     $this->paymentProcessor = $processor;
     $this->paymentProcessorID = $result['id'];
     $this->paymentObject = \Civi\Payment\System::singleton()->getById($result['id']);
-    // Set params, creates stripeClient
-    $this->paymentObject->setAPIParams();
   }
 
   /**
@@ -205,7 +203,6 @@ abstract class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implement
     $this->assertNotEmpty($this->trxn_id, "A trxn id was assigned");
 
     $processor = \Civi\Payment\System::singleton()->getById($this->paymentProcessorID);
-    $processor->setAPIParams();
 
     try {
       $processor->stripeClient->charges->retrieve($this->trxn_id);

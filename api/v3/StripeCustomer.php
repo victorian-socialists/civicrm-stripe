@@ -250,11 +250,10 @@ function civicrm_api3_stripe_customer_updatestripemetadata($params) {
 
     /** @var \CRM_Core_Payment_Stripe $paymentProcessor */
     $paymentProcessor = \Civi\Payment\System::singleton()->getById($customerParams['processor_id']);
-    $paymentProcessor->setAPIParams();
 
     // Get the stripe customer from stripe
     try {
-      $stripeCustomer = $paymentProcessor->stripeClient->customers->retrieve($customerId);
+      $paymentProcessor->stripeClient->customers->retrieve($customerId);
     } catch (Exception $e) {
       $err = CRM_Core_Payment_Stripe::parseStripeException('retrieve_customer', $e, FALSE);
       $errorMessage = $paymentProcessor->handleErrorNotification($err, NULL);

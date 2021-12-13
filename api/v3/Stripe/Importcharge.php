@@ -59,7 +59,6 @@ function civicrm_api3_stripe_importcharge($params) {
   // Get the payment processor and activate the Stripe API
   /** @var \CRM_Core_Payment_Stripe $paymentProcessor */
   $paymentProcessor = \Civi\Payment\System::singleton()->getById($params['ppid']);
-  $paymentProcessor->setAPIParams();
 
   // Retrieve the Stripe charge.
   $stripeCharge = $paymentProcessor->stripeClient->charges->retrieve($params['charge']);

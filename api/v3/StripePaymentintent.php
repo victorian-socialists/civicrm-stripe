@@ -191,7 +191,6 @@ function civicrm_api3_stripe_paymentintent_process($params) {
   /** @var CRM_Core_Payment_Stripe $paymentProcessor */
   $paymentProcessor = \Civi\Payment\System::singleton()->getById($paymentProcessorID);
   ($paymentProcessor->getPaymentProcessor()['class_name'] === 'Payment_Stripe') ?: _civicrm_api3_stripe_paymentintent_returnInvalid();
-  $paymentProcessor->setAPIParams();
 
   $intentParams['confirmation_method'] = 'manual';
   if (empty($paymentIntentID) && empty($paymentMethodID)) {

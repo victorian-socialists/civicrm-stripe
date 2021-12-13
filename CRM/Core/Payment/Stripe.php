@@ -9,6 +9,7 @@
  +--------------------------------------------------------------------+
  */
 
+use Civi\Api4\PaymentprocessorWebhook;
 use CRM_Stripe_ExtensionUtil as E;
 use Civi\Payment\PropertyBag;
 
@@ -44,6 +45,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       $secretKey = self::getSecretKey($this->_paymentProcessor);
       // You can configure only one of live/test so don't initialize StripeClient if keys are blank
       if (!empty($secretKey)) {
+        $this->setAPIParams();
         $this->stripeClient = new \Stripe\StripeClient($secretKey);
       }
     }
@@ -513,9 +515,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     $newParams = [];
     CRM_Utils_Hook::alterPaymentProcessorParams($this, $params, $newParams);
 
-    // Set our Stripe API parameters
-    $this->setAPIParams();
-
     $amountFormattedForStripe = self::getAmount($params);
     $email = $this->getBillingEmail($params, $propertyBag->getContactID());
 
@@ -893,8 +892,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       }
     }
 
-    $this->setAPIParams();
-
     $refundParams = [
       'charge' => $params['trxn_id'],
     ];
@@ -1130,8 +1127,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     if (!$notifyProcessor) {
       return ['message' => E::ts('Successfully cancelled the subscription in CiviCRM ONLY.')];
     }
-
-    $this->setAPIParams();
 
     if (!$propertyBag->has('recurProcessorID')) {
       $errorMessage = E::ts('The recurring contribution cannot be cancelled (No reference (trxn_id) found).');
