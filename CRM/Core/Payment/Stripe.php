@@ -12,6 +12,7 @@
 use Civi\Api4\PaymentprocessorWebhook;
 use CRM_Stripe_ExtensionUtil as E;
 use Civi\Payment\PropertyBag;
+use Stripe\Stripe;
 
 /**
  * Class CRM_Core_Payment_Stripe
@@ -218,13 +219,13 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    */
   public function setAPIParams() {
     // Use CiviCRM log file
-    \Stripe\Stripe::setLogger(\Civi::log());
+    Stripe::setLogger(\Civi::log());
     // Attempt one retry (Stripe default is 0) if we can't connect to Stripe servers
-    \Stripe\Stripe::setMaxNetworkRetries(1);
+    Stripe::setMaxNetworkRetries(1);
     // Set plugin info and API credentials.
-    \Stripe\Stripe::setAppInfo('CiviCRM', CRM_Utils_System::version(), CRM_Utils_System::baseURL());
-    \Stripe\Stripe::setApiKey(self::getSecretKey($this->_paymentProcessor));
-    \Stripe\Stripe::setApiVersion(CRM_Stripe_Check::API_VERSION);
+    Stripe::setAppInfo('CiviCRM', CRM_Utils_System::version(), CRM_Utils_System::baseURL());
+    Stripe::setApiKey(self::getSecretKey($this->_paymentProcessor));
+    Stripe::setApiVersion(CRM_Stripe_Check::API_VERSION);
   }
 
   /**
