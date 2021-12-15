@@ -150,7 +150,6 @@ function stripe_civicrm_buildForm($formName, &$form) {
 
       /** @var \CRM_Core_Payment_Stripe $paymentProcessor */
       $paymentProcessor = \Civi\Payment\System::singleton()->getById($form->_paymentProcessor['id']);
-      $paymentProcessor->setAPIParams();
       try {
         $jsVars = [
           'id' => $form->_paymentProcessor['id'],
@@ -164,7 +163,7 @@ function stripe_civicrm_buildForm($formName, &$form) {
         switch (substr($paymentIntent['stripe_intent_id'], 0, 2)) {
           case 'pi':
             // pi_ Stripe PaymentIntent
-            $stripePaymentIntent = \Stripe\PaymentIntent::retrieve($paymentIntent['stripe_intent_id']);
+            $stripePaymentIntent = $paymentProcessor->stripeClient->paymentIntents->retrieve($paymentIntent['stripe_intent_id']);
             // We need the confirmation_method to decide whether to use handleCardAction (manual) or handleCardPayment (automatic) on the js side
             $jsVars['paymentIntentID'] = $stripePaymentIntent->id;
             $jsVars['intentStatus'] = $stripePaymentIntent->status;
@@ -173,7 +172,7 @@ function stripe_civicrm_buildForm($formName, &$form) {
 
           case 'se':
             // seti_ Stripe SetupIntent
-            $stripeSetupIntent = \Stripe\SetupIntent::retrieve($paymentIntent['stripe_intent_id']);
+            $stripeSetupIntent = $paymentProcessor->stripeClient->setupIntents->retrieve($paymentIntent['stripe_intent_id']);
             $jsVars['setupIntentID'] = $stripeSetupIntent->id;
             $jsVars['setupIntentNextAction'] = $stripeSetupIntent->next_action;
             $jsVars['setupIntentClientSecret'] = $stripeSetupIntent->client_secret;

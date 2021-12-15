@@ -158,21 +158,22 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
     $dbName = DB::connect($config->dsn)->_db;
 
     $null_count =  CRM_Core_DAO::executeQuery('SELECT COUNT(*) FROM civicrm_stripe_subscriptions where subscription_id IS NULL');
-    if ( $null_count == 0 ) {
+    if ($null_count == 0) {
       $this->ctx->log->info('Skipped civicrm_stripe update 5004.  No nulls found in column subscription_id in our civicrm_stripe_subscriptions table.');
     }
     else {
       $customer_infos = CRM_Core_DAO::executeQuery("SELECT customer_id,processor_id
       FROM `civicrm_stripe_subscriptions`;");
-      while ( $customer_infos->fetch() ) {
+      while ($customer_infos->fetch()) {
         $processor_id = $customer_infos->processor_id;
         $customer_id = $customer_infos->customer_id;
         try {
-          $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $processor_id]));
+          /** @var \CRM_Core_Payment_Stripe $paymentProcessor */
+          $paymentProcessor = \Civi\Payment\System::singleton()->getById($processor_id);
 
-          $subscription = \Stripe\Subscription::all([
-            'customer'=> $customer_id,
-            'limit'=>1,
+          $subscription = $paymentProcessor->stripeClient->subscriptions->all([
+            'customer' => $customer_id,
+            'limit' => 1,
           ]);
         }
         catch (Exception $e) {

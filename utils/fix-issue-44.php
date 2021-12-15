@@ -51,10 +51,12 @@ while ($dao->fetch()) {
   if (!$paymentProcessor) {
     echo "Failed to find a stripe payment processor for recurring contrib $dao->contribution_recur_id\n";
   }
-  $processor = new CRM_Core_Payment_Stripe('', civicrm_api3('PaymentProcessor', 'getsingle', ['id' => $paymentProcessor['id']]));
+
+  /** @var \CRM_Core_Payment_Stripe $processor */
+  $processor = \Civi\Payment\System::singleton()->getById($paymentProcessor['id']);
 
   try {
-    $results = Charge::retrieve(['id' => $dao->trxn_id]);
+    $results = $processor->stripeClient->charges->retrieve($dao->trxn_id);
     //print json_encode($results, JSON_PRETTY_PRINT);
     if (empty($results->created)) {
       echo " Failed to retrieve a charge created date\n";
