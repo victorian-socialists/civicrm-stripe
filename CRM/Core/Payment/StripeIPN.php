@@ -333,13 +333,17 @@ class CRM_Core_Payment_StripeIPN {
     }
 
     // Record that we have processed this webhook (success or error)
-    PaymentprocessorWebhook::update(FALSE)
+    $paymentProcessorWebhookUpdate = PaymentprocessorWebhook::update(FALSE)
       ->addWhere('event_id', '=', $this->getEventID())
       ->addWhere('trigger', '=', $this->getEventType())
       ->addValue('status', $return->ok ? 'success' : 'error')
-      ->addValue('message', preg_replace('/^(.{250}).*/su', '$1 ...', $return->message))
-      ->addValue('processed_date', 'now')
-      ->execute();
+      ->addValue('processed_date', 'now');
+
+    // Only add message if not empty
+    if (!empty($return->message)) {
+      $paymentProcessorWebhookUpdate->addValue('message', preg_replace('/^(.{250}).*/su', '$1 ...', $return->message));
+    }
+    $paymentProcessorWebhookUpdate->execute();
 
     return $return;
   }
