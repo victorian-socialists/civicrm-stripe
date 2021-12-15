@@ -258,9 +258,10 @@ class CRM_Core_Payment_StripeIPN {
     // In mjwshared 1.1 status defaults to NULL. In 1.2 status defaults to "new".
     PaymentprocessorWebhook::create(FALSE)
       ->addValue('payment_processor_id', $this->_paymentProcessor->getID())
-      ->addValue('trigger', $this->eventType)
+      ->addValue('trigger', $this->getEventType())
       ->addValue('identifier', $uniqueIdentifier)
-      ->addValue('event_id', $this->eventID)
+      ->addValue('event_id', $this->getEventID())
+      ->addValue('data', $this->getData())
       ->execute();
 
     // Check the number of webhooks to be processed does not exceed connection-limit
@@ -311,7 +312,7 @@ class CRM_Core_Payment_StripeIPN {
    * @throws \Civi\API\Exception\UnauthorizedException
    */
   public function processWebhookEvent() :StdClass {
-    $return = (object) ['message' => NULL, 'ok' => FALSE, 'exception' => NULL];
+    $return = (object) ['message' => '', 'ok' => FALSE, 'exception' => NULL];
     try {
       $this->setInputParameters();
       $return->ok = $this->processEventType();
@@ -327,7 +328,7 @@ class CRM_Core_Payment_StripeIPN {
         $return->ok = FALSE;
         $return->message = $e->getMessage(). "\n" . $e->getTraceAsString();
         $return->exception = $e;
-        \Civi::log()->error("StripeIPN: processEventType failed. EventID: {$this->eventID} : " . $return->message);
+        \Civi::log()->error("StripeIPN: processWebhookEvent failed. EventID: {$this->eventID} : " . $return->message);
       }
     }
 

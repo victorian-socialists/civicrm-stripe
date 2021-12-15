@@ -1167,7 +1167,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     if (!$ipnClass->setEventType($event->type)) {
       // We don't handle this event
       return;
-    };
+    }
     $ipnClass->setVerifyData(TRUE);
     $ipnClass->setPaymentProcessor(CRM_Utils_Request::retrieveValue('processor_id', 'Positive', NULL, FALSE, 'GET'));
     $ipnClass->onReceiveWebhook();
