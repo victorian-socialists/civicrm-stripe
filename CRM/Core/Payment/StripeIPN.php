@@ -327,7 +327,15 @@ class CRM_Core_Payment_StripeIPN {
       else {
         // Normal use.
         $return->ok = FALSE;
-        $return->message = $e->getMessage(). "\n" . $e->getTraceAsString();
+        if (($e instanceof \Stripe\Exception\InvalidRequestException) && ($e->getHttpStatus() === 404)) {
+          /** @var \Stripe\Exception\InvalidRequestException $e */
+          // Probably "is no longer available because it's aged out of our retention policy"
+          // We don't need a backtrace
+          $return->message = $e->getMessage();
+        }
+        else {
+          $return->message = $e->getMessage() . "\n" . $e->getTraceAsString();
+        }
         $return->exception = $e;
         \Civi::log()->error("StripeIPN: processWebhookEvent failed. EventID: {$this->eventID} : " . $return->message);
       }
