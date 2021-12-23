@@ -339,6 +339,10 @@ class CRM_Core_Payment_StripeIPN {
       ->addValue('status', $return->ok ? 'success' : 'error')
       ->addValue('processed_date', 'now');
 
+    if ($return->ok && empty($return->message)) {
+      // We may have had error messages or eg. "scheduled for retry" but don't need this now we succeeded.
+      $paymentProcessorWebhookUpdate->addValue('message', '');
+    }
     // Only add message if not empty
     if (!empty($return->message)) {
       $paymentProcessorWebhookUpdate->addValue('message', preg_replace('/^(.{250}).*/su', '$1 ...', $return->message));
