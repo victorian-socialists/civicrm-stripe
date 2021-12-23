@@ -9,6 +9,7 @@
  +--------------------------------------------------------------------+
  */
 
+use Civi\Api4\ContributionRecur;
 use Civi\Api4\PaymentprocessorWebhook;
 
 /**
@@ -657,22 +658,20 @@ class CRM_Core_Payment_StripeIPN {
     }
 
     // Get the recurring contribution record associated with the Stripe subscription.
-    try {
-      $contributionRecur = \Civi\Api4\ContributionRecur::get(FALSE)
-        ->addWhere('trxn_id', '=', $this->subscription_id)
-        ->addWhere('is_test', 'IN', [TRUE, FALSE])
-        ->execute()
-        ->first();
-      $this->contribution_recur_id = $contributionRecur['id'];
-      $this->contributionRecur = $contributionRecur;
-    }
-    catch (Exception $e) {
+    $contributionRecur = ContributionRecur::get(FALSE)
+      ->addWhere('trxn_id', '=', $this->subscription_id)
+      ->addWhere('is_test', 'IN', [TRUE, FALSE])
+      ->execute()
+      ->first();
+    if (empty($contributionRecur)) {
       if ((bool)\Civi::settings()->get('stripe_ipndebug')) {
         $message = $this->_paymentProcessor->getPaymentProcessorLabel() . ': ' . $this->getEventID() . ': Cannot find recurring contribution for subscription ID: ' . $this->subscription_id;
         Civi::log()->debug($message);
       }
       return FALSE;
     }
+    $this->contribution_recur_id = $contributionRecur['id'];
+    $this->contributionRecur = $contributionRecur;
     return TRUE;
   }
 
