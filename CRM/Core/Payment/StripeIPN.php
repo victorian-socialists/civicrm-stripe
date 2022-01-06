@@ -566,6 +566,11 @@ class CRM_Core_Payment_StripeIPN {
           return TRUE;
         }
 
+        // We only process charge.captured for one-off contributions
+        if (empty(CRM_Stripe_Api::getObjectParam('captured', $this->getData()->object))) {
+          return TRUE;
+        };
+
         // If contribution is in Pending or Failed state record payment and transition to Completed
         if (in_array($this->contribution['contribution_status_id'], $statusesAllowedToComplete)) {
           $params = [
