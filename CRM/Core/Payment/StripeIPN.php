@@ -232,7 +232,7 @@ class CRM_Core_Payment_StripeIPN {
       // We have not received this webhook before.
       // Some webhooks we always add to the queue and do not process immediately (eg. invoice.finalized)
       if (in_array($this->eventType, CRM_Stripe_Webhook::getDelayProcessingEvents())) {
-        // Process the webhook immediately. @todo is this comment correct? surely it means do NOT process webhook immediately?
+        // Never process the webhook immediately.
         $processWebhook = FALSE;
       }
     }
@@ -271,10 +271,9 @@ class CRM_Core_Payment_StripeIPN {
         ->addWhere('processed_date', 'IS NULL')
         ->execute();
 
-    // Limit on webhooks that will be processed immediately. Otherwise we delay execution. 0=unlimited.
+    // Limit on webhooks that will be processed immediately. Otherwise we delay execution.
     $webhookProcessingLimit = (int)\Civi::settings()->get('stripe_webhook_processing_limit');
-    if (!$processWebhook
-      || (($toBeProcessedWebhook->rowCount > $webhookProcessingLimit) && ($webhookProcessingLimit > 0))) {
+    if (!$processWebhook || ($toBeProcessedWebhook->rowCount > $webhookProcessingLimit)) {
         return TRUE;
     }
 

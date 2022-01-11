@@ -627,7 +627,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
    * want stripe to resend something again later)
    */
   public function ipn($event, $verifyRequest = TRUE, $exceptionOnFailure=FALSE) {
-    $ipnClass = new CRM_Core_Payment_StripeIPN();
+    $ipnClass = new CRM_Core_Payment_StripeIPN($this->paymentObject);
 
     if ($exceptionOnFailure) {
       // We don’t' expect failure, so ensure exceptions are not caught.
@@ -642,7 +642,6 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     if (!$verifyRequest) {
       $ipnClass->setData($event->data);
     }
-    $ipnClass->setPaymentProcessor($this->paymentProcessorID);
     $ipnClass->setExceptionMode(FALSE);
 
     // This code commented as $emailReceipt is never passed in/set.

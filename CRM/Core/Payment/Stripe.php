@@ -13,6 +13,7 @@ use Civi\Api4\PaymentprocessorWebhook;
 use CRM_Stripe_ExtensionUtil as E;
 use Civi\Payment\PropertyBag;
 use Stripe\Stripe;
+use Civi\Payment\Exception\PaymentProcessorException;
 
 /**
  * Class CRM_Core_Payment_Stripe
@@ -1185,7 +1186,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       return;
     }
     $ipnClass->setVerifyData(TRUE);
-    $ipnClass->setPaymentProcessor(CRM_Utils_Request::retrieveValue('processor_id', 'Positive', NULL, FALSE, 'GET'));
     $ipnClass->onReceiveWebhook();
   }
 
@@ -1209,7 +1209,11 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     http_response_code(200);
 
     $event = json_decode($rawData);
-    $ipnClass = new CRM_Core_Payment_StripeIPN();
+    $paymentProcessorObject = \Civi\Payment\System::singleton()->getById($paymentProcessorID);
+    if (!($paymentProcessorObject instanceof CRM_Core_Payment_Stripe)) {
+      throw new PaymentProcessorException('Failed to get payment processor');
+    }
+    $ipnClass = new CRM_Core_Payment_StripeIPN($paymentProcessorObject);
     $ipnClass->setEventID($event->id);
     if (!$ipnClass->setEventType($event->type)) {
       // We don't handle this event
@@ -1219,7 +1223,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     if (!$verifyRequest) {
       $ipnClass->setData($event->data);
     }
-    $ipnClass->setPaymentProcessor($paymentProcessorID);
     $ipnClass->setExceptionMode(FALSE);
     if (isset($emailReceipt)) {
       $ipnClass->setSendEmailReceipt($emailReceipt);

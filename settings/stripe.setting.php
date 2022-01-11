@@ -178,7 +178,7 @@ Required by the paymentRequest button. 2-character code (eg. "US") that can be f
     'is_domain' => 1,
     'is_contact' => 0,
     'title' => E::ts('Maximum number of webhooks to process simultaneously.'),
-    'description' => E::ts('Default 50. 0=Unlimited. This helps prevents webhooks from Stripe failing if a large number are triggered at the same time by delaying processing of any over this limit.'),
+    'description' => E::ts('Default 50. This helps prevents webhooks from Stripe failing if a large number are triggered at the same time by delaying processing of any over this limit.'),
     'html_attributes' => [
       'size' => 10,
       'maxlength' => 3,

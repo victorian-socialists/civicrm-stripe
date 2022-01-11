@@ -9,6 +9,7 @@
  +--------------------------------------------------------------------+
  */
 
+use Civi\Payment\Exception\PaymentProcessorException;
 use CRM_Stripe_ExtensionUtil as E;
 
 /**
@@ -31,8 +32,11 @@ function _civicrm_api3_stripe_invoice_process_spec(&$spec) {
 }
 
 function civicrm_api3_stripe_invoice_process($params) {
-  $ipnClass = new CRM_Core_Payment_StripeIPN();
-  $ipnClass->setPaymentProcessor($params['payment_processor_id']);
+  $paymentProcessorObject = \Civi\Payment\System::singleton()->getById($params['payment_processor_id']);
+  if (!($paymentProcessorObject instanceof CRM_Core_Payment_Stripe)) {
+    throw new PaymentProcessorException('Failed to get payment processor');
+  }
+  $ipnClass = new CRM_Core_Payment_StripeIPN($paymentProcessorObject);
   $stripeInvoiceObject = $ipnClass->getPaymentProcessor()->stripeClient->invoices->retrieve($params['invoice_id']);
 
   if ($stripeInvoiceObject->paid === TRUE) {
