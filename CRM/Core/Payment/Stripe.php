@@ -14,6 +14,7 @@ use CRM_Stripe_ExtensionUtil as E;
 use Civi\Payment\PropertyBag;
 use Stripe\Stripe;
 use Civi\Payment\Exception\PaymentProcessorException;
+use Stripe\Webhook;
 
 /**
  * Class CRM_Core_Payment_Stripe
@@ -69,6 +70,13 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    */
   public static function getPublicKey($paymentProcessor) {
     return trim($paymentProcessor['user_name'] ?? '');
+  }
+
+  /**
+   * @return string
+   */
+  public function getWebhookSecret(): string {
+    return trim($this->_paymentProcessor['signature']);
   }
 
   /**
@@ -1185,7 +1193,32 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       // We don't handle this event
       return;
     }
-    $ipnClass->setVerifyData(TRUE);
+
+    $webhookSecret = $this->getWebhookSecret();
+    if (!empty($webhookSecret)) {
+      $sigHeader = $_SERVER['HTTP_STRIPE_SIGNATURE'];
+
+      try {
+        Webhook::constructEvent(
+          $rawData, $sigHeader, $webhookSecret
+        );
+        $ipnClass->setVerifyData(FALSE);
+      } catch (\UnexpectedValueException $e) {
+        // Invalid payload
+        \Civi::log()->error('Stripe webhook signature validation error: ' . $e->getMessage());
+        http_response_code(400);
+        exit();
+      } catch (\Stripe\Exception\SignatureVerificationException $e) {
+        // Invalid signature
+        \Civi::log()->error('Stripe webhook signature validation error: ' . $e->getMessage());
+        http_response_code(400);
+        exit();
+      }
+    }
+    else {
+      $ipnClass->setVerifyData(TRUE);
+    }
+
     $ipnClass->onReceiveWebhook();
   }
 
