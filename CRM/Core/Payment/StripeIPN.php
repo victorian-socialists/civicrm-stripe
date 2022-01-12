@@ -733,7 +733,7 @@ class CRM_Core_Payment_StripeIPN {
         $message = $this->_paymentProcessor->getPaymentProcessorLabel() . 'No matching contributions for event ' . $this->getEventID();
         Civi::log()->debug($message);
       }
-      $result = NULL;
+      $result = [];
       CRM_Mjwshared_Hook::webhookEventNotMatched('stripe', $this, 'contribution_not_found', $result);
       if (empty($result['contribution'])) {
         return FALSE;
