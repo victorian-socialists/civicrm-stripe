@@ -32,8 +32,20 @@ class CRM_Core_Payment_StripeIPN {
   protected $contactID = NULL;
 
   // Properties of the event.
+
+  /**
+   * @var string The Stripe Subscription ID
+   */
   protected $subscription_id = NULL;
+
+  /**
+   * @var string The Stripe Customer ID
+   */
   protected $customer_id = NULL;
+
+  /**
+   * @var string The Stripe Charge ID
+   */
   protected $charge_id = NULL;
 
   /**
@@ -111,6 +123,34 @@ class CRM_Core_Payment_StripeIPN {
     catch (Exception $e) {
       $this->exception('Failed to get payment processor');
     }
+  }
+
+  /**
+   * @return string|null
+   */
+  public function getStripeCustomerID() {
+    return $this->customer_id;
+  }
+
+  /**
+   * @return string|null
+   */
+  public function getStripeSubscriptionID() {
+    return $this->subscription_id;
+  }
+
+  /**
+   * @return string|null
+   */
+  public function getStripeInvoiceID() {
+    return $this->invoice_id;
+  }
+
+  /**
+   * @return string|null
+   */
+  public function getStripeChargeID() {
+    return $this->charge_id;
   }
 
   /**
