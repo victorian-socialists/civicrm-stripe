@@ -47,22 +47,36 @@ class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implements Headles
   protected $total = '400.00';
 
   public function setUpHeadless() {
-    return \Civi\Test::headless()
-      ->install('mjwshared')
-      ->installMe(__DIR__)
-      ->apply();
   }
 
-  public function setUp() {
+  public function setUp(): void {
     parent::setUp();
+    // we only need to do the shared library once
+    if (!is_dir(__DIR__ . '/../../../../../mjwshared')) {
+      civicrm_api3('Extension', 'download', ['key' => 'mjwshared']);
+    }
+    else {
+      civicrm_api3('Extension', 'install', ['keys' => 'mjwshared']);
+    }
+    civicrm_api3('Extension', 'install', ['keys' => 'com.drastikbydesign.stripe']);
     require_once('vendor/stripe/stripe-php/init.php');
     $this->createPaymentProcessor();
     $this->createContact();
     $this->created_ts = time();
   }
 
-  public function tearDown() {
+  public function tearDown(): void {
+    civicrm_api3('PaymentProcessor', 'delete', ['id' => $this->paymentProcessorID]);
+    civicrm_api3('Extension', 'disable', ['keys' => 'com.drastikbydesign.stripe']);
+    civicrm_api3('Extension', 'uninstall', ['keys' => 'com.drastikbydesign.stripe']);
     parent::tearDown();
+  }
+
+  /**
+   *
+   */
+  protected function returnValueMapOrDie($map): ValueMapOrDie {
+    return new ValueMapOrDie($map);
   }
 
   /**

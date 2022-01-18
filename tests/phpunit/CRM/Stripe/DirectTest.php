@@ -9,32 +9,18 @@
  +--------------------------------------------------------------------+
  */
 
-use Civi\Test\HeadlessInterface;
-use Civi\Test\HookInterface;
-use Civi\Test\TransactionalInterface;
-
 /**
  * Test a simple, direct payment via Stripe. 
  *
  * @group headless
  */
-require ('BaseTest.php');
 class CRM_Stripe_DirectTest extends CRM_Stripe_BaseTest {
 
-  public function setUpHeadless() {
-    // Civi\Test has many helpers, like install(), uninstall(), sql(), and sqlFile().
-    // See: https://github.com/civicrm/org.civicrm.testapalooza/blob/master/civi-test.md
-    return \Civi\Test::headless()
-      ->install('mjwshared')
-      ->installMe(__DIR__)
-      ->apply();
-  }
-
-  public function setUp() {
+  public function setUp(): void {
     parent::setUp();
   }
 
-  public function tearDown() {
+  public function tearDown(): void {
     parent::tearDown();
   }
 

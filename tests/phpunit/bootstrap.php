@@ -10,9 +10,9 @@
  */
 
 ini_set('memory_limit', '2G');
-ini_set('safe_mode', 0);
+define('CIVICRM_TEST', 1);
 // phpcs:ignore
-eval(cv('php:boot --level=classloader', 'phpcode'));
+eval(cv('php:boot --level=settings', 'phpcode'));
 
 // Allow autoloading of PHPUnit helper classes in this extension.
 $loader = new \Composer\Autoload\ClassLoader();
@@ -21,6 +21,10 @@ $loader->add('Civi\\', __DIR__);
 $loader->add('api_', __DIR__);
 $loader->add('api\\', __DIR__);
 $loader->register();
+
+if (CIVICRM_UF === 'UnitTests') {
+  Civi\Test::headless()->apply();
+}
 
 /**
  * Call the "cv" command.
@@ -42,7 +46,9 @@ function cv($cmd, $decode = 'json') {
 
   // Execute `cv` in the original folder. This is a work-around for
   // phpunit/codeception, which seem to manipulate PWD.
-  $cmd = sprintf('cd %s; %s', escapeshellarg(getenv('PWD')), $cmd);
+  if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+    $cmd = sprintf('cd %s; %s', escapeshellarg(getenv('PWD')), $cmd);
+  }
 
   $process = proc_open($cmd, $descriptorSpec, $pipes, __DIR__);
   putenv("CV_OUTPUT=$oldOutput");

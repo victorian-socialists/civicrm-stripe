@@ -27,32 +27,17 @@
  *
  */
 
-use Civi\Test\HeadlessInterface;
-use Civi\Test\HookInterface;
-use Civi\Test\TransactionalInterface;
-
 /**
  * Tests simple recurring contribution with IPN.
  *
  * @group headless
  */
-require ('BaseTest.php');
 class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
   protected $contributionRecurID;
   protected $installments = 5;
   protected $frequency_unit = 'month';
   protected $frequency_interval = 1;
   protected $created_ts;
-
-  // This test is particularly dirty for some reason so we have to
-  // force a reset.
-  public function setUpHeadless() {
-    $force = FALSE;
-    return \Civi\Test::headless()
-      ->install('mjwshared')
-      ->installMe(__DIR__)
-      ->apply($force);
-  }
 
   /**
    * Test creating a recurring contribution and
@@ -1238,7 +1223,9 @@ class PropertySpy implements ArrayAccess, Iterator, Countable, JsonSerializable 
 /**
  * Stubs a method by returning a value from a map.
  */
-class ValueMapOrDie implements \PHPUnit\Framework\MockObject\Stub {
+class ValueMapOrDie implements \PHPUnit\Framework\MockObject\Stub\Stub {
+
+  use \PHPUnit\Framework\MockObject\Api;
 
   protected $valueMap;
 
