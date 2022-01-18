@@ -517,6 +517,8 @@ class PropertySpy implements ArrayAccess, Iterator, Countable, JsonSerializable 
  */
 class ValueMapOrDie implements \PHPUnit\Framework\MockObject\Stub {
 
+  use \PHPUnit\Framework\MockObject\Api;
+
   protected $valueMap;
 
   public function __construct(array $valueMap) {
