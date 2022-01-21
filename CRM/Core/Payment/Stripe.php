@@ -431,11 +431,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'country' => \Civi::settings()->get('stripe_country'),
     ];
 
-    // Add help and javascript
-    CRM_Core_Region::instance('billing-block')->add(
-      ['template' => 'CRM/Core/Payment/Stripe/Card.tpl', 'weight' => -1]);
     // Add CSS via region (it won't load on drupal webform if added via \Civi::resources()->addStyleFile)
-
     CRM_Core_Region::instance('billing-block')->add([
       'styleUrl' => \Civi::service('asset_builder')->getUrl(
         'elements.css',
@@ -462,8 +458,14 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     CRM_Stripe_Recur::buildFormFutureRecurStartDate($form, $this, $jsVars);
 
     \Civi::resources()->addVars(E::SHORT_NAME, $jsVars);
-    // Assign to smarty so we can add via Card.tpl for drupal webform because addVars doesn't work in that context
-    $form->assign('stripeJSVars', $jsVars);
+    // CMS-specific handling
+    if (in_array(CRM_Core_Config::singleton()->userFramework, ['Drupal', 'Drupal8'])) {
+      // Assign to smarty so we can add via Card.tpl for drupal webform because addVars doesn't work in that context
+      // Required in Drupal7. Not sure if required in Drupal8/9.
+      $form->assign('stripeJSVars', $jsVars);
+      CRM_Core_Region::instance('billing-block')->add(
+        ['template' => 'CRM/Core/Payment/Stripe/Card.tpl', 'weight' => -1]);
+    }
 
     // Enable JS validation for forms so we only (submit) create a paymentIntent when the form has all fields validated.
     $form->assign('isJsValidate', TRUE);
