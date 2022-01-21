@@ -170,7 +170,7 @@
                     if (paymentIntentProcessResponse.requires_action) {
                       // Use Stripe.js to handle a pending card action (eg. 3d-secure)
                       script.paymentData.clientSecret = paymentIntentProcessResponse.paymentIntentClientSecret;
-                      stripe.handleCardAction(paymentData.clientSecret)
+                      stripe.handleCardAction(script.paymentData.clientSecret)
                         .then(function (cardActionResult) {
                           if (cardActionResult.error) {
                             // Show error in payment form
