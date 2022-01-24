@@ -880,23 +880,29 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       }
     }
     catch (Exception $e) {
-      $this->handleError($e->getCode(), $e->getMessage(), $params['error_url']);
+      $errorMessage = $e->getMessage();
+      $this->handleError($e->getCode(), $errorMessage, $params['error_url']);
+      if ($e instanceof \Stripe\Exception\CardException) {
+        throw new PaymentProcessorException($errorMessage);
+      }
     }
-
-    // Update the paymentIntent in the CiviCRM database for later tracking
-    $intentParams = [
-      'stripe_intent_id' => $intent->id,
-      'payment_processor_id' => $this->_paymentProcessor['id'],
-      'status' => $intent->status,
-      'contribution_id' =>  $params['contributionID'] ?? NULL,
-      'description' => $this->getDescription($params, 'description'),
-      'identifier' => $params['qfKey'] ?? NULL,
-      'contact_id' => $params['contactID'],
-    ];
-    if (empty($intentParams['contribution_id'])) {
-      $intentParams['flags'][] = 'NC';
+    finally {
+      // Always update the paymentIntent in the CiviCRM database for later tracking
+      $intentParams = [
+        'stripe_intent_id' => $intent->id,
+        'payment_processor_id' => $this->_paymentProcessor['id'],
+        'status' => $intent->status,
+        'contribution_id' =>  $params['contributionID'] ?? NULL,
+        'description' => $this->getDescription($params, 'description'),
+        'identifier' => $params['qfKey'] ?? NULL,
+        'contact_id' => $params['contactID'],
+        'extra_data' => ($errorMessage ?? '') . ';' . ($email ?? ''),
+      ];
+      if (empty($intentParams['contribution_id'])) {
+        $intentParams['flags'][] = 'NC';
+      }
+      CRM_Stripe_BAO_StripePaymentintent::create($intentParams);
     }
-    CRM_Stripe_BAO_StripePaymentintent::create($intentParams);
 
     return $params;
   }
