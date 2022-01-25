@@ -309,7 +309,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     try {
       $plan = $this->stripeClient->plans->retrieve($planId);
     }
-    catch (Stripe\Exception\InvalidRequestException $e) {
+    catch (\Stripe\Exception\InvalidRequestException $e) {
       $err = self::parseStripeException('plan_retrieve', $e, FALSE);
       if ($err['code'] === 'resource_missing') {
         $formatted_amount = CRM_Utils_Money::formatLocaleNumericRoundedByCurrency(($amount / 100), $currency);
