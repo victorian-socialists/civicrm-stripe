@@ -54,29 +54,31 @@ abstract class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implement
   ];
 
   public function setUpHeadless() {
-  }
+    // Civi\Test has many helpers, like install(), uninstall(), sql(), and sqlFile().
+    // See: https://github.com/civicrm/org.civicrm.testapalooza/blob/master/civi-test.md
+    static $reInstallOnce = TRUE;
 
-  public function setUp(): void {
-    parent::setUp();
-    // we only need to do the shared library once
+    $reInstall = FALSE;
+    if (!isset($reInstallOnce)) {
+      $reInstallOnce=TRUE;
+      $reInstall = TRUE;
+    }
     if (!is_dir(__DIR__ . '/../../../../../mjwshared')) {
       civicrm_api3('Extension', 'download', ['key' => 'mjwshared']);
     }
-    else {
-      civicrm_api3('Extension', 'install', ['keys' => 'mjwshared']);
-    }
+
+    return \Civi\Test::headless()
+      ->installMe(__DIR__)
+      ->install('mjwshared')
+      ->apply($reInstall);
+  }
+
+  public function setUp(): void {
     civicrm_api3('Extension', 'install', ['keys' => 'com.drastikbydesign.stripe']);
     require_once('vendor/stripe/stripe-php/init.php');
     $this->createPaymentProcessor();
     $this->createContact();
     $this->created_ts = time();
-  }
-
-  public function tearDown(): void {
-    civicrm_api3('PaymentProcessor', 'delete', ['id' => $this->paymentProcessorID]);
-    civicrm_api3('Extension', 'disable', ['keys' => 'com.drastikbydesign.stripe']);
-    civicrm_api3('Extension', 'uninstall', ['keys' => 'com.drastikbydesign.stripe']);
-    parent::tearDown();
   }
 
   /**
@@ -515,7 +517,7 @@ class PropertySpy implements ArrayAccess, Iterator, Countable, JsonSerializable 
 /**
  * Stubs a method by returning a value from a map.
  */
-class ValueMapOrDie implements \PHPUnit\Framework\MockObject\Stub {
+class ValueMapOrDie implements \PHPUnit\Framework\MockObject\Stub\Stub {
 
   use \PHPUnit\Framework\MockObject\Api;
 

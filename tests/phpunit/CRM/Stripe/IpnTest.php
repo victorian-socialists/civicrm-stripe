@@ -50,7 +50,6 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
    * update it after creation. @todo The membership should also be updated.
    */
   public function testNewRecurringInvoicePaymentSucceeded() {
-
     $this->mockRecurringPaymentSetup();
     $this->simulateEvent([
       'type'             => 'invoice.payment_succeeded',
@@ -940,7 +939,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     ]);
 
     //
-    // Check the CotnributionRecur
+    // Check the ContributionRecur
     //
     // The subscription ID should be in both processor_id and trxn_id fields
     // We expect it to be pending
@@ -954,7 +953,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
   /**
    *
    */
-  protected function returnValueMapOrDie($map) :ValueMapOrDie {
+  protected function returnValueMapOrDie($map): ValueMapOrDie {
     return new ValueMapOrDie($map);
   }
 
