@@ -21,17 +21,17 @@
     /**
      * Called when payment details have been entered and validated successfully
      *
-     * @param type
-     * @param object
+     * @param {string} objectType
+     * @param {string} objectID
      */
-    successHandler: function(type, object) {
-      script.debugging(type + ': success - submitting form');
+    successHandler: function(objectType, objectID) {
+      script.debugging(objectType + ': success - submitting form');
 
       // Insert the token ID into the form so it gets submitted to the server
       var hiddenInput = document.createElement('input');
       hiddenInput.setAttribute('type', 'hidden');
-      hiddenInput.setAttribute('name', type);
-      hiddenInput.setAttribute('value', object.id);
+      hiddenInput.setAttribute('name', objectType);
+      hiddenInput.setAttribute('value', objectID);
       CRM.payment.form.appendChild(hiddenInput);
 
       CRM.payment.resetBillingFieldsRequiredForJQueryValidate();
@@ -117,25 +117,47 @@
               totalAmount = totalAmount.toFixed(2);
             }
             if (CRM.payment.getIsRecur() || CRM.payment.isEventAdditionalParticipants() || (totalAmount === null)) {
-              CRM.api3('StripePaymentintent', 'createorupdate', {
-                stripe_intent_id: createPaymentMethodResult.paymentMethod.id,
-                description: document.title,
+              CRM.api3('StripePaymentintent', 'Process', {
+                setup: true,
+                payment_method_id: createPaymentMethodResult.paymentMethod.id,
                 payment_processor_id: CRM.vars[script.name].id,
-                amount: totalAmount,
-                currency: CRM.payment.getCurrency(CRM.vars[script.name].currency),
-                status: 'payment_method',
+                description: document.title,
                 csrfToken: CRM.vars[script.name].csrfToken,
                 extra_data: CRM.payment.getBillingEmail() + CRM.payment.getBillingName()
               })
-                .done(function (result) {
-                  // Handle server response (see Step 3)
+                .done(function (paymentIntentProcessResponse) {
                   CRM.payment.swalClose();
-                  // Submit the form, if we need to do 3dsecure etc. we do it at the end (thankyou page) once subscription etc has been created
-                  script.successHandler('paymentMethodID', {id: result.values[result.id].stripe_intent_id});
+                  CRM.payment.debugging(script.name, 'StripePaymentintent.Process done (setupIntent)');
+                  if (paymentIntentProcessResponse.is_error) {
+                    // Triggered for api3_create_error or Exception
+                    CRM.payment.displayError(paymentIntentProcessResponse.error_message, true);
+                  }
+                  else {
+                    paymentIntentProcessResponse = paymentIntentProcessResponse.values;
+                    if (paymentIntentProcessResponse.status === 'requires_action') {
+                      // Use Stripe.js to handle a pending card action (eg. 3d-secure)
+                      script.paymentData.clientSecret = paymentIntentProcessResponse.client_secret;
+                      stripe.confirmCardSetup(script.paymentData.clientSecret)
+                        .then(function (cardActionResult) {
+                          if (cardActionResult.error) {
+                            // Show error in payment form
+                            CRM.payment.displayError(cardActionResult.error.message, true);
+                          }
+                          else {
+                            // The card action has been handled
+                            // The PaymentIntent can be confirmed again on the server
+                            script.successHandler('setupIntentID', cardActionResult.setupIntent.id);
+                          }
+                        });
+                    }
+                    else {
+                      // All good, we can submit the form
+                      script.successHandler('paymentMethodID', createPaymentMethodResult.paymentMethod.id);
+                    }
+                  }
                 })
-                .fail(function () {
-                  CRM.payment.swalClose();
-                  CRM.payment.displayError(ts('Unknown error'), true);
+                .fail(function (failObject) {
+                  script.stripePaymentIntentProcessFail(failObject);
                 });
             }
             else {
@@ -160,7 +182,7 @@
               })
                 .done(function (paymentIntentProcessResponse) {
                   CRM.payment.swalClose();
-                  CRM.payment.debugging(script.name, 'StripePaymentintent.Process done');
+                  CRM.payment.debugging(script.name, 'StripePaymentintent.Process done (paymentIntent)');
                   if (paymentIntentProcessResponse.is_error) {
                     // Triggered for api3_create_error or Exception
                     CRM.payment.displayError(paymentIntentProcessResponse.error_message, true);
@@ -179,13 +201,13 @@
                           else {
                             // The card action has been handled
                             // The PaymentIntent can be confirmed again on the server
-                            script.successHandler('paymentIntentID', cardActionResult.paymentIntent);
+                            script.successHandler('paymentIntentID', cardActionResult.paymentIntent.id);
                           }
                         });
                     }
                     else {
                       // All good, we can submit the form
-                      script.successHandler('paymentIntentID', paymentIntentProcessResponse.paymentIntent);
+                      script.successHandler('paymentIntentID', paymentIntentProcessResponse.paymentIntent.id);
                     }
                   }
                 })
@@ -718,13 +740,13 @@
                         }
                         else {
                           // The payment has succeeded.
-                          script.successHandler('paymentIntentID', result.paymentIntent);
+                          script.successHandler('paymentIntentID', result.paymentIntent.id);
                         }
                       });
                   }
                   else {
                     // The payment has succeeded.
-                    script.successHandler('paymentIntentID', confirmResult.paymentIntent);
+                    script.successHandler('paymentIntentID', confirmResult.paymentIntent.id);
                   }
                 }
               });

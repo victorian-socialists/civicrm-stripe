@@ -9,6 +9,7 @@
  +--------------------------------------------------------------------+
  */
 
+use Civi\Api4\Contact;
 use CRM_Stripe_ExtensionUtil as E;
 
 /**
@@ -199,21 +200,33 @@ class CRM_Stripe_Customer {
    * @throws \CiviCRM_API3_Exception
    */
   private static function getStripeCustomerMetadata($params) {
-    $contactDisplayName = civicrm_api3('Contact', 'getvalue', [
-      'return' => 'display_name',
-      'id' => $params['contact_id'],
-    ]);
+    $contactDisplayName = Contact::get(FALSE)
+      ->addSelect('display_name')
+      ->addWhere('id', '=', $params['contact_id'])
+      ->execute()
+      ->first()['display_name'];
+
+    $domainName = \Civi\Api4\Domain::get(FALSE)
+      ->setCurrentDomain(TRUE)
+      ->addSelect('name')
+      ->execute()
+      ->first()['name'];
+    $extVersion = civicrm_api3('Extension', 'getvalue', ['return' => 'version', 'full_name' => E::LONG_NAME]);
 
     $stripeCustomerParams = [
       'name' => $contactDisplayName,
-      'description' => 'CiviCRM: ' . civicrm_api3('Domain', 'getvalue', ['current_domain' => 1, 'return' => 'name']),
-      'email' => CRM_Utils_Array::value('email', $params),
+      'description' => 'CiviCRM: ' . $domainName,
+      'email' => $params['email'] ?? '',
       'metadata' => [
         'CiviCRM Contact ID' => $params['contact_id'],
         'CiviCRM URL' => CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$params['contact_id']}", TRUE, NULL, TRUE, FALSE, TRUE),
-        'CiviCRM Version' => CRM_Utils_System::version() . ' ' . civicrm_api3('Extension', 'getvalue', ['return' => "version", 'full_name' => E::LONG_NAME]),
+        'CiviCRM Version' => CRM_Utils_System::version() . ' ' . $extVersion,
       ],
     ];
+    // This is used for new subscriptions/invoices as the default payment method
+    if (isset($params['invoice_settings'])) {
+      $stripeCustomerParams['invoice_settings'] = $params['invoice_settings'];
+    }
     return $stripeCustomerParams;
   }
 

@@ -115,6 +115,7 @@ function stripe_civicrm_buildForm($formName, &$form) {
   }
 
   switch ($formName) {
+    /* This is now disabled (6.7) in favour of creating a setupIntent and performing 3DS validation on the same page as the card details.
     case 'CRM_Contribute_Form_Contribution_ThankYou':
     case 'CRM_Event_Form_Registration_ThankYou':
       // This is a fairly nasty way of matching and retrieving our paymentIntent as it is no longer available.
@@ -148,7 +149,7 @@ function stripe_civicrm_buildForm($formName, &$form) {
         }
       }
 
-      /** @var \CRM_Core_Payment_Stripe $paymentProcessor */
+      /** @var \CRM_Core_Payment_Stripe $paymentProcessor *//*
       $paymentProcessor = \Civi\Payment\System::singleton()->getById($form->_paymentProcessor['id']);
       try {
         $jsVars = [
@@ -209,6 +210,7 @@ function stripe_civicrm_buildForm($formName, &$form) {
       );
 
       break;
+      */
 
     case 'CRM_Admin_Form_PaymentProcessor':
       $paymentProcessor = $form->getVar('_paymentProcessorDAO');
