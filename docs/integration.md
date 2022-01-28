@@ -114,23 +114,15 @@ $result = $paymentProcessor->doPayment($doPaymentParams);
 
 ##### Observations I suspect need discussion
 
-`doPayment` does not notice if the payment is captured (it assumes not)
-and will record only the invoice ID as the Contribution's `trxn_id`.
+The function `endDoPayment()` in [CRM_Core_Payment_MJWTrait.php](https://lab.civicrm.org/extensions/mjwshared/-/blob/master/CRM/Core/Payment/MJWTrait.php#L596)
+is used to filter and construct the return params for `doPayment()` as agreed in [dev/financial#141](https://lab.civicrm.org/dev/financial/-/issues/141).
 
-`doPayment` returns an array of fairly mixed stuff:
+But.. note that the results may already be out of date because the related objects (contribution etc.)
+may have been updated by webhook events received from Stripe.
 
-- Some Contribution fields which may or may not be up-to-date (e.g.
-  `contribution_status_id` is set to the value for *Pending*, unless a
-  different value was passed in, yet the contribution status may have since
-  been updated to *Completed* by IPN or `StripePaymentintent.process`)
-
-- Some left-over API parameters (e.g. `skipCleanMoney`).
-
-- To get the real result you'll need to disregard the data returned from
+- To get the real result you may need to disregard the data returned from
   `doPayment` and reload the objects, just using their IDs. From there you can
   see whether you have a payment intent yet, and what state it is in.
-
-
 
 #### Check for SCA requirements
 
@@ -147,4 +139,12 @@ at Stripe will have moved on, possibly to status `needs_capture`, or
 allow for the `needs_capture` case, your Javascript must now call
 `StripePaymentintent.process`, passing the `paymentIntentID`. This will see
 what needs doing, do it, and update CiviCRM records.
+
+#### Things that have changed since this was written.
+
+API3 `StripePaymentIntent.Process` now allows you to implement Stripe [setupIntents](https://stripe.com/docs/api/setup_intents)
+which allow you to capture the user authentication (eg. 3DSecure) without taking payment.
+This is used for creating subscriptions and for delayed payments when you don't know the exact amount until you've completed "checkout".
+
+See civicrm_stripe.js for an example implementation. Note the return values in our implementation are more consistent that paymentIntents.
 
