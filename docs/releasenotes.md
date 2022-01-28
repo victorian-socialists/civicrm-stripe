@@ -9,6 +9,43 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
+## Release 6.7 (not yet released)
+
+#### Features
+
+* Add support for webhook signing.
+* Implement setupIntents to perform 3DSecure etc on same form as card details. Previously it would prompt the user for the 3DSecure check on the "Thankyou" page.
+
+#### Fixes / Changes
+
+* Drop support for CiviCRM older than 5.35.
+* Update Job.process_stripe to use API4 and clarify that it is NOT domain-specific.
+* Don't initialise paymentprocessor twice for IPN. Change stripe_webhook_processing_limit so that 0=never process immediately.
+* Fix getSubscriptionDetails when contributionRecur not in CiviCRM.
+* Set paymentTypeLabel to 'Stripe'
+* Test improvements / fixes.
+* Only load handling for drupal webform on drupal sites.
+* Use paymentProcessor + stripeClient object in all API calls. Translation fixes.
+
+#### Developers / Integration
+
+* Remove hook `civicrm_stripe_updateRecurringContribution` (we may need to implement something new in future with support for PropertyBag/API4).
+* Throw exception when repeatTransaction fails.
+* Throw exception on payment failure. Always update the paymentintent status in CiviCRM database.
+* Switch final instances of static Stripe library access to object.
+* Convert js to functions on CRM.payment and move more shared code to CRM.payment.
+* Refactor checks class and move some checks to mjwshared.
+* Add getters for Stripe IDs to IPN class.
+* Add unit tests for Stripe.Importsubscription/ImportCharge API. Support importing subscriptions with future startdate/trial period (no invoice so we create a template contribution).
+* * Provide a more helpful reason instead of 'Bad Request' when payment fails due to expired CSRF token from firewall.
+
+##### Webhooks
+
+* Add new hook [webhookEventNotMatched](https://docs.civicrm.org/mjwshared/en/latest/hooks/#webhookeventnotmatched) that can be used for creating/matching missing events (eg. contributions created by other systems).
+* Implement new `processWebhookEvent` for processing events from the webhook queue and store error message in 'message' field.
+* Improve webhook queue error handling.
+
+
 ## Release 6.6.3
 
 * Fix [!170](https://lab.civicrm.org/extensions/stripe/-/merge_requests/170) Stripe.importsubscription API tweaks.
