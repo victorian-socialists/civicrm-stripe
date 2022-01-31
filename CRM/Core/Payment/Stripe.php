@@ -456,14 +456,11 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     CRM_Stripe_Recur::buildFormFutureRecurStartDate($form, $this, $jsVars);
 
     \Civi::resources()->addVars(E::SHORT_NAME, $jsVars);
-    // CMS-specific handling
-    if (in_array(CRM_Core_Config::singleton()->userFramework, ['Drupal', 'Drupal8'])) {
-      // Assign to smarty so we can add via Card.tpl for drupal webform because addVars doesn't work in that context
-      // Required in Drupal7. Not sure if required in Drupal8/9.
-      $form->assign('stripeJSVars', $jsVars);
-      CRM_Core_Region::instance('billing-block')->add(
-        ['template' => 'CRM/Core/Payment/Stripe/Card.tpl', 'weight' => -1]);
-    }
+    // Assign to smarty so we can add via Card.tpl for drupal webform and other situations where jsVars don't get loaded on the form.
+    // This applies to some contribution page configurations as well.
+    $form->assign('stripeJSVars', $jsVars);
+    CRM_Core_Region::instance('billing-block')->add(
+      ['template' => 'CRM/Core/Payment/Stripe/Card.tpl', 'weight' => -1]);
 
     // Enable JS validation for forms so we only (submit) create a paymentIntent when the form has all fields validated.
     $form->assign('isJsValidate', TRUE);
