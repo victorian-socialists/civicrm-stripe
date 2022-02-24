@@ -64,13 +64,8 @@ class CRM_Stripe_Check {
       $message = new CRM_Utils_Check_Message(
         __FUNCTION__ . $extensionName . E::SHORT_NAME . '_requirements_dev',
         E::ts('You are using a development version of %1 extension.',
-          [
-            1 => ucfirst(E::SHORT_NAME),
-            2 => $extensionName,
-            3 => $minVersion,
-            4 => $actualVersion
-          ]),
-        E::ts('%1: Development version', [1 => ucfirst(E::SHORT_NAME)]),
+          [1 => $extensionName]),
+        E::ts('%1: Development version', [1 => $extensionName]),
         \Psr\Log\LogLevel::WARNING,
         'fa-code'
       );
