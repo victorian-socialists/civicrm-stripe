@@ -14,12 +14,10 @@ View/Download this extension in the [Extension Directory](https://civicrm.org/ex
 There are a number of planned features that depend on funding/resources. See [Roadmap](./roadmap.md).
 
 ## Compatibility / Requirements
-* CiviCRM 5.35+
-* PHP 7.2+
 * Jquery 1.10+ (Use jquery_update module on Drupal 7).
-* Drupal 7 / Drupal 8 / Joomla / Wordpress (latest supported release).
+* Drupal 7 / Drupal 9 / Joomla / Wordpress (latest supported release).
 * Stripe API version: 2019-12-03+ (recommended: 2020-08-27).
-* Drupal webform_civicrm 7.x-5.1+ (if using webform integration) - see [Integration](integration.md) for more details.
+* Drupal webform_civicrm 7.x-5.5+ (if using webform integration) - see [Integration](integration.md) for more details.
 
 #### Required extensions
 

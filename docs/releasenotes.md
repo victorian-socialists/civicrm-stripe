@@ -9,7 +9,7 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
-## Release 6.7 (not yet released)
+## Release 6.7
 
 #### Features
 
@@ -24,7 +24,6 @@ Releases use the following numbering system:
 * Fix getSubscriptionDetails when contributionRecur not in CiviCRM.
 * Set paymentTypeLabel to 'Stripe'
 * Test improvements / fixes.
-* Only load handling for drupal webform on drupal sites.
 * Use paymentProcessor + stripeClient object in all API calls. Translation fixes.
 
 #### Developers / Integration
