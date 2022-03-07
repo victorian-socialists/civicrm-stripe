@@ -259,10 +259,15 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @param array $err
    * @param string $bounceURL
    *
-   * @return string errorMessage (or statusbounce if URL is specified)
+   * @return string errorMessage
    */
   public function handleErrorNotification($err, $bounceURL = NULL) {
-    return self::handleError("{$err['type']} {$err['code']}", $err['message'], $bounceURL);
+    try {
+      self::handleError("{$err['type']} {$err['code']}", $err['message'], $bounceURL);
+    }
+    catch (Exception $e) {
+      return $e->getMessage();
+    }
   }
 
   /**
@@ -578,9 +583,9 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       try {
         $stripeCustomer = $this->stripeClient->customers->retrieve($stripeCustomerId);
       } catch (Exception $e) {
-        $err = self::parseStripeException('retrieve_customer', $e, FALSE);
+        $err = self::parseStripeException('retrieve_customer', $e);
         $errorMessage = $this->handleErrorNotification($err, $propertyBag->getCustomProperty('error_url'));
-        throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to retrieve Stripe Customer: ' . $errorMessage);
+        throw new PaymentProcessorException('Failed to retrieve Stripe Customer: ' . $errorMessage);
       }
 
       if ($stripeCustomer->isDeleted()) {
@@ -590,9 +595,9 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
           $stripeCustomer = CRM_Stripe_Customer::create($customerParams, $this);
         } catch (Exception $e) {
           // We still failed to create a customer
-          $err = self::parseStripeException('create_customer', $e, FALSE);
+          $err = self::parseStripeException('create_customer', $e);
           $errorMessage = $this->handleErrorNotification($err, $propertyBag->getCustomProperty('error_url'));
-          throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to create Stripe Customer: ' . $errorMessage);
+          throw new PaymentProcessorException('Failed to create Stripe Customer: ' . $errorMessage);
         }
       }
     }
@@ -772,7 +777,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     if ($stripeSubscription->status === 'incomplete') {
       // For example with test card 4000000000000341 (Attaching this card to a Customer object succeeds, but attempts to charge the customer fail)
       \Civi::log()->warning('Stripe subscription status=incomplete. ID:' . $stripeSubscription->id);
-      throw new \Civi\Payment\Exception\PaymentProcessorException('Payment failed');
+      throw new PaymentProcessorException('Payment failed');
     }
 
     // artfulrobot: Q. what do we normally get here?
@@ -861,7 +866,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
           catch (Exception $e) {
             $err = self::parseStripeException('retrieve_balance_transaction', $e, FALSE);
             $errorMessage = $this->handleErrorNotification($err, $params['error_url']);
-            throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to retrieve Stripe Balance Transaction: ' . $errorMessage);
+            throw new PaymentProcessorException('Failed to retrieve Stripe Balance Transaction: ' . $errorMessage);
           }
           if (($stripeCharge['currency'] !== $stripeBalanceTransaction->currency)
               && (!empty($stripeBalanceTransaction->exchange_rate))) {
@@ -889,11 +894,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       }
     }
     catch (Exception $e) {
-      $errorMessage = $e->getMessage();
-      $this->handleError($e->getCode(), $errorMessage, $params['error_url']);
-      if ($e instanceof \Stripe\Exception\CardException) {
-        throw new PaymentProcessorException($errorMessage);
-      }
+      $this->handleError($e->getCode(), $e->getMessage(), $params['error_url']);
     }
     finally {
       // Always update the paymentIntent in the CiviCRM database for later tracking
@@ -931,7 +932,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       if (!isset($params[$required])) {
         $message = 'Stripe doRefund: Missing mandatory parameter: ' . $required;
         Civi::log()->error($message);
-        throw new \Civi\Payment\Exception\PaymentProcessorException($message);
+        throw new PaymentProcessorException($message);
       }
     }
 
@@ -944,7 +945,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     }
     catch (Exception $e) {
       $this->handleError($e->getCode(), $e->getMessage());
-      Throw new \Civi\Payment\Exception\PaymentProcessorException($e->getMessage());
     }
 
     switch ($refund->status) {
@@ -1174,7 +1174,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     if (!$propertyBag->has('recurProcessorID')) {
       $errorMessage = E::ts('The recurring contribution cannot be cancelled (No reference (trxn_id) found).');
       \Civi::log()->error($errorMessage);
-      throw new \Civi\Payment\Exception\PaymentProcessorException($errorMessage);
+      throw new PaymentProcessorException($errorMessage);
     }
 
     try {
@@ -1186,7 +1186,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     catch (Exception $e) {
       $errorMessage = E::ts('Could not delete Stripe subscription: %1', [1 => $e->getMessage()]);
       \Civi::log()->error($errorMessage);
-      throw new \Civi\Payment\Exception\PaymentProcessorException($errorMessage);
+      throw new PaymentProcessorException($errorMessage);
     }
 
     return ['message' => E::ts('Successfully cancelled the subscription at Stripe.')];

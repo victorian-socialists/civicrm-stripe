@@ -10,6 +10,7 @@
  */
 
 use Civi\Api4\Contact;
+use Civi\Payment\Exception\PaymentProcessorException;
 use CRM_Stripe_ExtensionUtil as E;
 
 /**
@@ -29,11 +30,11 @@ class CRM_Stripe_Customer {
     $requiredParams = ['processor_id'];
     foreach ($requiredParams as $required) {
       if (empty($params[$required])) {
-        throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (find): Missing required parameter: ' . $required);
+        throw new PaymentProcessorException('Stripe Customer (find): Missing required parameter: ' . $required);
       }
     }
     if (empty($params['contact_id'])) {
-      throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (find): contact_id is required');
+      throw new PaymentProcessorException('Stripe Customer (find): contact_id is required');
     }
     $queryParams = [
       1 => [$params['contact_id'], 'String'],
@@ -109,7 +110,7 @@ class CRM_Stripe_Customer {
     $requiredParams = ['contact_id', 'id', 'processor_id'];
     foreach ($requiredParams as $required) {
       if (empty($params[$required])) {
-        throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (add): Missing required parameter: ' . $required);
+        throw new PaymentProcessorException('Stripe Customer (add): Missing required parameter: ' . $required);
       }
     }
 
@@ -135,7 +136,7 @@ class CRM_Stripe_Customer {
     $requiredParams = ['contact_id', 'processor_id'];
     foreach ($requiredParams as $required) {
       if (empty($params[$required])) {
-        throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (create): Missing required parameter: ' . $required);
+        throw new PaymentProcessorException('Stripe Customer (create): Missing required parameter: ' . $required);
       }
     }
 
@@ -147,7 +148,7 @@ class CRM_Stripe_Customer {
     catch (Exception $e) {
       $err = CRM_Core_Payment_Stripe::parseStripeException('create_customer', $e, FALSE);
       $errorMessage = $stripe->handleErrorNotification($err, $params['error_url']);
-      throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to create Stripe Customer: ' . $errorMessage);
+      throw new PaymentProcessorException('Failed to create Stripe Customer: ' . $errorMessage);
     }
 
     // Store the relationship between CiviCRM's email address for the Contact & Stripe's Customer ID.
@@ -174,7 +175,7 @@ class CRM_Stripe_Customer {
     $requiredParams = ['contact_id', 'processor_id'];
     foreach ($requiredParams as $required) {
       if (empty($params[$required])) {
-        throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (updateMetadata): Missing required parameter: ' . $required);
+        throw new PaymentProcessorException('Stripe Customer (updateMetadata): Missing required parameter: ' . $required);
       }
     }
 
@@ -186,7 +187,7 @@ class CRM_Stripe_Customer {
     catch (Exception $e) {
       $err = CRM_Core_Payment_Stripe::parseStripeException('create_customer', $e, FALSE);
       $errorMessage = $stripe->handleErrorNotification($err, $params['error_url']);
-      throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to update Stripe Customer: ' . $errorMessage);
+      throw new PaymentProcessorException('Failed to update Stripe Customer: ' . $errorMessage);
     }
     return $stripeCustomer;
   }
@@ -241,11 +242,11 @@ class CRM_Stripe_Customer {
     $requiredParams = ['processor_id'];
     foreach ($requiredParams as $required) {
       if (empty($params[$required])) {
-        throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (delete): Missing required parameter: ' . $required);
+        throw new PaymentProcessorException('Stripe Customer (delete): Missing required parameter: ' . $required);
       }
     }
     if (empty($params['contact_id']) && empty($params['id'])) {
-      throw new \Civi\Payment\Exception\PaymentProcessorException('Stripe Customer (delete): Missing required parameter: contact_id or id');
+      throw new PaymentProcessorException('Stripe Customer (delete): Missing required parameter: contact_id or id');
     }
 
     if (!empty($params['id'])) {
