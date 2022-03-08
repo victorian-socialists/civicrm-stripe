@@ -25,7 +25,7 @@ class CRM_Stripe_Check {
   /**
    * @var string
    */
-  const MIN_VERSION_MJWSHARED = '1.2.2';
+  const MIN_VERSION_MJWSHARED = '1.2.3';
   const MIN_VERSION_FIREWALL = '1.5.1';
 
   /**
@@ -34,7 +34,7 @@ class CRM_Stripe_Check {
   private $messages;
 
   /**
-   * CRM_Stripe_Check constructor.
+   * constructor.
    *
    * @param $messages
    */
