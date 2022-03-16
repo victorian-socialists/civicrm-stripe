@@ -9,6 +9,10 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
+## Release 6.7.1
+
+* Fix Multiple event participant registration when 3DSecure validation is required.
+
 ## Release 6.7
 
 #### Features
