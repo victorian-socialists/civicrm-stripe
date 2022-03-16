@@ -1361,4 +1361,33 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     }
     $GLOBALS['mockStripeClient'] = $this->stripeClient = $stripeClient;
   }
+
+  /**
+   * Handle an error and notify the user
+   * @fixme: Remove when min version of mjwshared is 1.2.3.
+   *   This is a copy of the updated function that throws an exception on error instead of returning FALSE
+   *
+   * @param string $errorCode
+   * @param string $errorMessage
+   * @param string $bounceURL
+   *
+   * @throws \Civi\Payment\Exception\PaymentProcessorException
+   *   (or statusbounce if URL is specified)
+   */
+  private function handleError($errorCode = NULL, $errorMessage = NULL, $bounceURL = NULL) {
+    $errorCode = empty($errorCode) ? '' : $errorCode . ': ';
+    $errorMessage = empty($errorMessage) ? 'Unknown System Error.' : $errorMessage;
+    $message = $errorCode . $errorMessage;
+
+    Civi::log()->error($this->getPaymentTypeLabel() . ' Payment Error: ' . $message);
+    if ($this->handleErrorThrowsException) {
+      // We're in a test environment. Throw exception.
+      throw new \Exception('Exception thrown to avoid statusBounce because handleErrorThrowsException is set.' . $message);
+    }
+
+    if ($bounceURL) {
+      CRM_Core_Error::statusBounce($message, $bounceURL, $this->getPaymentTypeLabel());
+    }
+    throw new PaymentProcessorException($errorMessage, $errorCode);
+  }
 }
