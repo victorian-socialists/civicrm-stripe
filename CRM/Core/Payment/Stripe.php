@@ -29,6 +29,13 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   public $stripeClient;
 
   /**
+   * Custom properties used by this payment processor
+   *
+   * @var string[]
+   */
+  private $customProperties = ['paymentIntentID', 'paymentMethodID', 'setupIntentID'];
+
+  /**
    * Constructor
    *
    * @param string $mode
@@ -484,9 +491,10 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return array
    */
   public function doPreApproval(&$params) {
-    $preApprovalParams['paymentIntentID'] = CRM_Utils_Request::retrieve('paymentIntentID', 'String');
-    $preApprovalParams['paymentMethodID'] = CRM_Utils_Request::retrieve('paymentMethodID', 'String');
-    return ['pre_approval_parameters' => $preApprovalParams];
+    foreach ($this->customProperties as $property) {
+      $preApprovalParams[$property] = CRM_Utils_Request::retrieveValue($property, 'String', NULL, FALSE, 'POST');
+    }
+    return ['pre_approval_parameters' => $preApprovalParams ?? []];
   }
 
   /**
