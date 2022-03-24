@@ -290,12 +290,8 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     if ($log) {
       Civi::log()->error("Stripe_Error {$op}: " . print_r($body, TRUE));
     }
-    $err = $body['error'];
-    if (!isset($err['code'])) {
-      // A "fake" error code
-      $err['code'] = 9000;
-    }
-    return $err;
+    // Get the error array. Creat a "fake" error code if error is not set.
+    return $body['error'] ?? ['code' => 9000];
   }
 
   /**
