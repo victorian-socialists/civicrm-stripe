@@ -116,7 +116,7 @@
             if (totalAmount) {
               totalAmount = totalAmount.toFixed(2);
             }
-            if (CRM.payment.getIsRecur() || CRM.payment.isEventAdditionalParticipants() || (totalAmount === null)) {
+            if (CRM.payment.getIsRecur() || (totalAmount === null)) {
               CRM.api3('StripePaymentintent', 'Process', {
                 setup: true,
                 payment_method_id: createPaymentMethodResult.paymentMethod.id,

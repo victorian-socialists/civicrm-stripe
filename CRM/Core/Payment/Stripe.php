@@ -624,25 +624,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       //   save card functionality but should not save by default as the customer has not agreed.
       return $this->doRecurPayment($propertyBag, $amountFormattedForStripe, $stripeCustomer);
     }
-    elseif ($this->isPaymentForEventAdditionalParticipants($propertyBag)) {
-      // We're processing an event registration for multiple participants - because we did not know
-      //   the amount until now we process via a saved paymentMethod.
-      $intent = $this->stripeClient->paymentIntents->create([
-        'payment_method' => $paymentMethodID,
-        'customer' => $stripeCustomer->id,
-        'amount' => $amountFormattedForStripe,
-        'currency' => $this->getCurrency($params),
-        'confirmation_method' => 'automatic',
-        'capture_method' => 'manual',
-        // authorize the amount but don't take from card yet
-        'setup_future_usage' => 'off_session',
-        // Setup the card to be saved and used later
-        'confirm' => true,
-      ]);
-
-      $propertyBag->setCustomProperty('paymentIntentID', $intent->id);
-      $params['paymentIntentID'] = $intent->id;
-    }
     // @fixme FROM HERE we are using $params ONLY - SET things if required ($propertyBag is not used beyond here)
     //   Note that we set both $propertyBag and $params paymentIntentID in the case of participants above
 
