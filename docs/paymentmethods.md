@@ -14,6 +14,15 @@ This is enabled by default. No additional configuration is required.
 
 It is supported for all payment types.
 
+#### MOTO (Mail Order Telephone Order) Payments
+
+If you want to take payments in this way you have to:
+1. Request that it is enabled on your Stripe account.
+2. Enable "MOTO payments" in CiviCRM Stripe settings.
+3. Give the "CiviCRM Stripe: Process MOTO transactions" permission to roles which are allowed to process MOTO payments (eg. administrator).
+
+It will only be available on backend forms.
+
 ### Payment Request Button (Apple/Google/Microsoft Pay)
 
 See: [Stripe PaymentRequest Button](https://stripe.com/docs/stripe-js/elements/payment-request-button).

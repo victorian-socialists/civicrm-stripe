@@ -244,3 +244,14 @@ function stripe_civicrm_alterAPIPermissions($entity, $action, &$params, &$permis
   $permissions['stripe_paymentintent']['process'] = ['make online contributions'];
   $permissions['stripe_paymentintent']['createorupdate'] = ['make online contributions'];
 }
+
+/**
+ * Implements hook_civicrm_permission().
+ *
+ * @see CRM_Utils_Hook::permission()
+ */
+function stripe_civicrm_permission(&$permissions) {
+  if (\Civi::settings()->get('stripe_moto')) {
+    $permissions['allow stripe moto payments'] = E::ts('CiviCRM Stripe: Process MOTO transactions');
+  }
+}

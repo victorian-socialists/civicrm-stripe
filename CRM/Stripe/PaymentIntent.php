@@ -40,7 +40,18 @@ class CRM_Stripe_PaymentIntent {
   /**
    * @param \CRM_Core_Payment_Stripe $paymentProcessor
    */
-  public function __construct($paymentProcessor) {
+  public function __construct($paymentProcessor = NULL) {
+    if ($paymentProcessor) {
+      $this->setPaymentProcessor($paymentProcessor);
+    }
+  }
+
+  /**
+   * @param \CRM_Core_Payment_Stripe $paymentProcessor
+   *
+   * @return void
+   */
+  public function setPaymentProcessor(\CRM_Core_Payment_Stripe $paymentProcessor) {
     $this->paymentProcessor = $paymentProcessor;
   }
 
@@ -221,7 +232,12 @@ class CRM_Stripe_PaymentIntent {
     return $dao->toArray();
   }
 
-  public function processSetupIntent($params) {
+  /**
+   * @param $params
+   *
+   * @return object
+   */
+  public function processSetupIntent(array $params) {
     /*
     $params = [
       // Optional paymentMethodID
@@ -308,12 +324,68 @@ class CRM_Stripe_PaymentIntent {
   }
 
   /**
+   * Handle the processing of a Stripe "intent" from an endpoint eg. API3/API4.
+   * This function does not implement any "security" checks - it is expected that
+   * the calling code will do necessary security/permissions checks.
+   * WARNING: This function is NOT supported outside of Stripe extension and may change without notice.
+   *
+   * @param array $params
+   *
+   * @return object
+   * @throws \CRM_Core_Exception
+   * @throws \CiviCRM_API3_Exception
+   * @throws \Stripe\Exception\ApiErrorException
+   */
+  public function processIntent(array $params) {
+    // Params that may or may not be set by calling code:
+    // 'capture' was used by civicrmStripeConfirm.js and was removed when we added setupIntents.
+    $params['capture'] = $params['capture'] ?? FALSE;
+    // 'currency' should really be set but we'll default if not set.
+    $currency = \CRM_Utils_Type::validate($params['currency'], 'String', \CRM_Core_Config::singleton()->defaultCurrency);
+    // If a payment using MOTO (mail order telephone order) was requested.
+    // This parameter has security implications and great care should be taken when setting it to TRUE.
+    $params['moto'] = $params['moto'] ?? FALSE;
+
+    /** @var \CRM_Core_Payment_Stripe $paymentProcessor */
+    $paymentProcessor = \Civi\Payment\System::singleton()->getById($params['paymentProcessorID']);
+    $this->setPaymentProcessor($paymentProcessor);
+    if ($this->paymentProcessor->getPaymentProcessor()['class_name'] !== 'Payment_Stripe') {
+      \Civi::log('stripe')->error(__CLASS__ . " payment processor {$params['paymentProcessorID']} is not Stripe");
+      return (object) ['ok' => FALSE, 'message' => 'Payment processor is not Stripe', 'data' => []];
+    }
+
+    if ($params['setup']) {
+      $processSetupIntentParams = [
+        'paymentMethodID' => $params['paymentMethodID'],
+      ];
+      $processIntentResult = $this->processSetupIntent($processSetupIntentParams);
+      return $processIntentResult;
+    }
+    else {
+      $processPaymentIntentParams = [
+        'paymentIntentID' => $params['intentID'],
+        'paymentMethodID' => $params['paymentMethodID'],
+        'capture' => $params['capture'],
+        'amount' => $params['amount'],
+        'currency' => $currency,
+        'payment_method_options' => $params['payment_method_options'] ?? [],
+      ];
+      if (!empty($params['moto'])) {
+        $processPaymentIntentParams['moto'] = TRUE;
+      }
+
+      $processIntentResult = $this->processPaymentIntent($processPaymentIntentParams);
+      return $processIntentResult;
+    }
+  }
+
+  /**
    * @param array $params
    *
    * @return object
    * @throws \Stripe\Exception\ApiErrorException
    */
-  public function processPaymentIntent($params) {
+  public function processPaymentIntent(array $params) {
     /*
     $params = [
       // Either paymentIntentID or paymentMethodID must be set
@@ -347,6 +419,7 @@ class CRM_Stripe_PaymentIntent {
       }
     }
 
+    $intentParams = [];
     $intentParams['confirm'] = TRUE;
     $intentParams['confirmation_method'] = 'manual';
     if (empty($params['paymentIntentID']) && empty($params['paymentMethodID'])) {
@@ -373,6 +446,9 @@ class CRM_Stripe_PaymentIntent {
       // We don't yet have a PaymentIntent, create one using the
       // Payment Method ID and attempt to confirm it too.
       try {
+        if (!empty($params['moto'])) {
+          $intentParams['payment_method_options']['card']['moto'] = TRUE;
+        }
         $intentParams['amount'] = $this->paymentProcessor->getAmount(['amount' => $params['amount'], 'currency' => $params['currency']]);
         $intentParams['currency'] = $params['currency'];
         // authorize the amount but don't take from card yet
@@ -447,6 +523,7 @@ class CRM_Stripe_PaymentIntent {
           $message = $e->getMessage();
         }
         elseif ($e instanceof \Stripe\Exception\InvalidRequestException) {
+          \Civi::log('stripe')->error('processPaymentIntent: ' . $e->getMessage());
           $message = 'Invalid request';
         }
         $resultObject->ok = FALSE;
@@ -468,39 +545,37 @@ class CRM_Stripe_PaymentIntent {
     }
     CRM_Stripe_BAO_StripePaymentintent::create($stripePaymentintentParams);
 
+    $resultObject->data = [
+      'requires_payment_method' => false,
+      'requires_action' => false,
+      'success' => false,
+      'paymentIntent' => null,
+    ];
     // generatePaymentResponse()
     if ($intent->status === 'requires_action' &&
       $intent->next_action->type === 'use_stripe_sdk') {
       // Tell the client to handle the action
       $resultObject->ok = TRUE;
-      $resultObject->data = [
-        'requires_action' => true,
-        'paymentIntentClientSecret' => $intent->client_secret,
-      ];
+      $resultObject->data['requires_action'] = true;
+      $resultObject->data['paymentIntentClientSecret'] = $intent->client_secret;
     }
     elseif (($intent->status === 'requires_capture') || ($intent->status === 'requires_confirmation')) {
       // paymentIntent = requires_capture / requires_confirmation
       // The payment intent has been confirmed, we just need to capture the payment
       // Handle post-payment fulfillment
       $resultObject->ok = TRUE;
-      $resultObject->data = [
-        'success' => true,
-        'paymentIntent' => ['id' => $intent->id],
-      ];
+      $resultObject->data['success'] = true;
+      $resultObject->data['paymentIntent'] = ['id' => $intent->id];
     }
     elseif ($intent->status === 'succeeded') {
       $resultObject->ok = TRUE;
-      $resultObject->data = [
-        'success' => true,
-        'paymentIntent' => ['id' => $intent->id],
-      ];
+      $resultObject->data['success'] = true;
+      $resultObject->data['paymentIntent'] = ['id' => $intent->id];
     }
     elseif ($intent->status === 'requires_payment_method') {
       $resultObject->ok = TRUE;
-      $resultObject->data = [
-        'requires_payment_method' => true,
-        'paymentIntentClientSecret' => $intent->client_secret,
-      ];
+      $resultObject->data['requires_payment_method'] = true;
+      $resultObject->data['paymentIntentClientSecret'] = $intent->client_secret;
     }
     else {
       // Invalid status

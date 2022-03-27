@@ -453,9 +453,14 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'paymentProcessorTypeID' => $form->_paymentProcessor['payment_processor_type_id'],
       'locale' => CRM_Stripe_Api::mapCiviCRMLocaleToStripeLocale(),
       'apiVersion' => CRM_Stripe_Check::API_VERSION,
-      'csrfToken' => class_exists('\Civi\Firewall\Firewall') ? \Civi\Firewall\Firewall::getCSRFToken($context) : NULL,
+      'csrfToken' => NULL,
       'country' => \Civi::settings()->get('stripe_country'),
+      'moto' => \Civi::settings()->get('stripe_moto') && ($form->isBackOffice ?? FALSE) && CRM_Core_Permission::check('allow stripe moto payments'),
     ];
+    if (class_exists('\Civi\Firewall\Firewall')) {
+      $firewall = new \Civi\Firewall\Firewall();
+      $jsVars['csrfToken'] = $firewall->generateCSRFToken();
+    }
 
     // Add CSS via region (it won't load on drupal webform if added via \Civi::resources()->addStyleFile)
     CRM_Core_Region::instance('billing-block')->add([
