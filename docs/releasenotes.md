@@ -9,7 +9,7 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
-## Release 6.7.2 (not yet released)
+## Release 6.7.2
 
 * Use calculated amount for multiple event participant registration. This allows use to use paymentIntent instead of setupIntent which means that cards requiring 3DSs will not fail for multiple event participant registration.
 
