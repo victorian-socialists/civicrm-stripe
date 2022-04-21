@@ -81,11 +81,11 @@ function civicrm_api3_stripe_importsubscriptions($params) {
     'trxn_id' => [ 'IN' => $stripe_subscription_ids ]
   ]);
 
-  $subscritpions_civicrm = [];
+  $subscriptions_civicrm = [];
   if (is_array($recurring_contributions['values'])) {
     foreach ($recurring_contributions['values'] as $recurring_contribution) {
       $trxn_id = $recurring_contribution['trxn_id'];
-      $subscritpions_civicrm[$trxn_id] = [
+      $subscriptions_civicrm[$trxn_id] = [
         'contact_id' => $recurring_contribution['contact_id'],
         'recur_id' => $recurring_contribution['id'],
         'stripe_id' => $trxn_id,
@@ -103,9 +103,9 @@ function civicrm_api3_stripe_importsubscriptions($params) {
     ];
 
     // Check if the subscription exists in CiviCRM
-    if (isset($subscritpions_civicrm[$stripe_subscription->id])) {
-      $results['skipped'][] = $subscritpions_civicrm[$stripe_subscription->id];
-      $new_subscription['recur_id'] = $subscritpions_civicrm[$stripe_subscription->id]['recur_id'];
+    if (isset($subscriptions_civicrm[$stripe_subscription->id])) {
+      $results['skipped'][] = $subscriptions_civicrm[$stripe_subscription->id];
+      $new_subscription['recur_id'] = $subscriptions_civicrm[$stripe_subscription->id]['recur_id'];
     }
 
     // Search the Stripe customer to get the contact id
