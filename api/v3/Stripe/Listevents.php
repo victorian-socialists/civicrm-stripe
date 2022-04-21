@@ -422,7 +422,7 @@ function civicrm_api3_stripe_Listevents($params) {
 
       if ($subscription) {
         // Check if recurring contribution can be found.
-        $results = civicrm_api3('ContributionRecur', 'get', ['trxn_id' => $subscription]);
+        $results = civicrm_api3('ContributionRecur', 'get', ['processor_id' => $subscription]);
         if ($results['count'] > 0) {
           $item['contribution_recur_id'] = $results['id'];
           $contribution_recur = array_pop($results['values']);
