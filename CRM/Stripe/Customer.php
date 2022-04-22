@@ -216,7 +216,7 @@ class CRM_Stripe_Customer {
 
     $stripeCustomerParams = [
       'name' => $contactDisplayName,
-      'description' => 'CiviCRM: ' . $domainName,
+      'description' =>  $contactDisplayName . ' (CiviCRM)',
       'email' => $params['email'] ?? '',
       'metadata' => [
         'CiviCRM Contact ID' => $params['contact_id'],
