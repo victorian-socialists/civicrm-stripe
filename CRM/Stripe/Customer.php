@@ -216,6 +216,8 @@ class CRM_Stripe_Customer {
 
     $stripeCustomerParams = [
       'name' => $contactDisplayName,
+      // Stripe does not include the Customer Name when exporting payments, just the customer 
+      // description, so we stick the name in the description.
       'description' =>  $contactDisplayName . ' (CiviCRM)',
       'email' => $params['email'] ?? '',
       'metadata' => [
