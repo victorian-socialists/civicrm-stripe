@@ -83,7 +83,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return string
    */
   public function getWebhookSecret(): string {
-    return trim($this->_paymentProcessor['signature']);
+    return trim($this->_paymentProcessor['signature'] ?? '');
   }
 
   /**
