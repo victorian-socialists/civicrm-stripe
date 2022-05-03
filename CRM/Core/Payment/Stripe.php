@@ -513,7 +513,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * https://stripe.com/docs/api?lang=php
    * Payment processors should set payment_status_id/payment_status.
    *
-   * @param array|PropertyBag $propertyBag
+   * @param array|PropertyBag $paymentParams
    *   Assoc array of input parameters for this transaction.
    * @param string $component
    *
@@ -524,9 +524,9 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @throws \CiviCRM_API3_Exception
    * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
-  public function doPayment(&$propertyBag, $component = 'contribute') {
+  public function doPayment(&$paymentParams, $component = 'contribute') {
     /* @var \Civi\Payment\PropertyBag $propertyBag */
-    $propertyBag = \Civi\Payment\PropertyBag::cast($propertyBag);
+    $propertyBag = \Civi\Payment\PropertyBag::cast($paymentParams);
 
     $zeroAmountPayment = $this->processZeroAmountPayment($propertyBag);
     if ($zeroAmountPayment) {
