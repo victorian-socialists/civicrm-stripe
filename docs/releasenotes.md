@@ -9,6 +9,13 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
+## Release 6.7.3
+
+* Fix "Undefined index" when getting webhook secret if not set.
+* Don't overwrite params passed to `doPayment()` - they are passed by reference for legacy reasons so we should not modify them because it can impact the calling code (we were overwriting the array with a `\Civi\Payment\PropertyBag` object in some cases).
+* Fix [#332](https://lab.civicrm.org/extensions/stripe/-/issues/315) Ensure customer name is in stripe report.
+* Use `processor_id` instead of deprecated `trxn_id` for recurring contributions.
+
 ## Release 6.7.2
 
 * Use calculated amount for multiple event participant registration. This allows use to use paymentIntent instead of setupIntent which means that cards requiring 3DSs will not fail for multiple event participant registration.
