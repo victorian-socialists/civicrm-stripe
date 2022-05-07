@@ -50,6 +50,7 @@ class CRM_Stripe_Check {
     $this->checkExtensionMjwshared();
     $this->checkExtensionFirewall();
     $this->checkUpgradeMessages();
+    $this->checkWebhooks();
     return $this->messages;
   }
 
@@ -198,6 +199,14 @@ class CRM_Stripe_Check {
         ['Setting', 'create', ['stripe_upgrade66message' => 0]]
       );
       $this->messages[] = $message;
+    }
+  }
+
+  private function checkWebhooks() {
+    // If we didn't install mjwshared yet check requirements but don't crash when checking webhooks
+    if (trait_exists('CRM_Mjwshared_WebhookTrait')) {
+      $webhooks = new CRM_Stripe_Webhook();
+      $webhooks->check($this->messages);
     }
   }
 

@@ -26,7 +26,8 @@ class CRM_Stripe_Form_UpdateWebhook extends CRM_Core_Form {
 
     // Run check.
     $messages = [];
-    CRM_Stripe_Webhook::check($messages);
+    $webhooks = new CRM_Stripe_Webhook();
+    $webhooks->check($messages);
     if (!$messages) {
       $this->assign('isAllOk', 1);
     }
@@ -51,7 +52,8 @@ class CRM_Stripe_Form_UpdateWebhook extends CRM_Core_Form {
   public function postProcess() {
     $messages = [];
     $attemptFix = TRUE;
-    CRM_Stripe_Webhook::check($messages, $attemptFix);
+    $webhooks = new CRM_Stripe_Webhook();
+    $webhooks->check($messages, $attemptFix);
 
     if ($messages) {
       $this->assign('isStillBad', 1);

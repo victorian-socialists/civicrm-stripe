@@ -234,10 +234,6 @@ function stripe_civicrm_buildForm($formName, &$form) {
 function stripe_civicrm_check(&$messages) {
   $checks = new CRM_Stripe_Check($messages);
   $messages = $checks->checkRequirements();
-  // If we didn't install mjwshared yet check requirements but don't crash when checking webhooks
-  if (trait_exists('CRM_Mjwshared_WebhookTrait')) {
-    CRM_Stripe_Webhook::check($messages);
-  }
 }
 
 /**
