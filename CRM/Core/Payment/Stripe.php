@@ -554,12 +554,13 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       }
     }
 
+    // We didn't actually use this hook with Stripe, but it was useful to trigger so listeners could see raw params
+    // passing $propertyBag instead of $params now allows some things to be altered
+    $newParams = [];
+    CRM_Utils_Hook::alterPaymentProcessorParams($this, $propertyBag, $newParams);
+
     // @fixme DO NOT SET ANYTHING ON $propertyBag or $params BELOW THIS LINE (we are reading from both)
     $params = $this->getPropertyBagAsArray($propertyBag);
-
-    // We don't actually use this hook with Stripe, but useful to trigger so listeners can see raw params
-    $newParams = [];
-    CRM_Utils_Hook::alterPaymentProcessorParams($this, $params, $newParams);
 
     $amountFormattedForStripe = self::getAmount($params);
     $email = $this->getBillingEmail($params, $propertyBag->getContactID());
