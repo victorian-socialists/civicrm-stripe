@@ -43,6 +43,7 @@ function civicrm_api3_job_process_stripe($params) {
     $incompletePaymentintents = StripePaymentintent::get(FALSE)
       ->addWhere('status', 'NOT IN', ['succeeded', 'cancelled', 'canceled'])
       ->addWhere('created_date', '<', $params['cancel_incomplete'])
+      ->addWhere('stripe_intent_id', 'IS NOT EMPTY')
       ->execute();
 
     $cancelledIDs = [];
