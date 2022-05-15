@@ -355,7 +355,16 @@ class CRM_Core_Payment_StripeIPN {
     $return = (object) ['message' => '', 'ok' => FALSE, 'exception' => NULL];
     try {
       $this->setInputParameters();
-      $return->ok = $this->processEventType();
+      switch ($this->eventType) {
+        case 'charge.refunded':
+          $return->ok = TRUE;
+          $return->message = $this->doChargeRefunded();
+          break;
+
+        default:
+          $return->ok = $this->processEventType();
+      }
+
     }
     catch (Exception $e) {
       if ($this->exceptionOnFailure) {
@@ -537,45 +546,7 @@ class CRM_Core_Payment_StripeIPN {
         $this->updateContributionFailed($params);
         return TRUE;
 
-      case 'charge.refunded':
-        // Cancelling an uncaptured paymentIntent triggers charge.refunded but we don't want to process that
-        if (empty(CRM_Stripe_Api::getObjectParam('captured', $this->getData()->object))) {
-          return TRUE;
-        };
-        // This charge was actually captured, so record the refund in CiviCRM
-        if (!$this->setInfo()) {
-          return TRUE;
-        }
-        // This gives us the actual amount refunded
-        $amountRefunded = CRM_Stripe_Api::getObjectParam('amount_refunded', $this->getData()->object);
-        // This gives us the refund date + reason code
-        $refunds = $this->_paymentProcessor->stripeClient->refunds->all(['charge' => $this->charge_id, 'limit' => 1]);
-        // This gets the fee refunded
-        $this->setBalanceTransactionDetails($refunds->data[0]->balance_transaction);
-
-        $params = [
-          'contribution_id' => $this->contribution['id'],
-          'total_amount' => 0 - abs($amountRefunded),
-          'trxn_date' => date('YmdHis', $refunds->data[0]->created),
-          'trxn_result_code' => $refunds->data[0]->reason,
-          'fee_amount' => 0 - abs($this->fee),
-          'trxn_id' => $this->charge_id,
-          'order_reference' => $this->invoice_id ?? NULL,
-        ];
-        if (isset($this->contribution['payments'])) {
-          $refundStatusID = (int) CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Refunded');
-          foreach ($this->contribution['payments'] as $payment) {
-            if (((int) $payment['status_id'] === $refundStatusID) && ((float) $payment['total_amount'] === $params['total_amount'])) {
-              // Already refunded
-              return TRUE;
-            }
-          }
-          // This triggers the financial transactions/items to be updated correctly.
-          $params['cancelled_payment_id'] = reset($this->contribution['payments'])['id'];
-        }
-
-        $this->updateContributionRefund($params);
-        return TRUE;
+      // case 'charge.refunded': Handled via doChargeRefunded();
 
       case 'charge.succeeded':
         // For a recurring contribution we can process charge.succeeded once we receive the event with an invoice ID.
@@ -628,6 +599,63 @@ class CRM_Core_Payment_StripeIPN {
 
     // Unhandled event
     return TRUE;
+  }
+
+  /**
+   * Process the received event in CiviCRM
+   *
+   * @return bool
+   * @throws \CRM_Core_Exception
+   * @throws \CiviCRM_API3_Exception
+   * @throws \Civi\Payment\Exception\PaymentProcessorException
+   * @throws \Stripe\Exception\ApiErrorException
+   */
+  private function doChargeRefunded() {
+    // Cancelling an uncaptured paymentIntent triggers charge.refunded but we don't want to process that
+    if (empty(CRM_Stripe_Api::getObjectParam('captured', $this->getData()->object))) {
+      return TRUE;
+    };
+    // This charge was actually captured, so record the refund in CiviCRM
+    if (!$this->setInfo()) {
+      return TRUE;
+    }
+    // This gives us the refund date + reason code
+    $refunds = $this->_paymentProcessor->stripeClient->refunds->all(['charge' => $this->charge_id, 'limit' => 1]);
+    $refund = $refunds->data[0];
+
+    if (isset($this->contribution['payments'])) {
+      foreach ($this->contribution['payments'] as $payment) {
+        if ($payment['trxn_id'] === $refund->id) {
+          return 'Refund ' . $refund->id . ' already recorded in CiviCRM';
+        }
+        if ($payment['trxn_id'] === $this->charge_id) {
+          // This triggers the financial transactions/items to be updated correctly.
+          $cancelledPaymentID = $payment['id'];
+        }
+      }
+    }
+
+    // This gets the fee refunded
+    $this->fee = $this->getPaymentProcessor()->getFeeFromBalanceTransaction($refund->balance_transaction, $this->retrieve('currency', 'String', FALSE));
+    // This gives us the actual amount refunded
+    $amountRefunded = CRM_Stripe_Api::getObjectParam('amount_refunded', $this->getData()->object);
+
+    $refundParams = [
+      'contribution_id' => $this->contribution['id'],
+      'total_amount' => 0 - abs($amountRefunded),
+      'trxn_date' => date('YmdHis', $refund->created),
+      'trxn_result_code' => $refund->reason,
+      'fee_amount' => 0 - abs($this->fee),
+      'trxn_id' => $refund->id,
+      'order_reference' => $this->invoice_id ?? NULL,
+    ];
+
+    if (!empty($cancelledPaymentID)) {
+      $refundParams['cancelled_payment_id'] = $cancelledPaymentID;
+    }
+
+    $this->updateContributionRefund($refundParams);
+    return 'OK - refund recorded';
   }
 
   /**
@@ -684,7 +712,7 @@ class CRM_Core_Payment_StripeIPN {
     else {
       $balanceTransactionID = CRM_Stripe_Api::getObjectParam('balance_transaction', $this->getData()->object);
     }
-    $this->setBalanceTransactionDetails($balanceTransactionID);
+    $this->fee = $this->getPaymentProcessor()->getFeeFromBalanceTransaction($balanceTransactionID, $this->retrieve('currency', 'String', FALSE));
 
     // Get the CiviCRM recurring contribution that matches the Stripe subscription (if we have one).
     $this->getSubscriptionDetails();
@@ -818,29 +846,6 @@ class CRM_Core_Payment_StripeIPN {
       return FALSE;
     }
     return TRUE;
-  }
-
-  private function setBalanceTransactionDetails($balanceTransactionID) {
-    // Gather info about the amount and fee.
-    // Get the Stripe charge object if one exists. Null charge still needs processing.
-    // If the transaction is declined, there won't be a balance_transaction_id.
-    $this->fee = 0.0;
-    if ($balanceTransactionID) {
-      try {
-        $currency = $this->retrieve('currency', 'String', FALSE);
-        $balanceTransaction = $this->_paymentProcessor->stripeClient->balanceTransactions->retrieve($balanceTransactionID);
-        if ($currency !== $balanceTransaction->currency && !empty($balanceTransaction->exchange_rate)) {
-          $this->fee = CRM_Stripe_Api::currencyConversion($balanceTransaction->fee, $balanceTransaction->exchange_rate, $currency);
-        } else {
-          // We must round to currency precision otherwise payments may fail because Contribute BAO saves but then
-          // can't retrieve because it tries to use the full unrounded number when it only got saved with 2dp.
-          $this->fee = round($balanceTransaction->fee / 100, CRM_Utils_Money::getCurrencyPrecision($currency));
-        }
-      }
-      catch(Exception $e) {
-        $this->exception('Error retrieving balance transaction. ' . $e->getMessage());
-      }
-    }
   }
 
   /**

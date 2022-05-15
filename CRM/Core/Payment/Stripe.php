@@ -928,6 +928,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     $refundParams['amount'] = $this->getAmount($params);
     try {
       $refund = $this->stripeClient->refunds->create($refundParams);
+      $fee = $this->getFeeFromBalanceTransaction($refund['balance_transaction'], $refund['currency']);
     }
     catch (Exception $e) {
       $this->handleError($e->getCode(), $e->getMessage());
@@ -958,8 +959,9 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     $refundParams = [
       'refund_trxn_id' => $refund->id,
       'refund_status_id' => $refundStatus,
-      'refund_status_name' => $refundStatusName,
+      'refund_status' => $refundStatusName,
       'processor_result' => $refund->jsonSerialize(),
+      'fee_amount' => $fee ?? NULL,
     ];
     return $refundParams;
   }
@@ -1376,4 +1378,35 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     }
     throw new PaymentProcessorException($errorMessage, $errorCode);
   }
+
+  /**
+   * Get the Fee charged by Stripe from the "balance transaction".
+   * If the transaction is declined, there won't be a balance_transaction_id.
+   * We also have to do currency conversion here in case Stripe has converted it internally.
+   *
+   * @param string $balanceTransactionID
+   *
+   * @return float
+   * @throws \Civi\Payment\Exception\PaymentProcessorException
+   */
+  public function getFeeFromBalanceTransaction(string $balanceTransactionID, $currency): float {
+    $fee = 0.0;
+    if ($balanceTransactionID) {
+      try {
+        $balanceTransaction = $this->stripeClient->balanceTransactions->retrieve($balanceTransactionID);
+        if ($currency !== $balanceTransaction->currency && !empty($balanceTransaction->exchange_rate)) {
+          $fee = CRM_Stripe_Api::currencyConversion($balanceTransaction->fee, $balanceTransaction->exchange_rate, $currency);
+        } else {
+          // We must round to currency precision otherwise payments may fail because Contribute BAO saves but then
+          // can't retrieve because it tries to use the full unrounded number when it only got saved with 2dp.
+          $fee = round($balanceTransaction->fee / 100, CRM_Utils_Money::getCurrencyPrecision($currency));
+        }
+      }
+      catch (Exception $e) {
+        throw new \Civi\Payment\Exception\PaymentProcessorException("Error retrieving balanceTransaction {$balanceTransactionID}. " . $e->getMessage());
+      }
+    }
+    return $fee;
+  }
+
 }

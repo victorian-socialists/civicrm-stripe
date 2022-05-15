@@ -226,4 +226,5 @@ class CRM_Stripe_Api {
     //   to "auto"
     return substr($civiCRMLocale,0, 2);
   }
+
 }
