@@ -655,7 +655,18 @@ class CRM_Core_Payment_StripeIPN {
       $refundParams['cancelled_payment_id'] = $cancelledPaymentID;
     }
 
-    $this->updateContributionRefund($refundParams);
+    $lock = Civi::lockManager()->acquire('data.contribute.contribution.' . $refundParams['contribution_id']);
+    if (!$lock->isAcquired()) {
+      \Civi::log()->error('Could not acquire lock to record refund for contribution: ' . $refundParams['contribution_id']);
+    }
+    $refundPayment = civicrm_api3('Payment', 'get', [
+      'trxn_id' => $refund['refund_trxn_id'],
+      'total_amount' => $refundParams['total_amount'],
+    ]);
+    if (empty($refundPayment['count'])) {
+      $this->updateContributionRefund($refundParams);
+    }
+    $lock->release();
     return 'OK - refund recorded';
   }
 
