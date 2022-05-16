@@ -831,8 +831,23 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
         ['status', 'succeeded'],
         ['balance_transaction', 'txn_mock'],
       ]));
+
     $mockChargesCollection = new \Stripe\Collection();
     $mockChargesCollection->data = [$mockCharge];
+
+    $mockCharge = new PropertySpy('Charge', [
+      'id' => 'ch_mock',
+      'object' => 'charge',
+      'captured' => TRUE,
+      'status' => 'succeeded',
+      'balance_transaction' => 'txn_mock',
+      'invoice' => 'in_mock'
+    ]);
+    $stripeClient->charges = $this->createMock('Stripe\\Service\\ChargeService');
+    $stripeClient->charges
+      ->method('retrieve')
+      ->with($this->equalTo('ch_mock'))
+      ->willReturn($mockCharge);
 
     $mockPaymentIntent = $this->createMock('Stripe\\PaymentIntent');
     $mockPaymentIntent
@@ -906,12 +921,6 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       ->method('all')
       ->willReturn(['data' => $mockInvoice]);
      */
-
-    $stripeClient->charges = $this->createMock('Stripe\\Service\\ChargeService');
-    $stripeClient->charges
-      ->method('retrieve')
-      ->with($this->equalTo('ch_mock'))
-      ->willReturn($mockCharge);
 
     // Setup a recurring contribution for $this->total per month.
     $this->setupRecurringTransaction();

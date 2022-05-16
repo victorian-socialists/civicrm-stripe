@@ -181,7 +181,7 @@ abstract class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implement
     if (array_key_exists('trxn_id', $ret)) {
       $this->trxn_id = $ret['trxn_id'];
       $contribution = new CRM_Contribute_BAO_Contribution();
-      $contribution->id = $params['contribution_id'] ?? $params['contributionID'];
+      $contribution->id = $params['contributionID'];
       $contribution->trxn_id = $ret['trxn_id'];
       $contribution->save();
     }
