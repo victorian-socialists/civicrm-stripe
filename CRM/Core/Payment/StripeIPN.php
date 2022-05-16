@@ -602,7 +602,7 @@ class CRM_Core_Payment_StripeIPN {
   }
 
   /**
-   * Process the received event in CiviCRM
+   * Process the charge.refunded event from Stripe
    *
    * @return bool
    * @throws \CRM_Core_Exception
@@ -614,14 +614,20 @@ class CRM_Core_Payment_StripeIPN {
     // Cancelling an uncaptured paymentIntent triggers charge.refunded but we don't want to process that
     if (empty(CRM_Stripe_Api::getObjectParam('captured', $this->getData()->object))) {
       return TRUE;
-    };
-    // This charge was actually captured, so record the refund in CiviCRM
-    if (!$this->setInfo()) {
-      return TRUE;
     }
+
     // This gives us the refund date + reason code
     $refunds = $this->_paymentProcessor->stripeClient->refunds->all(['charge' => $this->charge_id, 'limit' => 1]);
     $refund = $refunds->data[0];
+
+    // Stripe does not refund fees - see https://support.stripe.com/questions/understanding-fees-for-refunded-payments
+    // This gets the fee refunded
+    // $this->fee = $this->getPaymentProcessor()->getFeeFromBalanceTransaction($refund->balance_transaction, $this->retrieve('currency', 'String', FALSE));
+    // This gives us the actual amount refunded
+    $amountRefunded = CRM_Stripe_Api::getObjectParam('amount_refunded', $this->getData()->object);
+
+    // Get the CiviCRM contribution that matches the Stripe metadata we have from the event
+    $this->getContribution();
 
     if (isset($this->contribution['payments'])) {
       foreach ($this->contribution['payments'] as $payment) {
@@ -635,17 +641,12 @@ class CRM_Core_Payment_StripeIPN {
       }
     }
 
-    // This gets the fee refunded
-    $this->fee = $this->getPaymentProcessor()->getFeeFromBalanceTransaction($refund->balance_transaction, $this->retrieve('currency', 'String', FALSE));
-    // This gives us the actual amount refunded
-    $amountRefunded = CRM_Stripe_Api::getObjectParam('amount_refunded', $this->getData()->object);
-
     $refundParams = [
       'contribution_id' => $this->contribution['id'],
       'total_amount' => 0 - abs($amountRefunded),
       'trxn_date' => date('YmdHis', $refund->created),
       'trxn_result_code' => $refund->reason,
-      'fee_amount' => 0 - abs($this->fee),
+      'fee_amount' => 0,
       'trxn_id' => $refund->id,
       'order_reference' => $this->invoice_id ?? NULL,
     ];

@@ -928,7 +928,8 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     $refundParams['amount'] = $this->getAmount($params);
     try {
       $refund = $this->stripeClient->refunds->create($refundParams);
-      $fee = $this->getFeeFromBalanceTransaction($refund['balance_transaction'], $refund['currency']);
+      // Stripe does not refund fees - see https://support.stripe.com/questions/understanding-fees-for-refunded-payments
+      // $fee = $this->getFeeFromBalanceTransaction($refund['balance_transaction'], $refund['currency']);
     }
     catch (Exception $e) {
       $this->handleError($e->getCode(), $e->getMessage());
@@ -960,8 +961,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'refund_trxn_id' => $refund->id,
       'refund_status_id' => $refundStatus,
       'refund_status' => $refundStatusName,
-      'processor_result' => $refund->jsonSerialize(),
-      'fee_amount' => $fee ?? NULL,
+      'fee_amount' => 0,
     ];
     return $refundParams;
   }
