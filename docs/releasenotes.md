@@ -9,6 +9,14 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
+## Release 6.7.4 (2022-05-16)
+
+* Fix [#320](https://lab.civicrm.org/extensions/stripe/-/issues/320) Using the new refund UI results in refund recorded twice.
+* Stripe does not refund fees. Don't record a fees refund in the refund FinancialTrxn in CiviCRM.
+* When submitting a recurring real-time payment (eg. using a contribution page) that starts immediately the Stripe Invoice now includes a Stripe Charge ID.
+Return this Charge ID instead of the Invoice ID so that the `trxn_id` field on the Contribution and FinancialTrxn is set to the Charge ID and not the Invoice ID.
+This was only affecting the first payment as the webhook for subsequent payments set the parameters correctly.
+
 ## Release 6.7.3
 
 * Fix "Undefined index" when getting webhook secret if not set.
