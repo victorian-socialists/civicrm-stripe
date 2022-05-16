@@ -772,9 +772,11 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       $intent = $stripeSubscription->latest_invoice['payment_intent'];
       $params = $this->processPaymentIntent($params, $intent);
 
-      // Set the orderID (trxn_id) to the invoice ID
-      // The IPN will change it to the charge_id
+      // Set the OrderID (invoice) and TrxnID (charge)
       $this->setPaymentProcessorOrderID($stripeSubscription->latest_invoice['id']);
+      if (!empty($stripeSubscription->latest_invoice['charge'])) {
+        $this->setPaymentProcessorTrxnID($stripeSubscription->latest_invoice['charge']);
+      }
     }
     else {
       // Update the paymentIntent in the CiviCRM database for later tracking
