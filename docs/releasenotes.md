@@ -16,6 +16,7 @@ Releases use the following numbering system:
 * When submitting a recurring real-time payment (eg. using a contribution page) that starts immediately the Stripe Invoice now includes a Stripe Charge ID.
 Return this Charge ID instead of the Invoice ID so that the `trxn_id` field on the Contribution and FinancialTrxn is set to the Charge ID and not the Invoice ID.
 This was only affecting the first payment as the webhook for subsequent payments set the parameters correctly.
+* Set the OrderID and TrxnID during doPayment for a recur - this means that both are available as return params and can be stored in the financial_trxn if supported.
 
 ## Release 6.7.3
 
