@@ -37,6 +37,11 @@ function civicrm_api3_stripe_paymentintent_createorupdate($params) {
       _civicrm_api3_stripe_paymentintent_returnInvalid($firewall->getReasonDescription());
     }
   }
+  foreach ($params as $key => $value) {
+    if (substr($key, 0, 3) === 'api') {
+      _civicrm_api3_stripe_paymentintent_returnInvalid('Invalid params');
+    }
+  }
   if (!empty($params['stripe_intent_id'])) {
     try {
       $params['id'] = civicrm_api3('StripePaymentintent', 'getvalue', ['stripe_intent_id' => $params['stripe_intent_id'], 'return' => 'id']);
@@ -161,6 +166,11 @@ function civicrm_api3_stripe_paymentintent_process($params) {
     $firewall = new Firewall();
     if (!$firewall->checkIsCSRFTokenValid(CRM_Utils_Type::validate($params['csrfToken'], 'String'))) {
       _civicrm_api3_stripe_paymentintent_returnInvalid($firewall->getReasonDescription());
+    }
+  }
+  foreach ($params as $key => $value) {
+    if (substr($key, 0, 3) === 'api') {
+      _civicrm_api3_stripe_paymentintent_returnInvalid('Invalid params');
     }
   }
   $paymentMethodID = CRM_Utils_Type::validate($params['payment_method_id'] ?? '', 'String');
