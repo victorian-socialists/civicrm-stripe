@@ -41,7 +41,7 @@ function civicrm_api3_job_process_stripe($params) {
   if ($params['cancel_incomplete'] !== 0 && !empty($params['cancel_incomplete'])) {
     // Cancel incomplete paymentIntents after 1 hour
     $incompletePaymentintents = StripePaymentintent::get(FALSE)
-      ->addWhere('status', 'NOT IN', ['succeeded', 'cancelled', 'canceled'])
+      ->addWhere('status', 'NOT IN', ['succeeded', 'cancelled', 'canceled', 'failed'])
       ->addWhere('created_date', '<', $params['cancel_incomplete'])
       ->addWhere('stripe_intent_id', 'IS NOT EMPTY')
       ->execute();
