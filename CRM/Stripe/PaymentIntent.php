@@ -246,7 +246,6 @@ class CRM_Stripe_PaymentIntent {
     } catch (Exception $e) {
       // Save the "error" in the paymentIntent table in in case investigation is required.
       $stripePaymentintentParams = [
-        'stripe_intent_id' => 'null',
         'payment_processor_id' => $this->paymentProcessor->getID(),
         'status' => 'failed',
         'description' => "{$e->getRequestId()};{$e->getMessage()};{$this->description}",
@@ -352,7 +351,6 @@ class CRM_Stripe_PaymentIntent {
       } catch (Exception $e) {
         // Save the "error" in the paymentIntent table in in case investigation is required.
         $stripePaymentintentParams = [
-          'stripe_intent_id' => 'null',
           'payment_processor_id' => $this->paymentProcessor->getID(),
           'status' => 'failed',
           'description' => "{$e->getRequestId()};{$e->getMessage()};{$this->description}",
