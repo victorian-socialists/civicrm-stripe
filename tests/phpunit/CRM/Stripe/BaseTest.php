@@ -149,7 +149,7 @@ abstract class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implement
         'payment_method_id' => $paymentMethod->id,
         'amount' => $this->total,
         'payment_processor_id' => $this->paymentProcessorID,
-        'payment_intent_id' => NULL,
+        'payment_intent_id' => $params['paymentIntentID'] ?? NULL,
         'description' => NULL,
       ];
       $result = civicrm_api3('StripePaymentintent', 'process', $paymentIntentParams);
@@ -178,6 +178,15 @@ abstract class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implement
 
     $ret = $this->paymentObject->doPayment($params);
 
+    /*if ($ret['payment_status'] === 'Completed') {
+      civicrm_api3('Payment', 'create', [
+        'trxn_id' => $ret['trxn_id'],
+        'total_amount' => $params['amount'],
+        'fee_amount' => $ret['fee_amount'],
+        'order_reference' => $ret['order_reference'],
+        'contribution_id' => $params['contributionID'],
+      ]);
+    }*/
     if (array_key_exists('trxn_id', $ret)) {
       $this->trxn_id = $ret['trxn_id'];
       $contribution = new CRM_Contribute_BAO_Contribution();

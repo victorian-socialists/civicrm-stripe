@@ -554,6 +554,7 @@ class CRM_Core_Payment_StripeIPN {
         if (empty(CRM_Stripe_Api::getObjectParam('customer_id', $this->getData()->object))) {
           return TRUE;
         }
+
       // Deliberately missing break here because we process charge.succeeded per charge.captured
       case 'charge.captured':
         // For a single contribution we have to use charge.captured because it has the customer_id.
@@ -569,7 +570,7 @@ class CRM_Core_Payment_StripeIPN {
         // We only process charge.captured for one-off contributions
         if (empty(CRM_Stripe_Api::getObjectParam('captured', $this->getData()->object))) {
           return TRUE;
-        };
+        }
 
         // If contribution is in Pending or Failed state record payment and transition to Completed
         if (in_array($this->contribution['contribution_status_id'], $statusesAllowedToComplete)) {

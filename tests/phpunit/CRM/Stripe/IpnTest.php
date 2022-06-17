@@ -46,6 +46,74 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
   ];
 
   /**
+   * Test creating a one-off contribution and
+   * update it after creation.
+   */
+  public function testNewOneOffChargeSucceeded() {
+    $this->mockOneOffPaymentSetup();
+    $this->simulateEvent([
+      'type'             => 'charge.succeeded',
+      'id'               => 'evt_mock',
+      'object'           => 'event', // ?
+      'livemode'         => FALSE,
+      'pending_webhooks' => 0,
+      'request'          => [ 'id' => NULL ],
+      'data'             => [
+        'object' => [
+          'id'           => 'ch_mock',
+          'object'       => 'charge',
+          'customer'     => 'cus_mock',
+          'charge'       => 'ch_mock',
+          'created'      => time(),
+          'amount'       => $this->total*100,
+          'status'       => 'succeeded',
+          "captured"     => FALSE,
+        ]
+      ],
+    ]);
+
+    // Ensure Contribution status is updated to complete and that we now have both invoice ID and charge ID as the transaction ID.
+    $this->checkContrib([
+      'contribution_status_id' => 'Pending',
+      'trxn_id'                => 'ch_mock',
+    ]);
+  }
+
+  /**
+   * Test creating a one-off contribution and
+   * update it after creation.
+   */
+  public function testNewOneOffChargeCaptured() {
+    $this->mockOneOffPaymentSetup();
+    $this->simulateEvent([
+      'type'             => 'charge.captured',
+      'id'               => 'evt_mock',
+      'object'           => 'event', // ?
+      'livemode'         => FALSE,
+      'pending_webhooks' => 0,
+      'request'          => [ 'id' => NULL ],
+      'data'             => [
+        'object' => [
+          'id'           => 'ch_mock',
+          'object'       => 'charge',
+          'customer'     => 'cus_mock',
+          'charge'       => 'ch_mock',
+          'created'      => time(),
+          'amount'       => $this->total*100,
+          'status'       => 'succeeded',
+          "captured"     => TRUE,
+        ]
+      ],
+    ]);
+
+    // Ensure Contribution status is updated to complete and that we now have both invoice ID and charge ID as the transaction ID.
+    $this->checkContrib([
+      'contribution_status_id' => 'Completed',
+      'trxn_id'                => 'ch_mock',
+    ]);
+  }
+
+  /**
    * Test creating a recurring contribution and
    * update it after creation. @todo The membership should also be updated.
    */
@@ -79,6 +147,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     ]);
     $this->checkContribRecur(['contribution_status_id' => 'In Progress']);
   }
+
   /**
    * Test creating a recurring contribution and
    * the handling of charge.succeeded
@@ -749,6 +818,142 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       ]));
 
     return [$mockCharge1, $mockCharge2, $mockInvoice2, $balanceTransaction2];
+  }
+
+  /**
+   * DRY code. Sets up the database as it would be after a recurring contrib
+   * has been set up with Stripe.
+   *
+   * Results in a pending ContributionRecur and a pending Contribution record.
+   *
+   * The following mock Stripe IDs strings are used:
+   *
+   * - pm_mock   PaymentMethod
+   * - pi_mock   PaymentIntent
+   * - cus_mock  Customer
+   * - ch_mock   Charge
+   * - txn_mock  Balance transaction
+   * - sub_mock  Subscription
+   */
+  protected function mockOneOffPaymentSetup() {
+    PropertySpy::$buffer = 'none';
+    // Set this to 'print' or 'log' maybe more helpful in debugging but for
+    // generally running tests 'exception' suits as we don't expect any output.
+    PropertySpy::$outputMode = 'exception';
+
+    $this->assertInstanceOf('CRM_Core_Payment_Stripe', $this->paymentObject);
+
+    // Create a mock stripe client.
+    $stripeClient = $this->createMock('Stripe\\StripeClient');
+    // Update our CRM_Core_Payment_Stripe object and ensure any others
+    // instantiated separately will also use it.
+    $this->paymentObject->setMockStripeClient($stripeClient);
+
+    // Mock the payment methods service.
+    $mockPaymentMethod = $this->createMock('Stripe\\PaymentMethod');
+    $mockPaymentMethod->method('__get')
+      ->will($this->returnValueMap([
+        [ 'id', 'pm_mock']
+      ]));
+    $stripeClient->paymentMethods = $this->createMock('Stripe\\Service\\PaymentMethodService');
+    $stripeClient->paymentMethods
+      ->method('create')
+      ->willReturn($mockPaymentMethod);
+    $stripeClient->paymentMethods
+      ->method('retrieve')
+      ->with($this->equalTo('pm_mock'))
+      ->willReturn($mockPaymentMethod);
+
+    // Mock the Customers service
+    $stripeClient->customers = $this->createMock('Stripe\\Service\\CustomerService');
+    $stripeClient->customers
+      ->method('create')
+      ->willReturn(
+        new PropertySpy('customers.create', ['id' => 'cus_mock'])
+      );
+    $stripeClient->customers
+      ->method('retrieve')
+      ->with($this->equalTo('cus_mock'))
+      ->willReturn(
+        new PropertySpy('customers.retrieve', ['id' => 'cus_mock'])
+      );
+
+    // Need a mock intent with id and status
+    $mockCharge = $this->createMock('Stripe\\Charge');
+    $mockCharge
+      ->method('__get')
+      ->will($this->returnValueMap([
+        ['id', 'ch_mock'],
+        ['captured', TRUE],
+        ['status', 'succeeded'],
+        ['balance_transaction', 'txn_mock'],
+      ]));
+
+    $mockChargesCollection = new \Stripe\Collection();
+    $mockChargesCollection->data = [$mockCharge];
+
+    $mockCharge = new PropertySpy('Charge', [
+      'id' => 'ch_mock',
+      'object' => 'charge',
+      'captured' => TRUE,
+      'status' => 'succeeded',
+      'balance_transaction' => 'txn_mock',
+      'amount' => $this->total * 100,
+    ]);
+    $stripeClient->charges = $this->createMock('Stripe\\Service\\ChargeService');
+    $stripeClient->charges
+      ->method('retrieve')
+      ->with($this->equalTo('ch_mock'))
+      ->willReturn($mockCharge);
+
+    $mockPaymentIntent = $this->createMock('Stripe\\PaymentIntent');
+    $mockPaymentIntent
+      ->method('__get')
+      ->will($this->returnValueMap([
+        ['id', 'pi_mock'],
+        ['status', 'succeeded'],
+        ['charges', $mockChargesCollection]
+      ]));
+
+    $stripeClient->paymentIntents = $this->createMock('Stripe\\Service\\PaymentIntentService');
+    $stripeClient->paymentIntents
+      ->method('retrieve')
+      ->with($this->equalTo('pi_mock'))
+      ->willReturn($mockPaymentIntent);
+    $stripeClient->paymentIntents
+      ->method('update')
+      ->willReturn($mockPaymentIntent);
+
+    $stripeClient->balanceTransactions = $this->createMock('Stripe\\Service\\BalanceTransactionService');
+    $stripeClient->balanceTransactions
+      ->method('retrieve')
+      ->with($this->equalTo('txn_mock'))
+      ->willReturn(new PropertySpy('balanceTransaction', [
+        'id' => 'txn_mock',
+        'fee' => 1190, /* means $11.90 */
+        'currency' => 'usd',
+        'exchange_rate' => NULL,
+        'object' => 'balance_transaction',
+      ]));
+
+    $this->setupTransaction();
+    // Submit the payment.
+    $payment_extra_params = [
+      'contributionID'      => $this->contributionID,
+      'paymentIntentID'     => 'pi_mock',
+    ];
+
+    $this->doPayment($payment_extra_params);
+
+    //
+    // Check the Contribution
+    // ...should be pending
+    // ...its transaction ID should be our Charge ID.
+    //
+    $this->checkContrib([
+      'contribution_status_id' => 'Pending',
+      'trxn_id'                => 'ch_mock',
+    ]);
   }
 
   /**
