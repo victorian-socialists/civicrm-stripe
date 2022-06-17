@@ -25,15 +25,6 @@ function stripe_civicrm_config(&$config) {
 }
 
 /**
- * Implementation of hook_civicrm_xmlMenu().
- *
- * @param $files array(string)
- */
-function stripe_civicrm_xmlMenu(&$files) {
-  _stripe_civix_civicrm_xmlMenu($files);
-}
-
-/**
  * Implementation of hook_civicrm_install().
  */
 function stripe_civicrm_install() {
@@ -76,27 +67,10 @@ function stripe_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
 }
 
 /**
- * Implementation of hook_civicrm_managed().
- *
- * Generate a list of entities to create/deactivate/delete when this module
- * is installed, disabled, uninstalled.
- */
-function stripe_civicrm_managed(&$entities) {
-  _stripe_civix_civicrm_managed($entities);
-}
-
-/**
  * Implements hook_civicrm_entityTypes().
  */
 function stripe_civicrm_entityTypes(&$entityTypes) {
   _stripe_civix_civicrm_entityTypes($entityTypes);
-}
-
-/**
- * Implements hook_civicrm_alterSettingsFolders().
- */
-function stripe_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
-  _stripe_civix_civicrm_alterSettingsFolders($metaDataFolders);
 }
 
 /**
