@@ -156,6 +156,8 @@ class CRM_Stripe_PaymentIntent {
    * @param \CRM_Core_Payment_Stripe $stripe
    *
    * @throws \Civi\Payment\Exception\PaymentProcessorException
+   *
+   * @deprecated not used anywhere?
    */
   public static function stripeCancel($params, $stripe) {
     $requiredParams = ['id'];
@@ -174,6 +176,8 @@ class CRM_Stripe_PaymentIntent {
    * @param \CRM_Core_Payment_Stripe $stripe
    *
    * @throws \Civi\Payment\Exception\PaymentProcessorException
+   *
+   * @deprecated not used anywhere?
    */
   public static function stripeGet($params, $stripe) {
     $requiredParams = ['id'];
