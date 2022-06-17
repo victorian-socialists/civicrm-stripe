@@ -75,7 +75,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     // Ensure Contribution status is updated to complete and that we now have both invoice ID and charge ID as the transaction ID.
     $this->checkContrib([
       'contribution_status_id' => 'Completed',
-      'trxn_id'                => 'in_mock,ch_mock',
+      'trxn_id'                => 'ch_mock',
     ]);
     $this->checkContribRecur(['contribution_status_id' => 'In Progress']);
   }
@@ -116,7 +116,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     //
     $this->checkContrib([
       'contribution_status_id' => 'Pending',
-      'trxn_id'                => 'in_mock',
+      'trxn_id'                => 'ch_mock',
     ]);
     $this->checkContribRecur([ 'contribution_status_id' => 'Pending' ]);
   }
@@ -582,7 +582,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     $this->getContributionsAndAssertCount(1);
     $this->checkContrib([
       'contribution_status_id' => 'Completed',
-      'trxn_id'                => 'in_mock,ch_mock',
+      'trxn_id'                => 'ch_mock',
     ]);
   }
 
@@ -944,7 +944,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     //
     $this->checkContrib([
       'contribution_status_id' => 'Pending',
-      'trxn_id'                => 'in_mock',
+      'trxn_id'                => 'ch_mock',
     ]);
 
     //
