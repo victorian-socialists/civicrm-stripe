@@ -43,8 +43,11 @@ function civicrm_api3_job_process_stripe($params) {
     $incompletePaymentintents = StripePaymentintent::get(FALSE)
       ->addWhere('status', 'NOT IN', ['succeeded', 'cancelled', 'canceled', 'failed'])
       ->addWhere('created_date', '<', $params['cancel_incomplete'])
-      ->addWhere('stripe_intent_id', 'IS NOT EMPTY')
-      ->execute();
+      ->addWhere('stripe_intent_id', 'IS NOT EMPTY');
+    if (!empty($params['stripe_paymentintent_id'])) {
+      $incompletePaymentintents->addWhere('id', '=', $params['stripe_paymentintent_id']);
+    }
+    $incompletePaymentintents = $incompletePaymentintents->execute();
 
     $cancelledIDs = [];
     foreach ($incompletePaymentintents as $incompletePaymentintent) {
@@ -52,7 +55,10 @@ function civicrm_api3_job_process_stripe($params) {
         /** @var \CRM_Core_Payment_Stripe $paymentProcessor */
         $paymentProcessor = Civi\Payment\System::singleton()->getById($incompletePaymentintent['payment_processor_id']);
         $intent = $paymentProcessor->stripeClient->paymentIntents->retrieve($incompletePaymentintent['stripe_intent_id']);
-        $intent->cancel(['cancellation_reason' => 'abandoned']);
+        // Check intent was not already cancelled - this could happen eg. at Stripe before we process it
+        if ($intent->status !== 'canceled') {
+          $intent->cancel(['cancellation_reason' => 'abandoned']);
+        }
         $cancelledIDs[] = $incompletePaymentintent['id'];
       } catch (Exception $e) {
         if ($e instanceof \Stripe\Exception\InvalidRequestException) {
@@ -62,7 +68,7 @@ function civicrm_api3_job_process_stripe($params) {
             $cancelledIDs[] = $incompletePaymentintent['id'];
           }
         }
-        \Civi::log()->error('Stripe.process_stripe: Unable to cancel paymentIntent. ' . $e->getMessage());
+        \Civi::log()->error("Stripe.process_stripe: Unable to cancel paymentIntentID: {$incompletePaymentintent['id']}: " . $e->getMessage());
       }
     }
     if (!empty($cancelledIDs)) {
@@ -89,4 +95,8 @@ function _civicrm_api3_job_process_stripe_spec(&$params) {
   $params['cancel_incomplete']['api.default'] = '-1 hour';
   $params['cancel_incomplete']['title'] = 'Cancel incomplete records after (default: -1hour)';
   $params['cancel_incomplete']['description'] = 'Cancel incomplete paymentIntents in your stripe account. Specify 0 to disable. Default is "-1hour"';
+  $params['stripe_paymentintent_id']['title'] = 'ID of record from civicrm_stripe_paymentintent table';
+  $params['stripe_paymentintent_id']['description'] = 'If specified, only this record will be processed';
+  $params['stripe_paymentintent_id']['type'] = CRM_Utils_Type::T_INT;
+
 }
