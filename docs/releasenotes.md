@@ -9,6 +9,10 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
+## Release 6.7.6 (not yet released)
+
+* Improve handling of already canceled payment intents.
+
 ## Release 6.7.5 (2022-06-19)
 
 * Fix [#365](https://lab.civicrm.org/extensions/stripe/-/issues/365) - don't try to cancel intents without an id.
