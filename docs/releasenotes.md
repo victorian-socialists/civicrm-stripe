@@ -9,9 +9,10 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
-## Release 6.7.6 (not yet released)
+## Release 6.7.6 (2022-06-24)
 
 * Improve handling of already canceled payment intents.
+* Fix [#358](https://lab.civicrm.org/extensions/stripe/-/issues/358) Update Stripe PHP SDK from 7.67.0 to 7.128.0 to resolve curl certificates issue.
 
 ## Release 6.7.5 (2022-06-19)
 
