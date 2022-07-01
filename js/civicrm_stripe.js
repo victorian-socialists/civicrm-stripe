@@ -307,18 +307,21 @@
      */
     stripePaymentIntentProcessFail: function(failObject) {
       var error = ts('Unknown error');
-      if (failObject.hasOwnProperty('error_message')) {
-        // From an API4 exception
-        error = failObject.error_message;
-      }
-      else if (failObject.hasOwnProperty('statusText') && (failObject.statusText !== 'OK')) {
-        // A PHP exit can return 200 "OK" but we don't want to display "OK" as the error!
-        if (failObject.statusText === 'parsererror') {
-          error = ts('Configuration error - unable to process paymentIntent');
+      if (typeof failObject !== 'undefined') {
+        if (failObject.hasOwnProperty('error_message')) {
+          // From an API4 exception
+          error = failObject.error_message;
         }
-        else {
-          error = failObject.statusText;
-        }
+        else
+          if (failObject.hasOwnProperty('statusText') && (failObject.statusText !== 'OK')) {
+            // A PHP exit can return 200 "OK" but we don't want to display "OK" as the error!
+            if (failObject.statusText === 'parsererror') {
+              error = ts('Configuration error - unable to process paymentIntent');
+            }
+            else {
+              error = failObject.statusText;
+            }
+          }
       }
       CRM.payment.displayError(error, true);
       script.reloadReCAPTCHA();
