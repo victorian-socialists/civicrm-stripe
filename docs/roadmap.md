@@ -23,6 +23,8 @@ created outside of CiviCRM (eg. via WooCommerce, Stripe Dashboard).
 
 ### Estimate: 16 hours.
 
+See https://github.com/mjwconsult/civicrm-stripewebhookrules for a partial implementation.
+
 ## UI to map customers to CiviCRM contacts
 
 Based on the existing `Stripe.Importcustomers` API we can build a UI in CiviCRM that allows to manually
