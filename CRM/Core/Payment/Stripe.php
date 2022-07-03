@@ -1297,6 +1297,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @throws \API_Exception
    * @throws \Civi\API\Exception\UnauthorizedException
    * @throws \Civi\Payment\Exception\PaymentProcessorException
+   * @deprecated
    */
   public static function processPaymentNotification($paymentProcessorID, $rawData, $verifyRequest = TRUE, $emailReceipt = NULL) {
     // Set default http response to 200

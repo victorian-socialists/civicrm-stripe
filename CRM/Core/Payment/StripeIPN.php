@@ -335,6 +335,18 @@ class CRM_Core_Payment_StripeIPN {
    * @throws \Civi\API\Exception\UnauthorizedException
    */
   public function processQueuedWebhookEvent(array $webhookEvent) :bool {
+    $this->setEventID($webhookEvent['event_id']);
+    if (!$this->setEventType($webhookEvent['trigger'])) {
+      // We don't handle this event
+      return FALSE;
+    };
+    // @todo consider storing webhook data when received.
+    $this->setVerifyData(TRUE);
+    $this->setExceptionMode(FALSE);
+    if (isset($emailReceipt)) {
+      $this->setSendEmailReceipt($emailReceipt);
+    }
+
     $processingResult = $this->processWebhookEvent();
     // Update the stored webhook event.
     PaymentprocessorWebhook::update(FALSE)
