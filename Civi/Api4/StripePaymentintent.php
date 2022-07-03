@@ -13,7 +13,7 @@ class StripePaymentintent extends Generic\DAOEntity {
   public static function permissions() {
     $permissions = parent::permissions();
     $permissions['processMOTO'] = ['allow stripe moto payments'];
-    $permissions['processPublic'] = ['access AJAX API'];
+    $permissions['processPublic'] = [\CRM_Core_Permission::ALWAYS_ALLOW_PERMISSION];
     return $permissions;
   }
 
