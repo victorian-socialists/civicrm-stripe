@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="iso-8859-1" ?>
+
+<table>
+  <base>CRM/Stripe</base>
+  <class>StripeCustomer</class>
+  <name>civicrm_stripe_customers</name>
+  <comment>Stripe Customers</comment>
+  <log>true</log>
+
+  <field>
+    <name>id</name>
+    <title>Stripe Customer ID</title>
+    <type>varchar</type>
+    <length>255</length>
+    <comment>The Stripe Customer ID</comment>
+  </field>
+  <index>
+    <name>id</name>
+    <fieldName>id</fieldName>
+    <unique>true</unique>
+  </index>
+
+  <field>
+    <name>contact_id</name>
+    <type>int unsigned</type>
+    <comment>FK to Contact</comment>
+  </field>
+  <foreignKey>
+    <name>contact_id</name>
+    <table>civicrm_contact</table>
+    <key>id</key>
+    <onDelete>CASCADE</onDelete>
+  </foreignKey>
+
+  <field>
+    <name>processor_id</name>
+    <title>Payment Processor ID</title>
+    <type>int unsigned</type>
+    <comment>Foreign key to civicrm_payment_processor.id</comment>
+    <pseudoconstant>
+      <table>civicrm_payment_processor</table>
+      <keyColumn>id</keyColumn>
+      <labelColumn>name</labelColumn>
+    </pseudoconstant>
+  </field>
+  <!-- <foreignKey>
+    <name>processor_id</name>
+    <table>civicrm_payment_processor</table>
+    <key>id</key>
+    <onDelete>SET NULL</onDelete>
+  </foreignKey> -->
+
+  
+</table>

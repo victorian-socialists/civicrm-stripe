@@ -295,6 +295,11 @@ function _stripe_civix_fixNavigationMenuItems(&$nodes, &$maxNavID, $parentID) {
  */
 function _stripe_civix_civicrm_entityTypes(&$entityTypes) {
   $entityTypes = array_merge($entityTypes, [
+    'CRM_Stripe_DAO_StripeCustomer' => [
+      'name' => 'StripeCustomer',
+      'class' => 'CRM_Stripe_DAO_StripeCustomer',
+      'table' => 'civicrm_stripe_customers',
+    ],
     'CRM_Stripe_DAO_StripePaymentintent' => [
       'name' => 'StripePaymentintent',
       'class' => 'CRM_Stripe_DAO_StripePaymentintent',
