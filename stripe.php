@@ -255,3 +255,17 @@ function stripe_civicrm_permission(&$permissions) {
     $permissions['allow stripe moto payments'] = E::ts('CiviCRM Stripe: Process MOTO transactions');
   }
 }
+
+/*
+ * Implements hook_civicrm_post().
+ */
+function stripe_civicrm_post($op, $objectName, $objectId, &$objectRef) {
+  try {
+    if ($objectName == 'Contact' && $op == 'merge') {
+      CRM_Stripe_Customer::updateMetadataForContact($objectId);
+    }
+  }
+  catch (Exception $e) {
+    \Civi::log(E::SHORT_NAME)->error('Stripe Contact Merge failed: ' . $e->getMessage());
+  }
+}

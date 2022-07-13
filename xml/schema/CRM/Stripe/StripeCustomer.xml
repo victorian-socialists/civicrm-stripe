@@ -12,7 +12,7 @@
     <title>Stripe Customer ID</title>
     <type>varchar</type>
     <length>255</length>
-    <comment>The Stripe Customer ID</comment>
+    <comment>Stripe Customer ID</comment>
   </field>
   <index>
     <name>id</name>
@@ -36,7 +36,7 @@
     <name>processor_id</name>
     <title>Payment Processor ID</title>
     <type>int unsigned</type>
-    <comment>Foreign key to civicrm_payment_processor.id</comment>
+    <comment>ID from civicrm_payment_processor</comment>
     <pseudoconstant>
       <table>civicrm_payment_processor</table>
       <keyColumn>id</keyColumn>

@@ -263,4 +263,26 @@ class CRM_Stripe_Customer {
     CRM_Core_DAO::executeQuery($sql, $queryParams);
   }
 
+  /**
+   * Update the metadata at Stripe for a given contactid
+   *
+   * @param int $contactId
+   * @return void
+   */
+  public static function updateMetadataForContact(int $contactId): void {
+    $customers = \Civi\Api4\StripeCustomer::get()
+      ->addWhere('contact_id', '=', $contactId)
+      ->execute();
+
+    // Could be multiple customer_id's and/or stripe processors
+    foreach ($customers as $customer) {
+      $stripe = new CRM_Core_Payment_Stripe(null, $customer['processor_id']);
+      CRM_Stripe_Customer::updateMetadata(
+        ['contact_id' => $contactId, 'processor_id' => $customer['processor_id']],
+        $stripe,
+        $customer['id']
+      );
+    }
+  }
+
 }
