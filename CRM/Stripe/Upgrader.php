@@ -82,10 +82,10 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
     $config = CRM_Core_Config::singleton();
     $dbName = DB::connect($config->dsn)->_db;
 
-    $null_count =  CRM_Core_DAO::executeQuery('SELECT COUNT(*) FROM civicrm_stripe_customers where processor_id IS NULL') +
+    $null_count = CRM_Core_DAO::executeQuery('SELECT COUNT(*) FROM civicrm_stripe_customers where processor_id IS NULL') +
       CRM_Core_DAO::executeQuery('SELECT COUNT(*) FROM civicrm_stripe_plans where processor_id IS NULL') +
       CRM_Core_DAO::executeQuery('SELECT COUNT(*) FROM civicrm_stripe_subscriptions where processor_id IS NULL');
-    if ( $null_count == 0 ) {
+    if ($null_count == 0) {
       $this->ctx->log->info('Skipped civicrm_stripe update 5002.  No nulls found in column processor_id in our tables.');
       return TRUE;
     }
@@ -98,7 +98,7 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
         ]);
         foreach ($processorCount['values'] as $processorType) {
           if (!empty($processorType['api.PaymentProcessor.get']['id'])) {
-            $stripe_live =$processorType['api.PaymentProcessor.get']['id'];
+            $stripe_live = $processorType['api.PaymentProcessor.get']['id'];
             $stripe_test = $stripe_live + 1;
             $p = [
               1 => [$stripe_live, 'Integer'],
@@ -112,8 +112,7 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
             CRM_Core_DAO::executeQuery('UPDATE `civicrm_stripe_subscriptions` SET processor_id = %2 where processor_id IS NULL and is_live = 0', $p);
           }
         }
-      }
-      catch (CiviCRM_API3_Exception $e) {
+      } catch (CiviCRM_API3_Exception $e) {
         Civi::log()->debug("Cannot find a PaymentProcessorType named Stripe.");
         return;
       }
@@ -157,7 +156,7 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
     $config = CRM_Core_Config::singleton();
     $dbName = DB::connect($config->dsn)->_db;
 
-    $null_count =  CRM_Core_DAO::executeQuery('SELECT COUNT(*) FROM civicrm_stripe_subscriptions where subscription_id IS NULL');
+    $null_count = CRM_Core_DAO::executeQuery('SELECT COUNT(*) FROM civicrm_stripe_subscriptions where subscription_id IS NULL');
     if ($null_count == 0) {
       $this->ctx->log->info('Skipped civicrm_stripe update 5004.  No nulls found in column subscription_id in our civicrm_stripe_subscriptions table.');
     }
@@ -175,8 +174,7 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
             'customer' => $customer_id,
             'limit' => 1,
           ]);
-        }
-        catch (Exception $e) {
+        } catch (Exception $e) {
           // Don't quit here.  A missing customer in Stipe is OK.  They don't exist, so they can't have a subscription.
           Civi::log()->debug('Cannot find Stripe API key: ' . $e->getMessage());
         }
@@ -223,7 +221,7 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
   /**
    *  Method 1 for populating the contribution_recur_id column in the civicrm_stripe_subscriptions table.
    *  ( A simple approach if that works if there have never been any susbcription edits in the Stripe UI. )
-
+   *
    * @return TRUE on success
    * @throws Exception
    */
@@ -232,10 +230,10 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
     $config = CRM_Core_Config::singleton();
     $dbName = DB::connect($config->dsn)->_db;
 
-    $subscriptions  = CRM_Core_DAO::executeQuery("SELECT invoice_id,is_live
+    $subscriptions = CRM_Core_DAO::executeQuery("SELECT invoice_id,is_live
       FROM `civicrm_stripe_subscriptions`;");
-    while ( $subscriptions->fetch() ) {
-      $test_mode = (int)!$subscriptions->is_live;
+    while ($subscriptions->fetch()) {
+      $test_mode = (int) !$subscriptions->is_live;
       try {
         // Fetch the recurring contribution Id.
         $recur_id = civicrm_api3('Contribution', 'getvalue', [
@@ -244,8 +242,7 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
           'invoice_id' => $subscriptions->invoice_id,
           'contribution_test' => $test_mode,
         ]);
-      }
-      catch (CiviCRM_API3_Exception $e) {
+      } catch (CiviCRM_API3_Exception $e) {
         // Don't quit here. If we can't find the recurring ID for a single customer, make a note in the error log and carry on.
         Civi::log()->debug('Recurring contribution search: ' . $e->getMessage());
       }
@@ -408,6 +405,17 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
   public function upgrade_6801() {
     $this->ctx->log->info('In civicrm_stripe_paymentintent database table, change extra_data from varchar to text');
     CRM_Core_DAO::executeQuery('ALTER TABLE civicrm_stripe_paymentintent MODIFY extra_data TEXT');
+    return TRUE;
+  }
+
+  public function upgrade_6802() {
+    $this->ctx->log->info('Drop unused \'email\' and \'is_live\' columns from civicrm_stripe_customers database table');
+    if (CRM_Core_BAO_SchemaHandler::checkIfFieldExists('civicrm_stripe_customers', 'email')) {
+      CRM_Core_DAO::executeQuery("ALTER TABLE civicrm_stripe_customers DROP COLUMN email");
+    }
+    if (CRM_Core_BAO_SchemaHandler::checkIfFieldExists('civicrm_stripe_customers', 'is_live')) {
+      CRM_Core_DAO::executeQuery("ALTER TABLE civicrm_stripe_customers DROP COLUMN is_live");
+    }
     return TRUE;
   }
 
