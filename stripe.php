@@ -255,18 +255,3 @@ function stripe_civicrm_permission(&$permissions) {
     $permissions['allow stripe moto payments'] = E::ts('CiviCRM Stripe: Process MOTO transactions');
   }
 }
-
-/**
- * Implements hook_civicrm_alterApiRoutePermissions().
- *
- * @see CRM_Utils_Hook::alterApiRoutePermissions
- */
-function stripe_civicrm_alterApiRoutePermissions(&$permissions, $entity, $action) {
-  if ($entity == 'StripePaymentintent') {
-    // These actions should be accessible to anonymous users; permissions are checked internally
-    $allowedActions = ['ProcessPublic'];
-    if (in_array($action, $allowedActions, TRUE)) {
-      $permissions = 'make online contributions';
-    }
-  }
-}
