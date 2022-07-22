@@ -1,3 +1,10 @@
+# FAQ
+
+## Permissions
+
+To accept payments using Stripe you must have "make online contributions" permission enabled.
+No other permissions are required.
+
 ## Terminology
 
 #### CiviCRM <=> Stripe

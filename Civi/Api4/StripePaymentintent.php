@@ -13,7 +13,10 @@ class StripePaymentintent extends Generic\DAOEntity {
   public static function permissions() {
     $permissions = parent::permissions();
     $permissions['processMOTO'] = ['allow stripe moto payments'];
-    $permissions['processPublic'] = [\CRM_Core_Permission::ALWAYS_ALLOW_PERMISSION];
+    // The "minimum" permission for an API4 call is "access CiviCRM"|"access AJAX API".
+    // We can't remove the requirement for one of those permissions here.
+    // So we specify only 'make online contributions' using alterAPIRoutePermissions hook.
+    // $permissions['processPublic'] = ['make online contributions'];
     return $permissions;
   }
 
