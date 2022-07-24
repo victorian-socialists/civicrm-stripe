@@ -666,14 +666,18 @@ class CRM_Core_Payment_StripeIPN {
       \Civi::log()->error('Could not acquire lock to record refund for contribution: ' . $refundParams['contribution_id']);
     }
     $refundPayment = civicrm_api3('Payment', 'get', [
-      'trxn_id' => $refund['refund_trxn_id'],
+      'trxn_id' => $refundParams['trxn_id'],
       'total_amount' => $refundParams['total_amount'],
     ]);
-    if (empty($refundPayment['count'])) {
+    if (!empty($refundPayment['count'])) {
+      $message = 'OK - refund already recorded';
+    }
+    else {
       $this->updateContributionRefund($refundParams);
+      $message = 'OK - refund recorded';
     }
     $lock->release();
-    return 'OK - refund recorded';
+    return $message;
   }
 
   /**
