@@ -9,6 +9,14 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
+## Release 6.8 (not yet released)
+**You don't need "Access AJAX API" permission for anonymous user to make payments**
+
+* Implement optional MOTO payments for backoffice.
+* Refactor webhook processing to be more 'standard'. Deprecate API3 Stripe.ipn.
+* Switch to API4 endpoints (`StripePaymentintent.ProcessPublic`, `StripePaymentintent.ProcessMOTO`) for processing/creating paymentIntents.
+* Make `StripePaymentintent.ProcessPublic` conditional on 'make online contributions' permission.
+
 ## Release 6.7.14 (2022-12-19)
 
 * Fix [#404](https://lab.civicrm.org/extensions/stripe/-/issues/404)
