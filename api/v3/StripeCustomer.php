@@ -42,41 +42,43 @@ function _civicrm_api3_stripe_customer_get_spec(&$spec) {
  * @throws \CiviCRM_API3_Exception
  */
 function civicrm_api3_stripe_customer_get($params) {
-  $index = 1;
-  foreach ($params as $key => $value) {
-    switch ($key) {
-      case 'id':
-        $where[$index] = "{$key}=%{$index}";
-        $whereParam[$index] = [$value, 'String'];
-        $index++;
-        break;
+  return _civicrm_api3_basic_get(_civicrm_api3_get_BAO(__FUNCTION__), $params, TRUE, 'StripeCustomer');
 
-      case 'contact_id':
-      case 'processor_id':
-        $where[$index] = "{$key}=%{$index}";
-        $whereParam[$index] = [$value, 'Integer'];
-        $index++;
-        break;
+  // $index = 1;
+  // foreach ($params as $key => $value) {
+  //   switch ($key) {
+  //     case 'id':
+  //       $where[$index] = "{$key}=%{$index}";
+  //       $whereParam[$index] = [$value, 'String'];
+  //       $index++;
+  //       break;
 
-    }
-  }
+  //     case 'contact_id':
+  //     case 'processor_id':
+  //       $where[$index] = "{$key}=%{$index}";
+  //       $whereParam[$index] = [$value, 'Integer'];
+  //       $index++;
+  //       break;
 
-  $query = "SELECT * FROM civicrm_stripe_customers ";
-  if (count($where)) {
-    $whereClause = implode(' AND ', $where);
-    $query .= "WHERE {$whereClause}";
-  }
-  $dao = CRM_Core_DAO::executeQuery($query, $whereParam);
+  //   }
+  // }
 
-  while ($dao->fetch()) {
-    $result = [
-      'id' => $dao->id,
-      'contact_id' => $dao->contact_id,
-      'processor_id' => $dao->processor_id,
-    ];
-    $results[] = $result;
-  }
-  return civicrm_api3_create_success($results ?? []);
+  // $query = "SELECT * FROM civicrm_stripe_customers ";
+  // if (count($where)) {
+  //   $whereClause = implode(' AND ', $where);
+  //   $query .= "WHERE {$whereClause}";
+  // }
+  // $dao = CRM_Core_DAO::executeQuery($query, $whereParam);
+
+  // while ($dao->fetch()) {
+  //   $result = [
+  //     'id' => $dao->id,
+  //     'contact_id' => $dao->contact_id,
+  //     'processor_id' => $dao->processor_id,
+  //   ];
+  //   $results[] = $result;
+  // }
+  // return civicrm_api3_create_success($results ?? []);
 }
 
 /**
@@ -152,55 +154,56 @@ function civicrm_api3_stripe_customer_create($params) {
  * @return array
  * @throws \CiviCRM_API3_Exception
  */
-function civicrm_api3_stripe_customer_updatecontactids($params) {
-  $dao = CRM_Core_DAO::executeQuery('SELECT email, id FROM civicrm_stripe_customers WHERE contact_id IS NULL');
-  $counts = [
-    'updated' => 0,
-    'failed' => 0,
-  ];
-  while ($dao->fetch()) {
-    $contactId = NULL;
-    try {
-      $contactId = civicrm_api3('Contact', 'getvalue', [
-        'return' => "id",
-        'email' => $dao->email,
-      ]);
-    }
-    catch (Exception $e) {
-      // Most common problem is duplicates.
-      if(preg_match("/Expected one Contact but found/", $e->getMessage())) {
-        // Still no luck. Now get desperate.
-        $sql = "SELECT c.id
-            FROM civicrm_contact c JOIN civicrm_email e ON c.id = e.contact_id
-            JOIN civicrm_contribution cc ON c.id = cc.contact_id
-            WHERE e.email = %0 AND c.is_deleted = 0 AND is_test = 0 AND
-              trxn_id LIKE 'ch_%' AND contribution_status_id = 1
-            ORDER BY receive_date DESC LIMIT 1";
-        $dao_contribution = CRM_Core_DAO::executeQuery($sql, [0 => [$dao->email, 'String']]);
-        $dao_contribution->fetch();
-        if ($dao_contribution->id) {
-          $contactId = $dao_contribution->id;
-        }
-      }
-      if (empty($contactId)) {
-        // Still no luck. Log it and move on.
-        Civi::log()->debug('Stripe Upgrader: No contact ID found for stripe customer with email: ' . $dao->email);
-        $counts['failed']++;
-        continue;
-      }
-    }
+// Obsolete - email column has been dropped.
+// function civicrm_api3_stripe_customer_updatecontactids($params) {
+//   $dao = CRM_Core_DAO::executeQuery('SELECT email, id FROM civicrm_stripe_customers WHERE contact_id IS NULL');
+//   $counts = [
+//     'updated' => 0,
+//     'failed' => 0,
+//   ];
+//   while ($dao->fetch()) {
+//     $contactId = NULL;
+//     try {
+//       $contactId = civicrm_api3('Contact', 'getvalue', [
+//         'return' => "id",
+//         'email' => $dao->email,
+//       ]);
+//     }
+//     catch (Exception $e) {
+//       // Most common problem is duplicates.
+//       if(preg_match("/Expected one Contact but found/", $e->getMessage())) {
+//         // Still no luck. Now get desperate.
+//         $sql = "SELECT c.id
+//             FROM civicrm_contact c JOIN civicrm_email e ON c.id = e.contact_id
+//             JOIN civicrm_contribution cc ON c.id = cc.contact_id
+//             WHERE e.email = %0 AND c.is_deleted = 0 AND is_test = 0 AND
+//               trxn_id LIKE 'ch_%' AND contribution_status_id = 1
+//             ORDER BY receive_date DESC LIMIT 1";
+//         $dao_contribution = CRM_Core_DAO::executeQuery($sql, [0 => [$dao->email, 'String']]);
+//         $dao_contribution->fetch();
+//         if ($dao_contribution->id) {
+//           $contactId = $dao_contribution->id;
+//         }
+//       }
+//       if (empty($contactId)) {
+//         // Still no luck. Log it and move on.
+//         Civi::log()->debug('Stripe Upgrader: No contact ID found for stripe customer with email: ' . $dao->email);
+//         $counts['failed']++;
+//         continue;
+//       }
+//     }
 
-    $sqlParams = [
-      1 => [$contactId, 'Integer'],
-      2 => [$dao->email, 'String'],
-    ];
-    $sql = 'UPDATE civicrm_stripe_customers SET contact_id=%1 WHERE email=%2';
-    CRM_Core_DAO::executeQuery($sql, $sqlParams);
-    $counts['updated']++;
-  }
+//     $sqlParams = [
+//       1 => [$contactId, 'Integer'],
+//       2 => [$dao->email, 'String'],
+//     ];
+//     $sql = 'UPDATE civicrm_stripe_customers SET contact_id=%1 WHERE email=%2';
+//     CRM_Core_DAO::executeQuery($sql, $sqlParams);
+//     $counts['updated']++;
+//   }
 
-  return civicrm_api3_create_success($counts);
-}
+//   return civicrm_api3_create_success($counts);
+// }
 
 /**
  * @param array $spec
@@ -255,7 +258,8 @@ function civicrm_api3_stripe_customer_updatestripemetadata($params) {
     // Get the stripe customer from stripe
     try {
       $paymentProcessor->stripeClient->customers->retrieve($customerId);
-    } catch (Exception $e) {
+    }
+    catch (Exception $e) {
       $err = CRM_Core_Payment_Stripe::parseStripeException('retrieve_customer', $e);
       throw new PaymentProcessorException('Failed to retrieve Stripe Customer: ' . $err['code']);
     }

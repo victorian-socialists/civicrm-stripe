@@ -50,7 +50,7 @@ function civicrm_api3_stripe_importcustomers($params) {
     'imported' => [],
     'skipped' => [],
     'errors' => [],
-    'continue_after' => NULL
+    'continue_after' => NULL,
   ];
 
   // Get customers from Stripe
@@ -68,43 +68,51 @@ function civicrm_api3_stripe_importcustomers($params) {
 
   // Search the customers in CiviCRM
   $customer_ids = array_map(
-    function ($customer) { return $customer->id; },
+    function ($customer) {
+      return $customer->id;
+    },
     $customers_stripe->data
   );
   $customers_stripe_clean = $customers_stripe->data;
 
-  $escaped_customer_ids = CRM_Utils_Type::escapeAll($customer_ids, 'String');
-  $filter_item = array_map(
-    function ($customer_id) { return "'$customer_id'"; },
-    $escaped_customer_ids
-  );
+  // $escaped_customer_ids = CRM_Utils_Type::escapeAll($customer_ids, 'String');
+  // $filter_item = array_map(
+  //   function ($customer_id) { return "'$customer_id'"; },
+  //   $escaped_customer_ids
+  // );
 
-  if (count($filter_item)) {
-    $select = "SELECT sc.*
-    FROM civicrm_stripe_customers AS sc
-    WHERE
-      sc.id IN (" . join(', ', $filter_item) . ") AND
-      sc.contact_id IS NOT NULL";
-    $dao = CRM_Core_DAO::executeQuery($select);
-    $customers_in_civicrm = $dao->fetchAll();
-    $customer_ids = array_map(
-      function ($customer) { return $customer['id']; },
-      $customers_in_civicrm
-    );
-  } else {
-    $customers_in_civicrm = $customer_ids = [];
+  if (count($customer_ids)) {
+    $customers_in_civicrm = \Civi\Api4\StripeCustomer::get()
+      ->addSelect('*')
+      ->addWhere('id', 'IN', $customer_ids)
+      ->addWhere('contact_id', 'IS NOT NULL')
+      ->execute()
+      ->indexBy('id');
+
+    // $select = "SELECT sc.*
+    // FROM civicrm_stripe_customers AS sc
+    // WHERE
+    //   sc.id IN (" . join(', ', $filter_item) . ") AND
+    //   sc.contact_id IS NOT NULL";
+    // $dao = CRM_Core_DAO::executeQuery($select);
+    // $customers_in_civicrm = $dao->fetchAll();
+    // $customer_ids = array_map(
+    //   function ($customer) { return $customer['id']; },
+    //   $customers_in_civicrm
+    // );
+  }
+  else {
+    $customers_in_civicrm = [];
   }
 
   foreach ($customers_stripe_clean as $customer) {
     $results['continue_after'] = $customer->id;
 
     // Return if contact was found
-    if (array_search($customer->id, $customer_ids) !== FALSE) {
-      $customer_in_civicrm = array_filter($customers_in_civicrm,
-        function ($record) use($customer) { return $record['id'] == $customer->id; }
-      );
+    if (isset($customers_in_civicrm[$customer->id])) {
+
       $results['skipped'][] = [
-        'contact_id' => end($customer_in_civicrm)['contact_id'],
+        'contact_id' => $customers_in_civicrm[$customer->id]['contact_id'],
         'email' => $customer->email,
         'stripe_id' => $customer->id,
       ];

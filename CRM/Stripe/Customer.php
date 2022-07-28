@@ -36,15 +36,14 @@ class CRM_Stripe_Customer {
     if (empty($params['contact_id'])) {
       throw new PaymentProcessorException('Stripe Customer (find): contact_id is required');
     }
-    $queryParams = [
-      1 => [$params['contact_id'], 'String'],
-      2 => [$params['processor_id'], 'Positive'],
-    ];
 
+    $result = \Civi\Api4\StripeCustomer::get()
+      ->addWhere('contact_id', '=', $params['contact_id'])
+      ->addWhere('processor_id', '=', $params['processor_id'])
+      ->addSelect('id')
+      ->execute();
 
-    return CRM_Core_DAO::singleValueQuery("SELECT id
-      FROM civicrm_stripe_customers
-      WHERE contact_id = %1 AND processor_id = %2", $queryParams);
+    return $result->count() ? $result->first()['id'] : NULL;
   }
 
   /**
@@ -55,18 +54,14 @@ class CRM_Stripe_Customer {
    * @return array|null
    */
   public static function getParamsForCustomerId($stripeCustomerId) {
-    $queryParams = [
-      1 => [$stripeCustomerId, 'String'],
-    ];
+    $result = \Civi\Api4\StripeCustomer::get()
+      ->addWhere('id', '=', $stripeCustomerId)
+      ->addSelect('contact_id', 'processor_id')
+      ->execute()
+      ->first();
 
-    $dao = CRM_Core_DAO::executeQuery("SELECT contact_id, processor_id
-      FROM civicrm_stripe_customers
-      WHERE id = %1", $queryParams);
-    $dao->fetch();
-    return [
-      'contact_id' => $dao->contact_id,
-      'processor_id' => $dao->processor_id,
-    ];
+    // Not sure whether this return for no match is needed, but that's what was being returned previously
+    return $result ? $result : ['contact_id' => NULL, 'processor_id' => NULL];
   }
 
   /**
@@ -77,26 +72,10 @@ class CRM_Stripe_Customer {
    * @return array|null
    */
   public static function getAll($processorId, $options = []) {
-    $queryParams = [
-      1 => [$processorId, 'Integer'],
-    ];
-
-    $limitClause = '';
-    if ($limit = CRM_Utils_Array::value('limit', $options)) {
-      $limitClause = "LIMIT $limit";
-      if ($offset = CRM_Utils_Array::value('offset', $options)) {
-        $limitClause .= " OFFSET $offset";
-      }
-    }
-
-    $customerIds = [];
-    $dao = CRM_Core_DAO::executeQuery("SELECT id
-      FROM civicrm_stripe_customers
-      WHERE processor_id = %1 {$limitClause}", $queryParams);
-    while ($dao->fetch()) {
-      $customerIds[] = $dao->id;
-    }
-    return $customerIds;
+    return civicrm_api4('StripeCustomer', 'get', [
+      'select' => ['id'],
+      'where' => [['processor_id', '=', $processorId]],
+    ] + $options, ['id']);
   }
 
   /**
@@ -107,6 +86,9 @@ class CRM_Stripe_Customer {
    * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
   public static function add($params) {
+    // This should work, but fails because 'id' is a special param in DAOCreateAction
+    // return civicrm_api4('StripeCustomer', 'create', ['values' => $params]);
+
     $requiredParams = ['contact_id', 'id', 'processor_id'];
     foreach ($requiredParams as $required) {
       if (empty($params[$required])) {
@@ -211,7 +193,7 @@ class CRM_Stripe_Customer {
       'name' => $contactDisplayName,
       // Stripe does not include the Customer Name when exporting payments, just the customer
       // description, so we stick the name in the description.
-      'description' =>  $contactDisplayName . ' (CiviCRM)',
+      'description' => $contactDisplayName . ' (CiviCRM)',
       'email' => $params['email'] ?? '',
       'metadata' => [
         'CiviCRM Contact ID' => $params['contact_id'],
@@ -244,39 +226,36 @@ class CRM_Stripe_Customer {
       throw new PaymentProcessorException('Stripe Customer (delete): Missing required parameter: contact_id or id');
     }
 
+    $delete = \Civi\Api4\StripeCustomer::delete()
+      ->addWhere('processor_id', '=', $params['processor_id']);
+
     if (!empty($params['id'])) {
-      $queryParams = [
-        1 => [$params['id'], 'String'],
-        2 => [$params['processor_id'], 'Integer'],
-      ];
-      $sql = "DELETE FROM civicrm_stripe_customers
-            WHERE id = %1 AND processor_id = %2";
+      $delete = $delete->addWhere('id', '=', $params['id']);
     }
     else {
-      $queryParams = [
-        1 => [$params['contact_id'], 'String'],
-        2 => [$params['processor_id'], 'Integer'],
-      ];
-      $sql = "DELETE FROM civicrm_stripe_customers
-            WHERE contact_id = %1 AND processor_id = %2";
+      $delete = $delete->addWhere('contact_id', '=', $params['contact_id']);
     }
-    CRM_Core_DAO::executeQuery($sql, $queryParams);
+    $delete->execute();
   }
 
   /**
    * Update the metadata at Stripe for a given contactid
    *
    * @param int $contactId
+   * @param int $processorId optional
    * @return void
    */
-  public static function updateMetadataForContact(int $contactId): void {
+  public static function updateMetadataForContact(int $contactId, int $processorId = NULL): void {
     $customers = \Civi\Api4\StripeCustomer::get()
-      ->addWhere('contact_id', '=', $contactId)
-      ->execute();
+      ->addWhere('contact_id', '=', $contactId);
+    if ($processorId) {
+      $customers = $customers->addWhere('processor_id', '=', $processorId);
+    }
+    $customers = $customers->execute();
 
     // Could be multiple customer_id's and/or stripe processors
     foreach ($customers as $customer) {
-      $stripe = new CRM_Core_Payment_Stripe(null, $customer['processor_id']);
+      $stripe = new CRM_Core_Payment_Stripe(NULL, $customer['processor_id']);
       CRM_Stripe_Customer::updateMetadata(
         ['contact_id' => $contactId, 'processor_id' => $customer['processor_id']],
         $stripe,
