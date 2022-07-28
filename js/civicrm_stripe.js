@@ -618,7 +618,7 @@
         // Hide the CiviCRM postcode field so it will still be submitted but will contain the value set in the stripe card-element.
         if (document.getElementById('billing_postal_code-5').value) {
           document.getElementById('billing_postal_code-5')
-            .setAttribute('disabled', true);
+            .setAttribute('readonly', true);
         }
         else {
           document.getElementsByClassName('billing_postal_code-' + CRM.vars[script.name].billingAddressID + '-section')[0].setAttribute('hidden', true);
