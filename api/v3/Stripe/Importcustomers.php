@@ -75,31 +75,13 @@ function civicrm_api3_stripe_importcustomers($params) {
   );
   $customers_stripe_clean = $customers_stripe->data;
 
-  // $escaped_customer_ids = CRM_Utils_Type::escapeAll($customer_ids, 'String');
-  // $filter_item = array_map(
-  //   function ($customer_id) { return "'$customer_id'"; },
-  //   $escaped_customer_ids
-  // );
-
   if (count($customer_ids)) {
     $customers_in_civicrm = \Civi\Api4\StripeCustomer::get()
       ->addSelect('*')
-      ->addWhere('id', 'IN', $customer_ids)
+      ->addWhere('customer_id', 'IN', $customer_ids)
       ->addWhere('contact_id', 'IS NOT NULL')
       ->execute()
-      ->indexBy('id');
-
-    // $select = "SELECT sc.*
-    // FROM civicrm_stripe_customers AS sc
-    // WHERE
-    //   sc.id IN (" . join(', ', $filter_item) . ") AND
-    //   sc.contact_id IS NOT NULL";
-    // $dao = CRM_Core_DAO::executeQuery($select);
-    // $customers_in_civicrm = $dao->fetchAll();
-    // $customer_ids = array_map(
-    //   function ($customer) { return $customer['id']; },
-    //   $customers_in_civicrm
-    // );
+      ->indexBy('customer_id');
   }
   else {
     $customers_in_civicrm = [];

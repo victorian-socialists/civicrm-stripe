@@ -10,6 +10,7 @@
  */
 
 use Civi\Api4\Contact;
+use Civi\Api4\StripeCustomer;
 use Civi\Payment\Exception\PaymentProcessorException;
 use CRM_Stripe_ExtensionUtil as E;
 
@@ -37,13 +38,13 @@ class CRM_Stripe_Customer {
       throw new PaymentProcessorException('Stripe Customer (find): contact_id is required');
     }
 
-    $result = \Civi\Api4\StripeCustomer::get()
+    $result = StripeCustomer::get()
       ->addWhere('contact_id', '=', $params['contact_id'])
       ->addWhere('processor_id', '=', $params['processor_id'])
-      ->addSelect('id')
+      ->addSelect('customer_id')
       ->execute();
 
-    return $result->count() ? $result->first()['id'] : NULL;
+    return $result->count() ? $result->first()['customer_id'] : NULL;
   }
 
   /**
@@ -54,8 +55,8 @@ class CRM_Stripe_Customer {
    * @return array|null
    */
   public static function getParamsForCustomerId($stripeCustomerId) {
-    $result = \Civi\Api4\StripeCustomer::get()
-      ->addWhere('id', '=', $stripeCustomerId)
+    $result = StripeCustomer::get()
+      ->addWhere('customer_id', '=', $stripeCustomerId)
       ->addSelect('contact_id', 'processor_id')
       ->execute()
       ->first();
@@ -73,9 +74,9 @@ class CRM_Stripe_Customer {
    */
   public static function getAll($processorId, $options = []) {
     return civicrm_api4('StripeCustomer', 'get', [
-      'select' => ['id'],
+      'select' => ['customer_id'],
       'where' => [['processor_id', '=', $processorId]],
-    ] + $options, ['id']);
+    ] + $options, ['customer_id']);
   }
 
   /**
@@ -86,24 +87,7 @@ class CRM_Stripe_Customer {
    * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
   public static function add($params) {
-    // This should work, but fails because 'id' is a special param in DAOCreateAction
-    // return civicrm_api4('StripeCustomer', 'create', ['values' => $params]);
-
-    $requiredParams = ['contact_id', 'id', 'processor_id'];
-    foreach ($requiredParams as $required) {
-      if (empty($params[$required])) {
-        throw new PaymentProcessorException('Stripe Customer (add): Missing required parameter: ' . $required);
-      }
-    }
-
-    $queryParams = [
-      1 => [$params['contact_id'], 'String'],
-      2 => [$params['id'], 'String'],
-      3 => [$params['processor_id'], 'Integer'],
-    ];
-
-    CRM_Core_DAO::executeQuery("INSERT INTO civicrm_stripe_customers
-          (contact_id, id, processor_id) VALUES (%1, %2, %3)", $queryParams);
+    return civicrm_api4('StripeCustomer', 'create', ['values' => $params]);
   }
 
   /**
@@ -135,7 +119,7 @@ class CRM_Stripe_Customer {
     // Store the relationship between CiviCRM's email address for the Contact & Stripe's Customer ID.
     $params = [
       'contact_id' => $params['contact_id'],
-      'id' => $stripeCustomer->id,
+      'customer_id' => $stripeCustomer->id,
       'processor_id' => $params['processor_id'],
     ];
     self::add($params);
@@ -222,15 +206,15 @@ class CRM_Stripe_Customer {
         throw new PaymentProcessorException('Stripe Customer (delete): Missing required parameter: ' . $required);
       }
     }
-    if (empty($params['contact_id']) && empty($params['id'])) {
-      throw new PaymentProcessorException('Stripe Customer (delete): Missing required parameter: contact_id or id');
+    if (empty($params['contact_id']) && empty($params['customer_id'])) {
+      throw new PaymentProcessorException('Stripe Customer (delete): Missing required parameter: contact_id or customer_id');
     }
 
-    $delete = \Civi\Api4\StripeCustomer::delete()
+    $delete = StripeCustomer::delete()
       ->addWhere('processor_id', '=', $params['processor_id']);
 
-    if (!empty($params['id'])) {
-      $delete = $delete->addWhere('id', '=', $params['id']);
+    if (!empty($params['customer_id'])) {
+      $delete = $delete->addWhere('customer_id', '=', $params['customer_id']);
     }
     else {
       $delete = $delete->addWhere('contact_id', '=', $params['contact_id']);
@@ -246,7 +230,7 @@ class CRM_Stripe_Customer {
    * @return void
    */
   public static function updateMetadataForContact(int $contactId, int $processorId = NULL): void {
-    $customers = \Civi\Api4\StripeCustomer::get()
+    $customers = StripeCustomer::get()
       ->addWhere('contact_id', '=', $contactId);
     if ($processorId) {
       $customers = $customers->addWhere('processor_id', '=', $processorId);
@@ -259,7 +243,7 @@ class CRM_Stripe_Customer {
       CRM_Stripe_Customer::updateMetadata(
         ['contact_id' => $contactId, 'processor_id' => $customer['processor_id']],
         $stripe,
-        $customer['id']
+        $customer['customer_id']
       );
     }
   }

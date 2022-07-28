@@ -12,10 +12,23 @@ Releases use the following numbering system:
 ## Release 6.8 (not yet released)
 **You don't need "Access AJAX API" permission for anonymous user to make payments**
 
+### Highlights:
+* Implement optional MOTO payments for backoffice.
+
+### Breaking changes:
+* In APIv3 StripeCustomer, the `id` field is renamed to `customer_id` and a standard autoincrement `id` field is added.  Note that previously `customer_id` was an alias for the `id` field so scripts using this Api may already be using `customer_id`.
+* You DO NOT need "Access AJAX API" permission for anonymous user to make payments.
+* You DO need "Make online contributions" permission for anonymous user to make payments.
+
+### Detailed changes:
 * Implement optional MOTO payments for backoffice.
 * Refactor webhook processing to be more 'standard'. Deprecate API3 Stripe.ipn.
 * Switch to API4 endpoints (`StripePaymentintent.ProcessPublic`, `StripePaymentintent.ProcessMOTO`) for processing/creating paymentIntents.
 * Make `StripePaymentintent.ProcessPublic` conditional on 'make online contributions' permission.
+* Fix [#294](https://lab.civicrm.org/extensions/stripe/-/issues/294) Stripe customer data not updated when contacts are merged.
+* Add APIv4 for StripeCustomer.
+* In APIv3 StripeCustomer, the `id` field is renamed to `customer_id` and a standard autoincrement `id` field is added.  Note that previously `customer_id` was an alias for the `id` field so scripts using this Api may already be using `customer_id`.
+* Fix StripeCustomer.updatemetadata() to use correct metadata.
 
 ## Release 6.7.14 (2022-12-19)
 

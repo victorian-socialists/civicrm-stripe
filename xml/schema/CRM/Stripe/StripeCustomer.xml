@@ -9,14 +9,25 @@
 
   <field>
     <name>id</name>
+    <type>int unsigned</type>
+    <required>true</required>
+    <comment>Unique ID</comment>
+  </field>
+  <primaryKey>
+    <name>id</name>
+    <autoincrement>true</autoincrement>
+  </primaryKey>
+
+  <field>
+    <name>customer_id</name>
     <title>Stripe Customer ID</title>
     <type>varchar</type>
     <length>255</length>
     <comment>Stripe Customer ID</comment>
   </field>
   <index>
-    <name>id</name>
-    <fieldName>id</fieldName>
+    <name>customer_id</name>
+    <fieldName>customer_id</fieldName>
     <unique>true</unique>
   </index>
 

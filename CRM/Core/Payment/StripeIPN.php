@@ -850,7 +850,7 @@ class CRM_Core_Payment_StripeIPN {
     }
     try {
       $customer = civicrm_api3('StripeCustomer', 'getsingle', [
-        'id' => $this->customer_id,
+        'customer_id' => $this->customer_id,
       ]);
       $this->contactID = $customer['contact_id'];
       if ($this->_paymentProcessor->getID() !== (int) $customer['processor_id']) {

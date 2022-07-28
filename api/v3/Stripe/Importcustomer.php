@@ -46,7 +46,7 @@ function civicrm_api3_stripe_importcustomer($params) {
     'name' => property_exists($customer, 'name') ? $customer->name : NULL,
     'email' => property_exists($customer, 'email') ? $customer->email : NULL,
   ];
-  $results = civicrm_api3('StripeCustomer', 'get', [ 'id' => $customer->id ]);
+  $results = civicrm_api3('StripeCustomer', 'get', [ 'customer_id' => $customer->id ]);
   if ($results['count'] > 0) {
     $return = array_merge($return, $results['values']);
   }
@@ -136,7 +136,7 @@ function civicrm_api3_stripe_importcustomer($params) {
         civicrm_api3('StripeCustomer', 'create',
           [
             'contact_id' => $contact_id,
-            'id' => $customer->id,
+            'customer_id' => $customer->id,
             'processor_id' => $params['ppid']
           ]
         );

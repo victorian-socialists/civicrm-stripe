@@ -413,7 +413,7 @@ function civicrm_api3_stripe_Listevents($params) {
 
       if ($customer) {
         // Check if the customer is in the stripe customer table.
-        $results = civicrm_api3('StripeCustomer', 'get', [ 'id' => $customer]);
+        $results = civicrm_api3('StripeCustomer', 'get', [ 'customer_id' => $customer]);
         if ($results['count'] == 1) {
           $value = array_pop($results['values']);
           $item['contact_id'] = $value['contact_id'];

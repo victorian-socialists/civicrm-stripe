@@ -111,7 +111,7 @@ function civicrm_api3_stripe_importsubscriptions($params) {
     // Search the Stripe customer to get the contact id
     $customer_civicrm = civicrm_api3('StripeCustomer', 'get', [
       'sequential' => 1,
-      'id' => $stripe_subscription->customer,
+      'customer_id' => $stripe_subscription->customer,
     ]);
     if (isset($customer_civicrm['values'][0]['contact_id'])) {
       $new_subscription['contact_id'] = $customer_civicrm['values'][0]['contact_id'];
