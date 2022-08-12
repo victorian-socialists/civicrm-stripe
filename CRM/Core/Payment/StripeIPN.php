@@ -296,7 +296,6 @@ class CRM_Core_Payment_StripeIPN {
       // So we will record this webhook but will not process now (it will be processed later by the scheduled job).
     }
 
-    // In mjwshared 1.1 status defaults to NULL. In 1.2 status defaults to "new".
     PaymentprocessorWebhook::create(FALSE)
       ->addValue('payment_processor_id', $this->_paymentProcessor->getID())
       ->addValue('trigger', $this->getEventType())

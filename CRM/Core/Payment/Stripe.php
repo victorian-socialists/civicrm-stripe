@@ -14,6 +14,7 @@ use CRM_Stripe_ExtensionUtil as E;
 use Civi\Payment\PropertyBag;
 use Stripe\Stripe;
 use Civi\Payment\Exception\PaymentProcessorException;
+use Stripe\StripeObject;
 use Stripe\Webhook;
 
 /**
@@ -1193,10 +1194,10 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     // Set default http response to 200
     http_response_code(200);
     $rawData = file_get_contents("php://input");
-    $event = json_decode($rawData);
+    $event = json_decode($rawData, TRUE);
     $ipnClass = new CRM_Core_Payment_StripeIPN($this);
-    $ipnClass->setEventID($event->id);
-    if (!$ipnClass->setEventType($event->type)) {
+    $ipnClass->setEventID($event['id']);
+    if (!$ipnClass->setEventType($event['type'])) {
       // We don't handle this event
       return;
     }
@@ -1206,10 +1207,10 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       $sigHeader = $_SERVER['HTTP_STRIPE_SIGNATURE'];
 
       try {
-        Webhook::constructEvent(
-          $rawData, $sigHeader, $webhookSecret
-        );
+        Webhook::constructEvent($rawData, $sigHeader, $webhookSecret);
         $ipnClass->setVerifyData(FALSE);
+        $data = StripeObject::constructFrom($event['data']);
+        $ipnClass->setData($data);
       } catch (\UnexpectedValueException $e) {
         // Invalid payload
         \Civi::log()->error('Stripe webhook signature validation error: ' . $e->getMessage());
