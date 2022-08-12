@@ -712,11 +712,6 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     }
     $ipnClass->setExceptionMode(FALSE);
 
-    // This code commented as $emailReceipt is never passed in/set.
-    // if (isset($emailReceipt)) {
-    //   $ipnClass->setSendEmailReceipt($emailReceipt);
-    // }
-
     return $ipnClass->processWebhookEvent()->ok;
   }
 

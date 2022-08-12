@@ -1297,6 +1297,14 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     }
 
     $handler = new CRM_Core_Payment_StripeIPN($this);
+    $handler->setEventID($webhookEvent['event_id']);
+    if (!$handler->setEventType($webhookEvent['trigger'])) {
+      // We don't handle this event
+      return FALSE;
+    }
+    // We retrieve/validate/store the webhook data when it is received.
+    $handler->setVerifyData(FALSE);
+    $handler->setExceptionMode(FALSE);
     return $handler->processQueuedWebhookEvent($webhookEvent);
   }
 

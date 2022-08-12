@@ -11,6 +11,7 @@
 
 use Civi\Api4\ContributionRecur;
 use Civi\Api4\PaymentprocessorWebhook;
+use Civi\Payment\Exception\PaymentProcessorException;
 
 /**
  * Class CRM_Core_Payment_StripeIPN
@@ -154,19 +155,22 @@ class CRM_Core_Payment_StripeIPN {
   }
 
   /**
-   * Store input array on the class.
+   * Check, decode, validate webhook data and extract some parameters to the class.
    */
   public function setInputParameters() {
     if ($this->setInputParametersHasRun) {
       return;
     }
 
+    // If we don't have a webhook signing secret we need to retrieve the event again
+    // to make sure that it is "real" and was not faked.
     if ($this->getVerifyData()) {
       /** @var \Stripe\Event $event */
       $event = $this->_paymentProcessor->stripeClient->events->retrieve($this->eventID);
       $this->setData($event->data);
     }
 
+    // If we have a webhook signing secret data was already set on the class.
     $data = $this->getData();
     if (!is_object($data)) {
       $this->exception('Invalid input data (not an object)');
@@ -235,7 +239,7 @@ class CRM_Core_Payment_StripeIPN {
    * @throws \CiviCRM_API3_Exception
    * @throws \Stripe\Exception\UnknownApiErrorException
    */
-  public function onReceiveWebhook() {
+  public function onReceiveWebhook(): bool {
     if (!in_array($this->eventType, CRM_Stripe_Webhook::getDefaultEnabledEvents())) {
       // We don't handle this event, return 200 OK so Stripe does not retry.
       return TRUE;
@@ -250,6 +254,7 @@ class CRM_Core_Payment_StripeIPN {
       exit();
     }
 
+    // Check, decode, validate webhook data and extract some parameters to the class
     $this->setInputParameters();
 
     $uniqueIdentifier = $this->getWebhookUniqueIdentifier();
@@ -296,13 +301,14 @@ class CRM_Core_Payment_StripeIPN {
       // So we will record this webhook but will not process now (it will be processed later by the scheduled job).
     }
 
-    PaymentprocessorWebhook::create(FALSE)
+    $newWebhookEvent = PaymentprocessorWebhook::create(FALSE)
       ->addValue('payment_processor_id', $this->_paymentProcessor->getID())
       ->addValue('trigger', $this->getEventType())
       ->addValue('identifier', $uniqueIdentifier)
       ->addValue('event_id', $this->getEventID())
       ->addValue('data', $this->getData())
-      ->execute();
+      ->execute()
+      ->first();
 
     // Check the number of webhooks to be processed does not exceed connection-limit
     $toBeProcessedWebhook = PaymentprocessorWebhook::get(FALSE)
@@ -316,7 +322,7 @@ class CRM_Core_Payment_StripeIPN {
         return TRUE;
     }
 
-    return $this->processWebhookEvent()->ok;
+    return $this->processQueuedWebhookEvent($newWebhookEvent);
   }
 
   /**
@@ -329,18 +335,16 @@ class CRM_Core_Payment_StripeIPN {
    * @throws \Civi\API\Exception\UnauthorizedException
    */
   public function processQueuedWebhookEvent(array $webhookEvent) :bool {
-    $this->setEventID($webhookEvent['event_id']);
-    if (!$this->setEventType($webhookEvent['trigger'])) {
-      // We don't handle this event
-      return FALSE;
-    };
-    // @todo consider storing webhook data when received.
-    $this->setVerifyData(TRUE);
-    $this->setExceptionMode(FALSE);
-    if (isset($emailReceipt)) {
-      $this->setSendEmailReceipt($emailReceipt);
-    }
-    return $this->processWebhookEvent()->ok;
+    $processingResult = $this->processWebhookEvent();
+    // Update the stored webhook event.
+    PaymentprocessorWebhook::update(FALSE)
+      ->addWhere('id', '=', $webhookEvent['id'])
+      ->addValue('status', $processingResult->ok ? 'success' : 'error')
+      ->addValue('message', preg_replace('/^(.{250}).*/su', '$1 ...', $processingResult->message))
+      ->addValue('processed_date', 'now')
+      ->execute();
+
+    return $processingResult->ok;
   }
 
   /**
@@ -369,7 +373,7 @@ class CRM_Core_Payment_StripeIPN {
       if ($this->exceptionOnFailure) {
         // Re-throw a modified exception. (Special case for phpunit testing).
         $return->message = get_class($e) . ": " . $e->getMessage();
-        throw new RuntimeException($return->message, $e->getCode(), $e);
+        throw new PaymentProcessorException($return->message, $e->getCode(), $e);
       }
       else {
         // Normal use.
@@ -388,23 +392,7 @@ class CRM_Core_Payment_StripeIPN {
       }
     }
 
-    // Record that we have processed this webhook (success or error)
-    $paymentProcessorWebhookUpdate = PaymentprocessorWebhook::update(FALSE)
-      ->addWhere('event_id', '=', $this->getEventID())
-      ->addWhere('trigger', '=', $this->getEventType())
-      ->addValue('status', $return->ok ? 'success' : 'error')
-      ->addValue('processed_date', 'now');
-
-    if ($return->ok && empty($return->message)) {
-      // We may have had error messages or eg. "scheduled for retry" but don't need this now we succeeded.
-      $paymentProcessorWebhookUpdate->addValue('message', '');
-    }
-    // Only add message if not empty
-    if (!empty($return->message)) {
-      $paymentProcessorWebhookUpdate->addValue('message', preg_replace('/^(.{250}).*/su', '$1 ...', $return->message));
-    }
-    $paymentProcessorWebhookUpdate->execute();
-
+    $this->setEventID('');
     return $return;
   }
 
