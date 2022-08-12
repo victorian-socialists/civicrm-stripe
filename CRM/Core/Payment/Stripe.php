@@ -1273,7 +1273,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   /**
    * Called by mjwshared extension's queue processor api3 Job.process_paymentprocessor_webhooks
    *
-   * The array parameter contains a row of PaymentprocessorWebhook data, which represents a single GC event
+   * The array parameter contains a row of PaymentprocessorWebhook data, which represents a single PaymentprocessorWebhook event
    *
    * Return TRUE for success, FALSE if there's a problem
    */

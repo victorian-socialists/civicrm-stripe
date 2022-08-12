@@ -277,7 +277,7 @@ class CRM_Core_Payment_StripeIPN {
       }
     }
     else {
-      // We have one or more webhooks with matching identifier
+      // We already have one or more webhooks with matching identifier
       foreach ($paymentProcessorWebhooks as $paymentProcessorWebhook) {
         // Does the eventType match our webhook?
         if ($paymentProcessorWebhook['trigger'] === $this->eventType) {
@@ -756,7 +756,7 @@ class CRM_Core_Payment_StripeIPN {
 
     // Get the recurring contribution record associated with the Stripe subscription.
     $contributionRecur = ContributionRecur::get(FALSE)
-      ->addWhere('trxn_id', '=', $this->subscription_id)
+      ->addWhere('processor_id', '=', $this->subscription_id)
       ->addWhere('is_test', 'IN', [TRUE, FALSE])
       ->execute()
       ->first();
