@@ -9,6 +9,10 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
+## Release 6.7.8 (not yet released)
+
+* Fix [#377](https://lab.civicrm.org/extensions/stripe/-/issues/377) Webhook failures when using webhook signing.
+
 ## Release 6.7.7 (2022-07-24)
 
 * Fix recording refund via webhook (it was detecting that the refund was already recorded when it wasn't because of a typo).
