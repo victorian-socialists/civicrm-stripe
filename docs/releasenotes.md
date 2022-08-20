@@ -9,7 +9,7 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
-## Release 6.7.8 (not yet released)
+## Release 6.7.8 (2022-08-20)
 **Requires mjwshared (Payment Shared) 1.2.8**
 
 * Fix [#377](https://lab.civicrm.org/extensions/stripe/-/issues/377) Webhook failures when using webhook signing.
