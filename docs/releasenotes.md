@@ -10,8 +10,12 @@ Releases use the following numbering system:
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
 ## Release 6.7.8 (not yet released)
+**Requires mjwshared (Payment Shared) 1.2.8**
 
 * Fix [#377](https://lab.civicrm.org/extensions/stripe/-/issues/377) Webhook failures when using webhook signing.
+* Simplify and standardise webhook processing.
+* Fix [#380](https://lab.civicrm.org/extensions/stripe/-/issues/380) Update civi address if donor updates their postal code.
+* Fix [#385](https://lab.civicrm.org/extensions/stripe/-/issues/385) Checkbox price field not submitted for non-stripe payments.
 
 ## Release 6.7.7 (2022-07-24)
 
