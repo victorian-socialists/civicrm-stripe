@@ -292,6 +292,7 @@
       script.destroyPaymentElements();
       delete (CRM.vars[script.name]);
       $(CRM.payment.getBillingSubmit()).show();
+      CRM.payment.resetBillingFieldsRequiredForJQueryValidate();
     },
 
     /**
