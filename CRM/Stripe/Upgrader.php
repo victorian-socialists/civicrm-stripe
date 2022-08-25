@@ -422,7 +422,8 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
   public function upgrade_6803() {
     $this->ctx->log->info('Applying Stripe update 5028. In civicrm_stripe_customers database table, rename id to customer_id, add new id column');
     if (!CRM_Core_BAO_SchemaHandler::checkIfFieldExists('civicrm_stripe_customers', 'customer_id')) {
-      CRM_Core_DAO::executeQuery("ALTER TABLE civicrm_stripe_customers RENAME COLUMN id TO customer_id");
+      // ALTER TABLE ... RENAME COLUMN only in MySQL8+
+      CRM_Core_DAO::executeQuery("ALTER TABLE civicrm_stripe_customers CHANGE COLUMN id customer_id varchar(255) COMMENT 'Stripe Customer ID'");
       if (CRM_Core_BAO_SchemaHandler::checkIfIndexExists('civicrm_stripe_customers', 'id')) {
         CRM_Core_DAO::executeQuery("ALTER TABLE civicrm_stripe_customers RENAME INDEX id TO customer_id");
       }

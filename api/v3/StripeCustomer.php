@@ -135,50 +135,51 @@ function civicrm_api3_stripe_customer_updatestripemetadata($params) {
   if (!isset($params['dryrun'])) {
     throw new CiviCRM_API3_Exception('Missing required parameter dryrun');
   }
-  // Check params
-  if (empty($params['id'])) {
+  $customers = \Civi\Api4\StripeCustomer::get();
+  if (isset($params['options']['limit'])) {
+    $customers = $customers->setLimit($params['options']['limit']);
+  }
+  if (isset($params['options']['offset'])) {
+    $customers = $customers->setOffset($params['options']['offset']);
+  }
+
+  if ($params['customer_id']) {
+    $customers = $customers->addWhere('customer_id', '=', $params['customer_id']);
+  }
+  else {
     // We're doing an update on all stripe customers
     if (!isset($params['processor_id'])) {
       throw new CiviCRM_API3_Exception('Missing required parameters processor_id when using without a customer id');
     }
-    $customerIds = CRM_Stripe_Customer::getAll($params['processor_id'], $params['options']);
+    else {
+      $customers = $customers->addWhere('processor_id', '=', $params['processor_id']);
+    }
   }
-  else {
-    $customerIds = [$params['id']];
-  }
-  foreach ($customerIds as $customerId) {
-    $customerParams = CRM_Stripe_Customer::getParamsForCustomerId($customerId);
-    if (empty($customerParams['contact_id'])) {
-      throw new CiviCRM_API3_Exception('Could not find contact ID for stripe customer: ' . $customerId);
+
+  $customers = $customers->execute();
+
+  foreach ($customers as $customer) {
+    if (!$customer['contact_id']) {
+      throw new CiviCRM_API3_Exception('Could not find contact ID for stripe customer: ' . $customer['customer_id']);
     }
 
     /** @var \CRM_Core_Payment_Stripe $paymentProcessor */
-    $paymentProcessor = \Civi\Payment\System::singleton()->getById($customerParams['processor_id']);
+    $paymentProcessor = \Civi\Payment\System::singleton()->getById($customer['processor_id']);
 
     // Get the stripe customer from stripe
     try {
-      $paymentProcessor->stripeClient->customers->retrieve($customerId);
+      $paymentProcessor->stripeClient->customers->retrieve($customer['customer_id']);
     }
     catch (Exception $e) {
       $err = CRM_Core_Payment_Stripe::parseStripeException('retrieve_customer', $e);
       throw new PaymentProcessorException('Failed to retrieve Stripe Customer: ' . $err['code']);
     }
 
-    // Get the contact display name
-    $contactDisplayName = civicrm_api3('Contact', 'getvalue', [
-      'return' => 'display_name',
-      'id' => $customerParams['contact_id'],
-    ]);
-
-    // Currently we set the description and metadata
-    $stripeCustomerParams = [
-      'description' => $contactDisplayName . ' (CiviCRM)',
-      'metadata' => ['civicrm_contact_id' => $customerParams['contact_id']],
-    ];
+    $stripeCustomerParams = CRM_Stripe_Customer::getStripeCustomerMetadata($customer);
 
     // Update the stripe customer object at stripe
     if (!$params['dryrun']) {
-      $paymentProcessor->stripeClient->customers->update($customerId, $stripeCustomerParams);
+      $paymentProcessor->stripeClient->customers->update($customer['customer_id'], $stripeCustomerParams);
       $results[] = $stripeCustomerParams;
     }
     else {

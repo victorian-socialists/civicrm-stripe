@@ -164,7 +164,7 @@ class CRM_Stripe_Customer {
    * @throws \CRM_Core_Exception
    * @throws \CiviCRM_API3_Exception
    */
-  private static function getStripeCustomerMetadata($params) {
+  public static function getStripeCustomerMetadata($params) {
     $contactDisplayName = Contact::get(FALSE)
       ->addSelect('display_name')
       ->addWhere('id', '=', $params['contact_id'])
@@ -181,7 +181,7 @@ class CRM_Stripe_Customer {
       'email' => $params['email'] ?? '',
       'metadata' => [
         'CiviCRM Contact ID' => $params['contact_id'],
-        'CiviCRM URL' => CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$params['contact_id']}", TRUE, NULL, TRUE, FALSE, TRUE),
+        'CiviCRM URL' => CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$params['contact_id']}", TRUE, NULL, FALSE, FALSE, TRUE),
         'CiviCRM Version' => CRM_Utils_System::version() . ' ' . $extVersion,
       ],
     ];
@@ -239,7 +239,7 @@ class CRM_Stripe_Customer {
 
     // Could be multiple customer_id's and/or stripe processors
     foreach ($customers as $customer) {
-      $stripe = new CRM_Core_Payment_Stripe(NULL, $customer['processor_id']);
+      $stripe = \Civi\Payment\System::singleton()->getById($customer['processor_id']);
       CRM_Stripe_Customer::updateMetadata(
         ['contact_id' => $contactId, 'processor_id' => $customer['processor_id']],
         $stripe,
