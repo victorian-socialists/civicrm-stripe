@@ -66,9 +66,9 @@ class CRM_Stripe_Customer {
   }
 
   /**
-   * Find the details (contact_id, processor_id) for an existing Stripe customer in the CiviCRM database
+   * Find all the Stripe customers in the CiviCRM database for a given processorId
    *
-   * @param string $stripeCustomerId
+   * @param string $processorId
    *
    * @return array|null
    */
