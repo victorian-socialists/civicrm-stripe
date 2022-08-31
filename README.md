@@ -21,7 +21,7 @@ You will enter your "Publishable" & "Secret" key given by stripe.com.
 ## Installation
 See Documentation above.
 
-**If using drupal webform or other integrations that use Contribution.transact API you MUST install the [contributiontransactlegacy](https://github.com/mjwconsult/civicrm-contributiontransactlegacy) extension to work around issues with that API.**
+**If using Drupal 7 webform or other integrations that use Contribution.transact API you MUST install the [contributiontransactlegacy](https://github.com/mjwconsult/civicrm-contributiontransactlegacy) extension to work around issues with that API.**
 
 The extension will show up in the extensions browser for automated installation.
 Otherwise, download and install as you would for any other CiviCRM extension.
