@@ -38,7 +38,7 @@ class CRM_Stripe_Customer {
       throw new PaymentProcessorException('Stripe Customer (find): contact_id is required');
     }
 
-    $result = StripeCustomer::get()
+    $result = StripeCustomer::get(FALSE)
       ->addWhere('contact_id', '=', $params['contact_id'])
       ->addWhere('processor_id', '=', $params['processor_id'])
       ->addSelect('customer_id')
@@ -55,7 +55,7 @@ class CRM_Stripe_Customer {
    * @return array|null
    */
   public static function getParamsForCustomerId($stripeCustomerId) {
-    $result = StripeCustomer::get()
+    $result = StripeCustomer::get(FALSE)
       ->addWhere('customer_id', '=', $stripeCustomerId)
       ->addSelect('contact_id', 'processor_id')
       ->execute()
@@ -76,6 +76,7 @@ class CRM_Stripe_Customer {
     return civicrm_api4('StripeCustomer', 'get', [
       'select' => ['customer_id'],
       'where' => [['processor_id', '=', $processorId]],
+      'checkPermissions' => FALSE,
     ] + $options, ['customer_id']);
   }
 
@@ -87,7 +88,7 @@ class CRM_Stripe_Customer {
    * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
   public static function add($params) {
-    return civicrm_api4('StripeCustomer', 'create', ['values' => $params]);
+    return civicrm_api4('StripeCustomer', 'create', ['checkPermissions' => FALSE, 'values' => $params]);
   }
 
   /**
@@ -230,7 +231,7 @@ class CRM_Stripe_Customer {
    * @return void
    */
   public static function updateMetadataForContact(int $contactId, int $processorId = NULL): void {
-    $customers = StripeCustomer::get()
+    $customers = StripeCustomer::get(FALSE)
       ->addWhere('contact_id', '=', $contactId);
     if ($processorId) {
       $customers = $customers->addWhere('processor_id', '=', $processorId);
