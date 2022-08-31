@@ -308,12 +308,19 @@ class CRM_Stripe_PaymentIntent {
     return $resultObject;
   }
 
+  /**
+   * @param array $params
+   *
+   * @return object
+   * @throws \Stripe\Exception\ApiErrorException
+   */
   public function processPaymentIntent($params) {
     /*
     $params = [
       // Either paymentIntentID or paymentMethodID must be set
       'paymentIntentID' => 'pi_xx',
       'paymentMethodID' => 'pm_xx',
+      'customer' => 'cus_xx', // required if paymentMethodID is set
       'capture' => TRUE/FALSE,
       'amount' => '12.05',
       'currency' => 'USD',
@@ -348,8 +355,11 @@ class CRM_Stripe_PaymentIntent {
         $intentParams['capture_method'] = 'manual';
         // Setup the card to be saved and used later
         $intentParams['setup_future_usage'] = 'off_session';
-        if ($params['paymentMethodID']) {
+        if (isset($params['paymentMethodID'])) {
           $intentParams['payment_method'] = $params['paymentMethodID'];
+        }
+        if (isset($params['customer'])) {
+          $intentParams['customer'] = $params['customer'];
         }
         $intent = $this->paymentProcessor->stripeClient->paymentIntents->create($intentParams);
       } catch (Exception $e) {

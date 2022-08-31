@@ -636,9 +636,36 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     $intentParams['statement_descriptor_suffix'] = $this->getDescription($params, 'statement_descriptor_suffix');
     $intentParams['statement_descriptor'] = $this->getDescription($params, 'statement_descriptor');
 
+    if (!$propertyBag->has('paymentIntentID') && !empty($paymentMethodID)) {
+      // We came in via a flow that did not know the amount before submit (eg. multiple event participants)
+      // We need to create a paymentIntent
+      $stripePaymentIntent = new CRM_Stripe_PaymentIntent($this);
+      $stripePaymentIntent->setDescription($this->getDescription($params));
+      $stripePaymentIntent->setReferrer($_SERVER['HTTP_REFERER'] ?? '');
+      $stripePaymentIntent->setExtraData($params['extra_data'] ?? []);
+
+      $paymentIntentParams = [
+        'paymentMethodID' => $paymentMethodID,
+        'customer' => $stripeCustomer->id,
+        'capture' => FALSE,
+        'amount' => $propertyBag->getAmount(),
+        'currency' => $propertyBag->getCurrency(),
+      ];
+      $processIntentResult = $stripePaymentIntent->processPaymentIntent($paymentIntentParams);
+      if ($processIntentResult->ok && !empty($processIntentResult->data['success'])) {
+        $paymentIntentID = $processIntentResult->data['paymentIntent']['id'];
+      }
+      else {
+        \Civi::log('stripe')->error('Attempted to create paymentIntent from paymentMethod during doPayment failed: ' . print_r($processIntentResult, TRUE));
+      }
+    }
+
     // This is where we actually charge the customer
     try {
-      $intent = $this->stripeClient->paymentIntents->retrieve($propertyBag->getCustomProperty('paymentIntentID'));
+      if (empty($paymentIntentID)) {
+        $paymentIntentID = $propertyBag->getCustomProperty('paymentIntentID');
+      }
+      $intent = $this->stripeClient->paymentIntents->retrieve($paymentIntentID);
       if ($intent->amount != $this->getAmount($params)) {
         $intentParams['amount'] = $this->getAmount($params);
       }
