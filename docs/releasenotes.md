@@ -9,6 +9,10 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
+## Release 6.7.9 (2022-09-01)
+
+* Fix [#387](https://lab.civicrm.org/extensions/stripe/-/issues/387) Paid multi-participant registration fails.
+
 ## Release 6.7.8 (2022-08-20)
 **Requires mjwshared (Payment Shared) 1.2.8**
 
