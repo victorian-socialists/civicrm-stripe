@@ -335,8 +335,8 @@ class CRM_Stripe_PaymentIntent {
       $intentParams['confirmation_method'] = 'automatic';
     }
 
-    if ($params['paymentIntentID']) {
-      // We already have a PaymentIntent, retrieve and attempt confirm.
+    if (!empty($params['paymentIntentID'])) {
+      // We already have a PaymentIntent, retrieve and attempt to confirm.
       $intent = $this->paymentProcessor->stripeClient->paymentIntents->retrieve($params['paymentIntentID']);
       if ($intent->status === 'requires_confirmation') {
         $intent->confirm();
