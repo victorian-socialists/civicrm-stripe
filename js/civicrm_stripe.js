@@ -596,6 +596,15 @@
       var style = {
         base: {
           fontSize: '1.1em', fontWeight: 'lighter'
+        },
+
+        invalid: {
+          "::placeholder": {
+            color: "#E25950",
+            fontWeight: '500',
+          },
+          color: "#E25950",
+          fontWeight: '500',
         }
       };
 
