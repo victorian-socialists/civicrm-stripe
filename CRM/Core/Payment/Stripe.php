@@ -1329,6 +1329,13 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       // We don't handle this event
       return FALSE;
     }
+
+    // Populate the data from this webhook.
+    $rawEventData = str_replace('Stripe\StripeObject JSON: ', '', $webhookEvent['data']);
+    $eventData = json_decode($rawEventData, TRUE);
+    $data = StripeObject::constructFrom($eventData);
+    $handler->setData($data);
+
     // We retrieve/validate/store the webhook data when it is received.
     $handler->setVerifyData(FALSE);
     $handler->setExceptionMode(FALSE);
