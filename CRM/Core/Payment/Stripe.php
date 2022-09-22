@@ -1434,7 +1434,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @return float
    * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
-  public function getFeeFromBalanceTransaction(string $balanceTransactionID, $currency): float {
+  public function getFeeFromBalanceTransaction(?string $balanceTransactionID, $currency): float {
     $fee = 0.0;
     if ($balanceTransactionID) {
       try {
