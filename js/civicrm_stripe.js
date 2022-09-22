@@ -1,6 +1,7 @@
 /**
  * JS Integration between CiviCRM & Stripe.
  */
+/*jshint esversion: 6 */
 (function($, ts) {
 
   var script = {

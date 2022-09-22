@@ -9,6 +9,12 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
+## Release 6.7.10 (2022-09-22)
+
+* Fix [#388](https://lab.civicrm.org/extensions/stripe/-/issues/388) Recurring payments not being recorded in CiviCRM.
+* [!198](https://lab.civicrm.org/extensions/stripe/-/merge_requests/198) Handle null balance trxn id when calculating fees.
+* [!195](https://lab.civicrm.org/extensions/stripe/-/merge_requests/195) Make errors more visible.
+
 ## Release 6.7.9 (2022-09-01)
 
 * Fix [#387](https://lab.civicrm.org/extensions/stripe/-/issues/387) Paid multi-participant registration fails.
