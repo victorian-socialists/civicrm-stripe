@@ -627,13 +627,7 @@
 
       if (postCodeElement) {
         // Hide the CiviCRM postcode field so it will still be submitted but will contain the value set in the stripe card-element.
-        if (document.getElementById('billing_postal_code-5').value) {
-          document.getElementById('billing_postal_code-5')
-            .setAttribute('readonly', true);
-        }
-        else {
-          document.getElementsByClassName('billing_postal_code-' + CRM.vars[script.name].billingAddressID + '-section')[0].setAttribute('hidden', true);
-        }
+        postCodeElement.setAttribute('readonly', true);
       }
 
       // All containers start as display: none and are enabled on demand
