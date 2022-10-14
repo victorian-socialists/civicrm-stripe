@@ -9,6 +9,12 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
+## Release 6.7.11 (2022-10-14)
+
+* Add psr0 prefix (might fix classloader issues / class not found).
+* Postcode element should always be visible but readonly (only if billing fields enabled).
+* Don't activate stripe job if it was disabled (stops the job auto-enabling on cache clear).
+
 ## Release 6.7.10 (2022-09-22)
 
 * Fix [#388](https://lab.civicrm.org/extensions/stripe/-/issues/388) Recurring payments not being recorded in CiviCRM.
