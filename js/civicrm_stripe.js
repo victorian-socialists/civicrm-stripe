@@ -301,7 +301,7 @@
      */
     checkAndLoad: function() {
       if (typeof CRM.vars[script.name] === 'undefined') {
-        script.debugging('CRM.vars' + script.name + ' not defined!');
+        script.debugging('CRM.vars.' + script.name + ' not defined!');
         return;
       }
 
