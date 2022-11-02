@@ -33,7 +33,7 @@ class CRM_Stripe_PaymentIntent {
   protected $referrer = '';
 
   /**
-   * @var array
+   * @var string
    */
   protected $extraData = '';
 
@@ -74,11 +74,11 @@ class CRM_Stripe_PaymentIntent {
   }
 
   /**
-   * @param array $extraData
+   * @param string $extraData
    *
    * @return void
    */
-  public function setExtraData($extraData) {
+  public function setExtraData(string $extraData) {
     $this->extraData = $extraData;
   }
 
@@ -260,19 +260,25 @@ class CRM_Stripe_PaymentIntent {
     }
     $intentParams['usage'] = 'off_session';
 
+    // Get the client IP address
+    $ipAddress = (class_exists('\Civi\Firewall\Firewall')) ? (new \Civi\Firewall\Firewall())->getIPAddress() : $ipAddress = CRM_Utils_System::ipAddress();
+
     try {
       $intent = $this->paymentProcessor->stripeClient->setupIntents->create($intentParams);
+
     } catch (Exception $e) {
-      // Save the "error" in the paymentIntent table in in case investigation is required.
+      // Save the "error" in the paymentIntent table in case investigation is required.
       $stripePaymentintentParams = [
         'payment_processor_id' => $this->paymentProcessor->getID(),
         'status' => 'failed',
         'description' => "{$e->getRequestId()};{$e->getMessage()};{$this->description}",
         'referrer' => $this->referrer,
       ];
-      if (!empty($this->extraData)) {
-        $stripePaymentintentParams['extra_data'] = $this->extraData;
-      }
+      $extraData = (!empty($this->extraData)) ? explode(';', $this->extraData) : [];
+      $extraData[] = $ipAddress;
+      $extraData[] = $e->getMessage();
+      $stripePaymentintentParams['extra_data'] = implode(';', $extraData);
+
       CRM_Stripe_BAO_StripePaymentintent::create($stripePaymentintentParams);
       $resultObject->ok = FALSE;
       $resultObject->message = $e->getMessage();
@@ -287,9 +293,11 @@ class CRM_Stripe_PaymentIntent {
       'description' => $this->description,
       'referrer' => $this->referrer,
     ];
-    if (!empty($this->extraData)) {
-      $stripePaymentintentParams['extra_data'] = $this->extraData;
-    }
+
+    $extraData = (!empty($this->extraData)) ? explode(';', $this->extraData) : [];
+    $extraData[] = $ipAddress;
+    $stripePaymentintentParams['extra_data'] = implode(';', $extraData);
+
     CRM_Stripe_BAO_StripePaymentintent::create($stripePaymentintentParams);
 
     switch ($intent->status) {
@@ -471,9 +479,15 @@ class CRM_Stripe_PaymentIntent {
           'description' => "{$e->getRequestId()};{$e->getMessage()};{$this->description}",
           'referrer' => $this->referrer,
         ];
-        if (!empty($this->extraData)) {
-          $stripePaymentintentParams['extra_data'] = $this->extraData;
-        }
+
+        // Get the client IP address
+        $ipAddress = (class_exists('\Civi\Firewall\Firewall')) ? (new \Civi\Firewall\Firewall())->getIPAddress() : $ipAddress = CRM_Utils_System::ipAddress();
+
+        $extraData = (!empty($this->extraData)) ? explode(';', $this->extraData) : [];
+        $extraData[] = $ipAddress;
+        $extraData[] = $e->getMessage();
+        $stripePaymentintentParams['extra_data'] = implode(';', $extraData);
+
         CRM_Stripe_BAO_StripePaymentintent::create($stripePaymentintentParams);
 
         if ($e instanceof \Stripe\Exception\CardException) {

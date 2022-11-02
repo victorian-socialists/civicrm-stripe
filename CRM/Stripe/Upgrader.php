@@ -405,4 +405,10 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
     return TRUE;
   }
 
+  public function upgrade_6801() {
+    $this->ctx->log->info('In civicrm_stripe_paymentintent database table, change extra_data from varchar to text');
+    CRM_Core_DAO::executeQuery('ALTER TABLE civicrm_stripe_paymentintent MODIFY extra_data TEXT');
+    return TRUE;
+  }
+
 }

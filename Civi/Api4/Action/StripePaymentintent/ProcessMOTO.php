@@ -103,7 +103,7 @@ class ProcessMOTO extends \Civi\Api4\Generic\AbstractAction {
     $intentProcessor = new \CRM_Stripe_PaymentIntent();
     $intentProcessor->setDescription($this->description);
     $intentProcessor->setReferrer($_SERVER['HTTP_REFERER'] ?? '');
-    $intentProcessor->setExtraData($this->extraData ?? []);
+    $intentProcessor->setExtraData($this->extraData ?? '');
 
     $processIntentParams = [
       'paymentProcessorID' => $this->paymentProcessorID,
