@@ -222,4 +222,23 @@ Do NOT enable unless you\'ve enabled this feature on your Stripe account - see <
       ]
     ],
   ],
+  'stripe_minamount' => [
+    'name' => 'stripe_minamount',
+    'type' => 'Integer',
+    'html_type' => 'text',
+    'default' => 0,
+    'is_domain' => 1,
+    'is_contact' => 0,
+    'title' => E::ts('Minimum amount that Stripe is allowed to process.'),
+    'description' => E::ts('Default 0. This can help reduce the impact of card testing attacks as they tend to use low amounts eg. $1. If you know that your will never take payments under eg. $10 you can set that here and the request will fail for anything below that amount.'),
+    'html_attributes' => [
+      'size' => 10,
+      'maxlength' => 3,
+    ],
+    'settings_pages' => [
+      'stripe' => [
+        'weight' => 120,
+      ]
+    ],
+  ],
 ];

@@ -341,7 +341,6 @@ class CRM_Stripe_PaymentIntent {
    *
    * @return object
    * @throws \CRM_Core_Exception
-   * @throws \CiviCRM_API3_Exception
    * @throws \Stripe\Exception\ApiErrorException
    */
   public function processIntent(array $params) {
