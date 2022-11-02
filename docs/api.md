@@ -134,6 +134,7 @@ When importing subscriptions, all invoice/charges assigned to the subscription w
 * `StripeCustomer.delete` - Delete a customer by passing either civicrm contact id or stripe customer id.
 * `StripeCustomer.updatecontactids` - Used to migrate civicrm_stripe_customer table to match on contact_id instead of email address.
 * `StripeCustomer.updatestripemetadata` - Used to update stripe customers that were created using an older version of the extension (adds name to description and contact_id as a metadata field).
+* `StripeCustomer.membershipcheck` - Used to look for potential problems and inconsistencies between Stripe and CiviCRM. Does not make any changes.
 
 ## StripePaymentintents
 
