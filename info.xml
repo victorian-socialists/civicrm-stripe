@@ -19,7 +19,7 @@
   <version>6.8-dev</version>
   <develStage>alpha</develStage>
   <compatibility>
-    <ver>5.49</ver>
+    <ver>5.54</ver>
   </compatibility>
   <comments>Original Author: Joshua Walker (drastik) - Drastik by Design.
     Jamie Mcclelland (ProgressiveTech) did a lot of the 5.x compatibility work.

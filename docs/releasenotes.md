@@ -12,13 +12,17 @@ Releases use the following numbering system:
 ## Release 6.8 (not yet released)
 **You don't need "Access AJAX API" permission for anonymous user to make payments**
 
-### Highlights:
+### Features:
 * Implement optional MOTO payments for backoffice.
+* Update email address at Stripe if contact has a Stripe Customer when updating primary contact email.
+* Allow to configure a minimum amount that Stripe can process. Anything below this will fail with 'Bad Request'. This helps reduce card testing in some circumstances.
+* Add APIv3 `Stripe.membershipcheck` api.
 
 ### Breaking changes:
 * In APIv3 StripeCustomer, the `id` field is renamed to `customer_id` and a standard autoincrement `id` field is added.  Note that previously `customer_id` was an alias for the `id` field so scripts using this Api may already be using `customer_id`.
 * You DO NOT need "Access AJAX API" permission for anonymous user to make payments.
 * You DO need "Make online contributions" permission for anonymous user to make payments.
+* Deprecate API3 Stripe.ipn (it's not yet removed but will be).
 
 ### Detailed changes:
 * Implement optional MOTO payments for backoffice.
@@ -29,6 +33,9 @@ Releases use the following numbering system:
 * Add APIv4 for StripeCustomer.
 * In APIv3 StripeCustomer, the `id` field is renamed to `customer_id` and a standard autoincrement `id` field is added.  Note that previously `customer_id` was an alias for the `id` field so scripts using this Api may already be using `customer_id`.
 * Fix StripeCustomer.updatemetadata() to use correct metadata.
+* Add StripeCustomer.getFromStripe and StripeCustomer.updateStripe API4 actions.
+* Record IP address and error message when processIntent fails.
+* Convert StripeCustomer to an entity and add API4 methods to access it.
 
 ## Release 6.7.14 (2022-12-19)
 
