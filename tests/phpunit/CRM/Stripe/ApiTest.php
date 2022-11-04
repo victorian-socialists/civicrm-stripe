@@ -184,6 +184,12 @@ class CRM_Stripe_ApiTest extends CRM_Stripe_BaseTest {
       ->willReturn(
         new PropertySpy('customers.retrieve', ['id' => 'cus_mock'])
       );
+    $stripeClient->customers
+      ->method('update')
+      ->with($this->equalTo('cus_mock'))
+      ->willReturn(
+        new PropertySpy('customers.update', ['id' => 'cus_mock'])
+      );
 
     $mockPlan = $this->createMock('Stripe\\Plan');
     $mockPlan

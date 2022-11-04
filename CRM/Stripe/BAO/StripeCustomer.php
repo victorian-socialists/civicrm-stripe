@@ -57,7 +57,7 @@ class CRM_Stripe_BAO_StripeCustomer extends CRM_Stripe_DAO_StripeCustomer {
    * @throws \CiviCRM_API3_Exception
    * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
-  public static function updateMetadata($params, $stripe, $stripeCustomerID) {
+  public static function updateMetadata(array $params, \CRM_Core_Payment_Stripe $stripe, string $stripeCustomerID) {
     $requiredParams = ['contact_id'];
     foreach ($requiredParams as $required) {
       if (empty($params[$required])) {
@@ -81,24 +81,27 @@ class CRM_Stripe_BAO_StripeCustomer extends CRM_Stripe_DAO_StripeCustomer {
   /**
    * Update the metadata at Stripe for a given contactid
    *
-   * @param int $contactId
-   * @param int $processorId optional
+   * @param int $contactID
+   *
    * @return void
    */
-  public static function updateMetadataForContact(int $contactId, int $processorId = NULL): void {
+  public static function updateMetadataForContact(int $contactID): void {
     $customers = StripeCustomer::get(FALSE)
-      ->addWhere('contact_id', '=', $contactId);
-    if ($processorId) {
-      $customers = $customers->addWhere('processor_id', '=', $processorId);
-    }
-    $customers = $customers->execute();
+      ->addWhere('contact_id', '=', $contactID)
+      ->execute();
 
     // Could be multiple customer_id's and/or stripe processors
     foreach ($customers as $customer) {
       /** @var CRM_Core_Payment_Stripe $stripe */
+      \Civi\Api4\StripeCustomer::updateStripe(FALSE)
+        ->setPaymentProcessorID($customer['processor_id'])
+        ->setContactID($contactID)
+        ->setCustomerID($customer['customer_id'])
+        ->execute()
+        ->first();
       $stripe = \Civi\Payment\System::singleton()->getById($customer['processor_id']);
       CRM_Stripe_BAO_StripeCustomer::updateMetadata(
-        ['contact_id' => $contactId, 'processor_id' => $customer['processor_id']],
+        ['contact_id' => $contactID, 'processor_id' => $customer['processor_id']],
         $stripe,
         $customer['customer_id']
       );

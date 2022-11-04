@@ -20,4 +20,14 @@ class StripeCustomer extends Generic\DAOEntity {
       ->setCheckPermissions($checkPermissions);
   }
 
+  /**
+   * @param bool $checkPermissions
+   *
+   * @return \Civi\Api4\Action\StripeCustomer\UpdateStripe
+   */
+  public static function updateStripe($checkPermissions = TRUE) {
+    return (new Action\StripeCustomer\UpdateStripe(__CLASS__, __FUNCTION__))
+      ->setCheckPermissions($checkPermissions);
+  }
+
 }

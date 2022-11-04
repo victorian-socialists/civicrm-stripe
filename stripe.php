@@ -260,12 +260,28 @@ function stripe_civicrm_permission(&$permissions) {
  * Implements hook_civicrm_post().
  */
 function stripe_civicrm_post($op, $objectName, $objectId, &$objectRef) {
-  try {
-    if ($objectName == 'Contact' && $op == 'merge') {
-      CRM_Stripe_BAO_StripeCustomer::updateMetadataForContact($objectId);
-    }
+  switch ($objectName) {
+    case 'Contact':
+      if ($op === 'merge') {
+        try {
+          CRM_Stripe_BAO_StripeCustomer::updateMetadataForContact($objectId);
+        }
+        catch (Exception $e) {
+          \Civi::log(E::SHORT_NAME)->error('Stripe Contact Merge failed: ' . $e->getMessage());
+        }
+      }
+    case 'Email':
+      if ($op === 'edit') {
+        try {
+          CRM_Stripe_BAO_StripeCustomer::updateMetadataForContact($objectRef->contact_id);
+        }
+        catch (Exception $e) {
+          \Civi::log(E::SHORT_NAME)->error('Stripe Contact update email failed: ' . $e->getMessage());
+        }
+      }
+
+    default:
+      return;
   }
-  catch (Exception $e) {
-    \Civi::log(E::SHORT_NAME)->error('Stripe Contact Merge failed: ' . $e->getMessage());
-  }
+
 }

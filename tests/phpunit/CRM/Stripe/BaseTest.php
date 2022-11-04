@@ -388,6 +388,10 @@ class PropertySpy implements ArrayAccess, Iterator, Countable, JsonSerializable 
     return array_key_exists(key($this->_props), $this->_props);
   }
 
+  public function toArray() {
+    return $this->_props;
+  }
+
   public function __construct($name, $props) {
     $this->_name = $name;
     foreach ($props as $k => $v) {

@@ -21,11 +21,12 @@ use Civi\Test\CiviEnvBuilder;
  * @group headless
  */
 require_once('BaseTest.php');
+require_once('ApiTest.php');
 class CRM_Stripe_MergeTest extends CRM_Stripe_ApiTest {
 
   /**
    * Test contact merging
-   * 
+   *
    * So far, only looks at the Civi side of things
    */
   public function testMerge():void {
@@ -82,6 +83,7 @@ class CRM_Stripe_MergeTest extends CRM_Stripe_ApiTest {
       ->execute()
       ->first();
     $this->assertEquals($res['is_deleted'], 1);
+
 
     // update saved contact_id
     $this->contactID = $new_id;

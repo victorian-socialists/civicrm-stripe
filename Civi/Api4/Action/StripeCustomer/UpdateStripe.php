@@ -87,8 +87,6 @@ class UpdateStripe extends \Civi\Api4\Generic\AbstractAction {
 
     /** @var \CRM_Core_Payment_Stripe $paymentProcessor */
     $paymentProcessor = \Civi\Payment\System::singleton()->getById($this->paymentProcessorID);
-    // $stripeCustomer = $paymentProcessor->stripeClient->customers->retrieve($this->customerID);
-
     $stripeCustomer = \CRM_Stripe_BAO_StripeCustomer::updateMetadata(['contact_id' => $this->contactID, 'email' => $this->email, 'description' => $this->description], $paymentProcessor, $this->customerID);
 
     $result->exchangeArray($stripeCustomer->toArray());
