@@ -271,9 +271,19 @@ function stripe_civicrm_post($op, $objectName, $objectId, &$objectRef) {
         }
       }
     case 'Email':
-      if ($op === 'edit') {
+      if (in_array($op, ['create', 'edit']) && ((int)$objectRef->is_primary === 1)) {
         try {
-          CRM_Stripe_BAO_StripeCustomer::updateMetadataForContact($objectRef->contact_id);
+          // Does the contact have a Stripe customer record?
+          $stripeCustomers = \Civi\Api4\StripeCustomer::get(FALSE)
+            ->addWhere('contact_id', '=', $objectRef->contact_id)
+            ->execute();
+          // Update the email address at Stripe for each customer associated with this contact
+          foreach ($stripeCustomers as $stripeCustomer) {
+            \Civi\Api4\StripeCustomer::updateStripe(FALSE)
+              ->setCustomerID($stripeCustomer['customer_id'])
+              ->setEmail($objectRef->email)
+              ->execute();
+          }
         }
         catch (Exception $e) {
           \Civi::log(E::SHORT_NAME)->error('Stripe Contact update email failed: ' . $e->getMessage());

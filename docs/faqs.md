@@ -61,7 +61,11 @@ When we create a contribution in CiviCRM (Stripe Invoice/Charge) we add some met
 
 A new Stripe [**Customer**](https://stripe.com/docs/api/customers) is created the first time a contribution is created by them in CiviCRM.
 
-Each time a new contribution is created the Stripe Customer metadata is updated.
+### When is Stripe metadata updated?
+* Each time a new payment/contribution is created.
+* If the primary contact email address is updated.
+
+### What metadata is sent to Stripe?
 
 The following metadata is created for a Stripe Customer:
 

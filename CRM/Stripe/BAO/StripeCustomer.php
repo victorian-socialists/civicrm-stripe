@@ -34,13 +34,17 @@ class CRM_Stripe_BAO_StripeCustomer extends CRM_Stripe_DAO_StripeCustomer {
       // Stripe does not include the Customer Name when exporting payments, just the customer
       // description, so we stick the name in the description.
       'description' => $description ?? $contactDisplayName . ' (CiviCRM)',
-      'email' => $email ?? '',
       'metadata' => [
         'CiviCRM Contact ID' => $contactID,
         'CiviCRM URL' => CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$contactID}", TRUE, NULL, FALSE, FALSE, TRUE),
         'CiviCRM Version' => CRM_Utils_System::version() . ' ' . $extVersion,
       ],
     ];
+    $email = $email ?? $contactDisplayName['email_primary.email'] ?? $contactDisplayName['email_billing.email'] ?? NULL;
+    if ($email) {
+      $stripeCustomerParams['email'] = $email;
+    }
+
     // This is used for new subscriptions/invoices as the default payment method
     if (!empty($invoiceSettings)) {
       $stripeCustomerParams['invoice_settings'] = $invoiceSettings;

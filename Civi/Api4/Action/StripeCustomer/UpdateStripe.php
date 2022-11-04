@@ -69,20 +69,27 @@ class UpdateStripe extends \Civi\Api4\Generic\AbstractAction {
     if (empty($this->customerID) && empty($this->contactID)) {
       throw new \CRM_Core_Exception('Missing customerID or contactID');
     }
-    if (empty($this->paymentProcessorID)) {
-      throw new \CRM_Core_Exception('Missing paymentProcessorID');
-    }
     if (empty($this->customerID) && !empty($this->contactID)) {
-      $this->customerID = \Civi\Api4\StripeCustomer::get(FALSE)
+      $existingStripeCustomer = \Civi\Api4\StripeCustomer::get(FALSE)
         ->addWhere('contact_id', '=', $this->contactID)
         ->execute()
-        ->first()['customer_id'];
+        ->first();
+      $this->customerID = $existingStripeCustomer['customer_id'];
     }
     if (empty($this->contactID) && !empty($this->customerID)) {
-      $this->contactID = \Civi\Api4\StripeCustomer::get(FALSE)
+      $existingStripeCustomer = \Civi\Api4\StripeCustomer::get(FALSE)
         ->addWhere('customer_id', '=', $this->customerID)
         ->execute()
-        ->first()['contact_id'];
+        ->first();
+      $this->contactID = $existingStripeCustomer['contact_id'];
+    }
+    if (empty($this->paymentProcessorID)) {
+      if (!empty($existingStripeCustomer)) {
+        $this->paymentProcessorID = $existingStripeCustomer['processor_id'];
+      }
+      else {
+        throw new \CRM_Core_Exception('Missing paymentProcessorID');
+      }
     }
 
     /** @var \CRM_Core_Payment_Stripe $paymentProcessor */
