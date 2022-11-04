@@ -107,7 +107,7 @@ class CRM_Stripe_Customer {
       }
     }
 
-    $stripeCustomerParams = self::getStripeCustomerMetadata($params);
+    $stripeCustomerParams = CRM_Stripe_BAO_StripeCustomer::getStripeCustomerMetadata($params['contact_id'], $params['email'] ?? NULL, $params['invoice_settings'] ?? []);
 
     try {
       $stripeCustomer = $stripe->stripeClient->customers->create($stripeCustomerParams);
@@ -126,71 +126,6 @@ class CRM_Stripe_Customer {
     self::add($params);
 
     return $stripeCustomer;
-  }
-
-  /**
-   * @param array $params
-   * @param \CRM_Core_Payment_Stripe $stripe
-   * @param string $stripeCustomerID
-   *
-   * @return \Stripe\Customer
-   * @throws \CiviCRM_API3_Exception
-   * @throws \Civi\Payment\Exception\PaymentProcessorException
-   */
-  public static function updateMetadata($params, $stripe, $stripeCustomerID) {
-    $requiredParams = ['contact_id', 'processor_id'];
-    foreach ($requiredParams as $required) {
-      if (empty($params[$required])) {
-        throw new PaymentProcessorException('Stripe Customer (updateMetadata): Missing required parameter: ' . $required);
-      }
-    }
-
-    $stripeCustomerParams = self::getStripeCustomerMetadata($params);
-
-    try {
-      $stripeCustomer = $stripe->stripeClient->customers->update($stripeCustomerID, $stripeCustomerParams);
-    }
-    catch (Exception $e) {
-      $err = CRM_Core_Payment_Stripe::parseStripeException('create_customer', $e);
-      throw new PaymentProcessorException('Failed to update Stripe Customer: ' . $err['code']);
-    }
-    return $stripeCustomer;
-  }
-
-  /**
-   * @param array $params
-   *   Required: contact_id; Optional: email
-   *
-   * @return array
-   * @throws \CRM_Core_Exception
-   * @throws \CiviCRM_API3_Exception
-   */
-  public static function getStripeCustomerMetadata($params) {
-    $contactDisplayName = Contact::get(FALSE)
-      ->addSelect('display_name')
-      ->addWhere('id', '=', $params['contact_id'])
-      ->execute()
-      ->first()['display_name'];
-
-    $extVersion = civicrm_api3('Extension', 'getvalue', ['return' => 'version', 'full_name' => E::LONG_NAME]);
-
-    $stripeCustomerParams = [
-      'name' => $contactDisplayName,
-      // Stripe does not include the Customer Name when exporting payments, just the customer
-      // description, so we stick the name in the description.
-      'description' => $contactDisplayName . ' (CiviCRM)',
-      'email' => $params['email'] ?? '',
-      'metadata' => [
-        'CiviCRM Contact ID' => $params['contact_id'],
-        'CiviCRM URL' => CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$params['contact_id']}", TRUE, NULL, FALSE, FALSE, TRUE),
-        'CiviCRM Version' => CRM_Utils_System::version() . ' ' . $extVersion,
-      ],
-    ];
-    // This is used for new subscriptions/invoices as the default payment method
-    if (isset($params['invoice_settings'])) {
-      $stripeCustomerParams['invoice_settings'] = $params['invoice_settings'];
-    }
-    return $stripeCustomerParams;
   }
 
   /**
@@ -221,32 +156,6 @@ class CRM_Stripe_Customer {
       $delete = $delete->addWhere('contact_id', '=', $params['contact_id']);
     }
     $delete->execute();
-  }
-
-  /**
-   * Update the metadata at Stripe for a given contactid
-   *
-   * @param int $contactId
-   * @param int $processorId optional
-   * @return void
-   */
-  public static function updateMetadataForContact(int $contactId, int $processorId = NULL): void {
-    $customers = StripeCustomer::get(FALSE)
-      ->addWhere('contact_id', '=', $contactId);
-    if ($processorId) {
-      $customers = $customers->addWhere('processor_id', '=', $processorId);
-    }
-    $customers = $customers->execute();
-
-    // Could be multiple customer_id's and/or stripe processors
-    foreach ($customers as $customer) {
-      $stripe = \Civi\Payment\System::singleton()->getById($customer['processor_id']);
-      CRM_Stripe_Customer::updateMetadata(
-        ['contact_id' => $contactId, 'processor_id' => $customer['processor_id']],
-        $stripe,
-        $customer['customer_id']
-      );
-    }
   }
 
 }

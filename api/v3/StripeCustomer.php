@@ -38,7 +38,7 @@ function _civicrm_api3_stripe_customer_get_spec(&$spec) {
  * @param array $params
  *
  * @return array
- * @throws \CiviCRM_API3_Exception
+ * @throws \CRM_Core_Exception
  */
 function civicrm_api3_stripe_customer_get($params) {
   return _civicrm_api3_basic_get(_civicrm_api3_get_BAO(__FUNCTION__), $params, TRUE, 'StripeCustomer');
@@ -66,7 +66,7 @@ function _civicrm_api3_stripe_customer_delete_spec(&$spec) {
  * @param array $params
  *
  * @return array
- * @throws \CiviCRM_API3_Exception
+ * @throws \CRM_Core_Exception
  * @throws \Civi\Payment\Exception\PaymentProcessorException
  */
 function civicrm_api3_stripe_customer_delete($params) {
@@ -98,7 +98,7 @@ function _civicrm_api3_stripe_customer_create_spec(&$spec) {
  * @param array $params
  *
  * @return array
- * @throws \CiviCRM_API3_Exception
+ * @throws \CRM_Core_Exception
  * @throws \Civi\Payment\Exception\PaymentProcessorException
  */
 function civicrm_api3_stripe_customer_create($params) {
@@ -128,12 +128,12 @@ function _civicrm_api3_stripe_customer_updatestripemetadata_spec(&$spec) {
  * @param $params
  *
  * @return array
- * @throws \CiviCRM_API3_Exception
+ * @throws \CRM_Core_Exception
  * @throws \Civi\Payment\Exception\PaymentProcessorException
  */
 function civicrm_api3_stripe_customer_updatestripemetadata($params) {
   if (!isset($params['dryrun'])) {
-    throw new CiviCRM_API3_Exception('Missing required parameter dryrun');
+    throw new CRM_Core_Exception('Missing required parameter dryrun');
   }
   $customers = \Civi\Api4\StripeCustomer::get();
   if (isset($params['options']['limit'])) {
@@ -149,7 +149,7 @@ function civicrm_api3_stripe_customer_updatestripemetadata($params) {
   else {
     // We're doing an update on all stripe customers
     if (!isset($params['processor_id'])) {
-      throw new CiviCRM_API3_Exception('Missing required parameters processor_id when using without a customer id');
+      throw new CRM_Core_Exception('Missing required parameters processor_id when using without a customer id');
     }
     else {
       $customers = $customers->addWhere('processor_id', '=', $params['processor_id']);
@@ -160,7 +160,7 @@ function civicrm_api3_stripe_customer_updatestripemetadata($params) {
 
   foreach ($customers as $customer) {
     if (!$customer['contact_id']) {
-      throw new CiviCRM_API3_Exception('Could not find contact ID for stripe customer: ' . $customer['customer_id']);
+      throw new CRM_Core_Exception('Could not find contact ID for stripe customer: ' . $customer['customer_id']);
     }
 
     /** @var \CRM_Core_Payment_Stripe $paymentProcessor */
@@ -175,7 +175,7 @@ function civicrm_api3_stripe_customer_updatestripemetadata($params) {
       throw new PaymentProcessorException('Failed to retrieve Stripe Customer: ' . $err['code']);
     }
 
-    $stripeCustomerParams = CRM_Stripe_Customer::getStripeCustomerMetadata($customer);
+    $stripeCustomerParams = CRM_Stripe_BAO_StripeCustomer::getStripeCustomerMetadata($customer['contact_id'], $customer['email'] ?? NULL, $customer['invoice_settings'] ?? []);
 
     // Update the stripe customer object at stripe
     if (!$params['dryrun']) {

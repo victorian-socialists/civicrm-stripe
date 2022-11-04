@@ -637,7 +637,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       $customerParams['invoice_settings']['default_payment_method'] = $paymentMethodID;
     }
 
-    CRM_Stripe_Customer::updateMetadata($customerParams, $this, $stripeCustomer->id);
+    CRM_Stripe_BAO_StripeCustomer::updateMetadata($customerParams, $this, $stripeCustomer->id);
 
     // Handle recurring payments in doRecurPayment().
     if ($isRecur) {

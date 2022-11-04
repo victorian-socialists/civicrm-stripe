@@ -262,7 +262,7 @@ function stripe_civicrm_permission(&$permissions) {
 function stripe_civicrm_post($op, $objectName, $objectId, &$objectRef) {
   try {
     if ($objectName == 'Contact' && $op == 'merge') {
-      CRM_Stripe_Customer::updateMetadataForContact($objectId);
+      CRM_Stripe_BAO_StripeCustomer::updateMetadataForContact($objectId);
     }
   }
   catch (Exception $e) {
