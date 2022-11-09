@@ -376,9 +376,50 @@ class CRM_Stripe_PaymentIntent {
         CRM_Stripe_BAO_StripePaymentintent::create($stripePaymentintentParams);
 
         if ($e instanceof \Stripe\Exception\CardException) {
-          if (($e->getDeclineCode() === 'fraudulent') && class_exists('\Civi\Firewall\Event\FraudEvent')) {
-            \Civi\Firewall\Event\FraudEvent::trigger(\CRM_Utils_System::ipAddress(), 'CRM_Stripe_AJAX::confirmPayment');
+
+          $fraud = FALSE;
+
+          if (method_exists('\Civi\Firewall\Firewall', 'getIPAddress')) {
+            $firewall = new \Civi\Firewall\Firewall();
+            $ipAddress = $firewall->getIPAddress();
           }
+          else {
+            $ipAddress = \CRM_Utils_System::ipAddress();
+          }
+
+          // Where a payment is declined as likely fraud, log it as a more serious exception
+          if (class_exists('\Civi\Firewall\Event\FraudEvent')) {
+
+            // Fraud response from issuer
+            if ($e->getDeclineCode() === 'fraudulent') {
+              $fraud = TRUE;
+            }
+
+            // Look for fraud detected by Stripe Radar
+            else {
+              $jsonBody = $e->getJsonBody();
+              if (!empty($jsonBody['error']['payment_intent']['charges']['data'])) {
+                foreach ($jsonBody['error']['payment_intent']['charges']['data'] as $charge) {
+                  if ($charge['outcome']['type'] === 'blocked') {
+                    $fraud = TRUE;
+                    break;
+                  }
+                }
+              }
+            }
+
+            if ($fraud) {
+              \Civi\Firewall\Event\FraudEvent::trigger($ipAddress, 'CRM_Stripe_PaymentIntent::processPaymentIntent');
+            }
+
+          }
+
+          // Multiple declined card attempts is an indicator of card testing
+          if (!$fraud && class_exists('\Civi\Firewall\Event\DeclinedCardEvent')) {
+            \Civi\Firewall\Event\DeclinedCardEvent::trigger($ipAddress, 'CRM_Stripe_PaymentIntent::processPaymentIntent');
+          }
+
+          // Returned message should not indicate whether fraud was detected
           $message = $e->getMessage();
         }
         elseif ($e instanceof \Stripe\Exception\InvalidRequestException) {
