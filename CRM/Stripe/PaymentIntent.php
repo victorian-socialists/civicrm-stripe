@@ -328,6 +328,27 @@ class CRM_Stripe_PaymentIntent {
     */
     $resultObject = (object) ['ok' => FALSE, 'message' => '', 'data' => []];
 
+    if (class_exists('\Civi\Firewall\Event\FraudEvent')) {
+      if (!empty($this->extraData)) {
+        // The firewall will block IP addresses when it detects fraud.
+        // This additionally checks if the same details are being used on a different IP address.
+        $firewall = new \Civi\Firewall\Firewall();
+        $ipAddress = $firewall->getIPAddress();
+
+        // Where a payment is declined as likely fraud, log it as a more serious exception
+        $numberOfFailedAttempts = \Civi\Api4\StripePaymentintent::get(FALSE)
+          ->selectRowCount()
+          ->addWhere('extra_data', '=', $this->extraData)
+          ->addWhere('status', '=', 'failed')
+          ->addWhere('created_date', '>', '-2 hours')
+          ->execute()
+          ->count();
+        if ($numberOfFailedAttempts > 5) {
+          \Civi\Firewall\Event\FraudEvent::trigger($ipAddress, CRM_Utils_String::ellipsify('StripeProcessPaymentIntent: ' . $this->extraData, 255));
+        }
+      }
+    }
+
     $intentParams['confirm'] = TRUE;
     $intentParams['confirmation_method'] = 'manual';
     if (empty($params['paymentIntentID']) && empty($params['paymentMethodID'])) {
