@@ -642,7 +642,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       $stripePaymentIntent = new CRM_Stripe_PaymentIntent($this);
       $stripePaymentIntent->setDescription($this->getDescription($params));
       $stripePaymentIntent->setReferrer($_SERVER['HTTP_REFERER'] ?? '');
-      $stripePaymentIntent->setExtraData($params['extra_data'] ?? []);
+      $stripePaymentIntent->setExtraData($params['extra_data'] ?? '');
 
       $paymentIntentParams = [
         'paymentMethodID' => $paymentMethodID,

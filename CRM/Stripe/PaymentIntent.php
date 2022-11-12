@@ -35,7 +35,7 @@ class CRM_Stripe_PaymentIntent {
   /**
    * @var array
    */
-  protected $extraData = [];
+  protected $extraData = '';
 
   /**
    * @param \CRM_Core_Payment_Stripe $paymentProcessor

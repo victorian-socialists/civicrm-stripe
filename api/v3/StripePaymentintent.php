@@ -204,7 +204,7 @@ function civicrm_api3_stripe_paymentintent_process($params) {
   $stripePaymentIntent = new CRM_Stripe_PaymentIntent($paymentProcessor);
   $stripePaymentIntent->setDescription($description);
   $stripePaymentIntent->setReferrer($_SERVER['HTTP_REFERER'] ?? '');
-  $stripePaymentIntent->setExtraData($params['extra_data'] ?? []);
+  $stripePaymentIntent->setExtraData($params['extra_data'] ?? '');
   if ($setup) {
     $params = [
       // Optional paymentMethodID
