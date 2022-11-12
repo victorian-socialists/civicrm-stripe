@@ -25,8 +25,8 @@ class CRM_Stripe_Check {
   /**
    * @var string
    */
-  const MIN_VERSION_MJWSHARED = '1.2.8';
-  const MIN_VERSION_FIREWALL = '1.5.1';
+  const MIN_VERSION_MJWSHARED = '1.2.9';
+  const MIN_VERSION_FIREWALL = '1.5.2';
 
   /**
    * @var array
@@ -149,10 +149,10 @@ class CRM_Stripe_Check {
     if (empty($extensions['count']) || ($extensions['values'][$extensions['id']]['status'] !== 'installed')) {
       $message = new CRM_Utils_Check_Message(
         __FUNCTION__ . 'stripe_recommended',
-        E::ts('If you are using Stripe to accept payments on public forms (eg. contribution/event registration forms) it is recommended that you install the <strong><a href="https://lab.civicrm.org/extensions/firewall">firewall</a></strong> extension.
+        E::ts('If you are using Stripe to accept payments on public forms (eg. contribution/event registration forms) it is required that you install the <strong><a href="https://lab.civicrm.org/extensions/firewall">firewall</a></strong> extension.
         Some sites have become targets for spammers who use the payment endpoint to try and test credit cards by submitting invalid payments to your Stripe account.'),
-        E::ts('Recommended Extension: firewall'),
-        \Psr\Log\LogLevel::NOTICE,
+        E::ts('Required Extension: firewall'),
+        \Psr\Log\LogLevel::ERROR,
         'fa-lightbulb-o'
       );
       $message->addAction(
@@ -214,7 +214,7 @@ class CRM_Stripe_Check {
   /**
    * Try to detect if a client is being spammed / credit card fraud.
    */
-  private function checkFailedPaymentIntents(&$messages) {
+  private function checkFailedPaymentIntents() {
     // Check for a high volume of failed/pending contributions
     $count = CRM_Core_DAO::singleValueQuery('SELECT count(*)
       FROM civicrm_stripe_paymentintent
