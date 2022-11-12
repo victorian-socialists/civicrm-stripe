@@ -51,6 +51,7 @@ class CRM_Stripe_Check {
     $this->checkExtensionFirewall();
     $this->checkUpgradeMessages();
     $this->checkWebhooks();
+    $this->checkFailedPaymentIntents();
     return $this->messages;
   }
 
@@ -207,6 +208,40 @@ class CRM_Stripe_Check {
     if (trait_exists('CRM_Mjwshared_WebhookTrait')) {
       $webhooks = new CRM_Stripe_Webhook();
       $webhooks->check($this->messages);
+    }
+  }
+
+  /**
+   * Try to detect if a client is being spammed / credit card fraud.
+   */
+  private function checkFailedPaymentIntents(&$messages) {
+    // Check for a high volume of failed/pending contributions
+    $count = CRM_Core_DAO::singleValueQuery('SELECT count(*)
+      FROM civicrm_stripe_paymentintent
+      WHERE status = "failed"
+        AND TIMESTAMPDIFF(minute, created_date, NOW()) < 60
+      ORDER BY id DESC
+      LIMIT 1000');
+
+    if ($count > 20) {
+      $message = new CRM_Utils_Check_Message(
+        'stripe_paymentintentspam',
+        E::ts('%1 failed Stripe Payment Intents in the past hour. Please check the logs. They are problably hitting the CiviCRM REST API.', [1 => $count]),
+        E::ts('Stripe - High rate of failed contributions'),
+        \Psr\Log\LogLevel::CRITICAL,
+        'fa-check'
+      );
+      $this->messages[] = $message;
+    }
+    else {
+      $message = new CRM_Utils_Check_Message(
+        'stripe_paymentintentspam',
+        E::ts('%1 failed Stripe Payment Intents in the past hour.', [1 => $count]) . ' ' . E::ts('We monitor this in case someone malicious is testing stolen credit cards on public contribution forms.'),
+        E::ts('Stripe - Failed Stripe Payment Intents'),
+        \Psr\Log\LogLevel::INFO,
+        'fa-check'
+      );
+      $this->messages[] = $message;
     }
   }
 
