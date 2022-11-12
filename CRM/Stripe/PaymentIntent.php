@@ -357,13 +357,18 @@ class CRM_Stripe_PaymentIntent {
     }
 
     if (!empty($params['paymentIntentID'])) {
-      // We already have a PaymentIntent, retrieve and attempt to confirm.
-      $intent = $this->paymentProcessor->stripeClient->paymentIntents->retrieve($params['paymentIntentID']);
-      if ($intent->status === 'requires_confirmation') {
-        $intent->confirm();
+      try {
+        // We already have a PaymentIntent, retrieve and attempt to confirm.
+        $intent = $this->paymentProcessor->stripeClient->paymentIntents->retrieve($params['paymentIntentID']);
+        if ($intent->status === 'requires_confirmation') {
+          $intent->confirm();
+        }
+        if ($params['capture'] && $intent->status === 'requires_capture') {
+          $intent->capture();
+        }
       }
-      if ($params['capture'] && $intent->status === 'requires_capture') {
-        $intent->capture();
+      catch (Exception $e) {
+        \Civi::log()->debug(get_class($e) . $e->getMessage());
       }
     }
     else {
@@ -384,7 +389,7 @@ class CRM_Stripe_PaymentIntent {
         }
         $intent = $this->paymentProcessor->stripeClient->paymentIntents->create($intentParams);
       } catch (Exception $e) {
-        // Save the "error" in the paymentIntent table in in case investigation is required.
+        // Save the "error" in the paymentIntent table in case investigation is required.
         $stripePaymentintentParams = [
           'payment_processor_id' => $this->paymentProcessor->getID(),
           'status' => 'failed',

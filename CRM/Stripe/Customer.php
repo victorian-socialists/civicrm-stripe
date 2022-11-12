@@ -147,8 +147,8 @@ class CRM_Stripe_Customer {
     }
     catch (Exception $e) {
       $err = CRM_Core_Payment_Stripe::parseStripeException('create_customer', $e, FALSE);
-      $errorMessage = $stripe->handleErrorNotification($err, $params['error_url']);
-      throw new PaymentProcessorException('Failed to create Stripe Customer: ' . $errorMessage);
+      \Civi::log('stripe')->error('Failed to create Stripe Customer: ' . $err['message'] . '; ' . print_r($err, TRUE));
+      throw new PaymentProcessorException('Failed to create Stripe Customer: ' . $err['code']);
     }
 
     // Store the relationship between CiviCRM's email address for the Contact & Stripe's Customer ID.
@@ -185,9 +185,9 @@ class CRM_Stripe_Customer {
       $stripeCustomer = $stripe->stripeClient->customers->update($stripeCustomerID, $stripeCustomerParams);
     }
     catch (Exception $e) {
-      $err = CRM_Core_Payment_Stripe::parseStripeException('create_customer', $e, FALSE);
-      $errorMessage = $stripe->handleErrorNotification($err, $params['error_url']);
-      throw new PaymentProcessorException('Failed to update Stripe Customer: ' . $errorMessage);
+      $err = CRM_Core_Payment_Stripe::parseStripeException('create_customer', $e);
+      \Civi::log('stripe')->error('Failed to update Stripe Customer: ' . $err['message'] . '; ' . print_r($err, TRUE));
+      throw new PaymentProcessorException('Failed to update Stripe Customer: ' . $err['code']);
     }
     return $stripeCustomer;
   }
@@ -216,7 +216,7 @@ class CRM_Stripe_Customer {
 
     $stripeCustomerParams = [
       'name' => $contactDisplayName,
-      // Stripe does not include the Customer Name when exporting payments, just the customer 
+      // Stripe does not include the Customer Name when exporting payments, just the customer
       // description, so we stick the name in the description.
       'description' =>  $contactDisplayName . ' (CiviCRM)',
       'email' => $params['email'] ?? '',

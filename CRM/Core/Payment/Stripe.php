@@ -262,23 +262,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   }
 
   /**
-   * Handle an error from Stripe API and notify the user
-   *
-   * @param array $err
-   * @param string $bounceURL
-   *
-   * @return string errorMessage
-   */
-  public function handleErrorNotification($err, $bounceURL = NULL) {
-    try {
-      self::handleError("{$err['type']} {$err['code']}", $err['message'], $bounceURL);
-    }
-    catch (Exception $e) {
-      return $e->getMessage();
-    }
-  }
-
-  /**
    * Stripe exceptions contain a json object in the body "error". This function extracts and returns that as an array.
    * @param String $op
    * @param Exception $e
@@ -317,7 +300,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       $plan = $this->stripeClient->plans->retrieve($planId);
     }
     catch (\Stripe\Exception\InvalidRequestException $e) {
-      $err = self::parseStripeException('plan_retrieve', $e, FALSE);
+      $err = self::parseStripeException('plan_retrieve', $e);
       if ($err['code'] === 'resource_missing') {
         $formatted_amount = CRM_Utils_Money::formatLocaleNumericRoundedByCurrency(($amount / 100), $currency);
         $productName = "CiviCRM " . (isset($params['membership_name']) ? $params['membership_name'] . ' ' : '') . "every {$params['recurFrequencyInterval']} {$params['recurFrequencyUnit']}(s) {$currency}{$formatted_amount}";
@@ -590,8 +573,8 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         $stripeCustomer = $this->stripeClient->customers->retrieve($stripeCustomerId);
       } catch (Exception $e) {
         $err = self::parseStripeException('retrieve_customer', $e);
-        $errorMessage = $this->handleErrorNotification($err, $propertyBag->getCustomProperty('error_url'));
-        throw new PaymentProcessorException('Failed to retrieve Stripe Customer: ' . $errorMessage);
+        \Civi::log('stripe')->error('Failed to retrieve Stripe Customer: ' . $err['message'] . '; ' . print_r($err, TRUE));
+        throw new PaymentProcessorException('Failed to retrieve Stripe Customer: ' . $err['code']);
       }
 
       if ($stripeCustomer->isDeleted()) {
@@ -602,8 +585,8 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         } catch (Exception $e) {
           // We still failed to create a customer
           $err = self::parseStripeException('create_customer', $e);
-          $errorMessage = $this->handleErrorNotification($err, $propertyBag->getCustomProperty('error_url'));
-          throw new PaymentProcessorException('Failed to create Stripe Customer: ' . $errorMessage);
+          \Civi::log('stripe')->error('Failed to create Stripe Customer: ' . $err['message'] . '; ' . print_r($err, TRUE));
+          throw new PaymentProcessorException('Failed to create Stripe Customer: ' . $err['code']);
         }
       }
     }
@@ -880,9 +863,9 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
             $stripeBalanceTransaction = $this->stripeClient->balanceTransactions->retrieve($stripeCharge->balance_transaction);
           }
           catch (Exception $e) {
-            $err = self::parseStripeException('retrieve_balance_transaction', $e, FALSE);
-            $errorMessage = $this->handleErrorNotification($err, $params['error_url']);
-            throw new PaymentProcessorException('Failed to retrieve Stripe Balance Transaction: ' . $errorMessage);
+            $err = self::parseStripeException('retrieve_balance_transaction', $e);
+            \Civi::log('stripe')->error('Failed to retrieve Stripe Balance Transaction: ' . $err['message'] . '; ' . print_r($err, TRUE));
+            throw new PaymentProcessorException('Failed to retrieve Stripe Balance Transaction: ' . $err['code']);
           }
           if (($stripeCharge['currency'] !== $stripeBalanceTransaction->currency)
               && (!empty($stripeBalanceTransaction->exchange_rate))) {
@@ -1393,35 +1376,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       throw new \RuntimeException("setMockStripeClient was called while not in a STRIPE_PHPUNIT_TEST");
     }
     $GLOBALS['mockStripeClient'] = $this->stripeClient = $stripeClient;
-  }
-
-  /**
-   * Handle an error and notify the user
-   * @fixme: Remove when min version of mjwshared is 1.2.3.
-   *   This is a copy of the updated function that throws an exception on error instead of returning FALSE
-   *
-   * @param string $errorCode
-   * @param string $errorMessage
-   * @param string $bounceURL
-   *
-   * @throws \Civi\Payment\Exception\PaymentProcessorException
-   *   (or statusbounce if URL is specified)
-   */
-  private function handleError($errorCode = NULL, $errorMessage = NULL, $bounceURL = NULL) {
-    $errorCode = empty($errorCode) ? '' : $errorCode . ': ';
-    $errorMessage = empty($errorMessage) ? 'Unknown System Error.' : $errorMessage;
-    $message = $errorCode . $errorMessage;
-
-    Civi::log()->error($this->getPaymentTypeLabel() . ' Payment Error: ' . $message);
-    if ($this->handleErrorThrowsException) {
-      // We're in a test environment. Throw exception.
-      throw new \Exception('Exception thrown to avoid statusBounce because handleErrorThrowsException is set.' . $message);
-    }
-
-    if ($bounceURL) {
-      CRM_Core_Error::statusBounce($message, $bounceURL, $this->getPaymentTypeLabel());
-    }
-    throw new PaymentProcessorException($errorMessage, $errorCode);
   }
 
   /**

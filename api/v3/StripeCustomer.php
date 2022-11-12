@@ -14,6 +14,7 @@
  *
  */
 
+use Civi\Payment\Exception\PaymentProcessorException;
 use CRM_Stripe_ExtensionUtil as E;
 
 /**
@@ -255,9 +256,9 @@ function civicrm_api3_stripe_customer_updatestripemetadata($params) {
     try {
       $paymentProcessor->stripeClient->customers->retrieve($customerId);
     } catch (Exception $e) {
-      $err = CRM_Core_Payment_Stripe::parseStripeException('retrieve_customer', $e, FALSE);
-      $errorMessage = $paymentProcessor->handleErrorNotification($err);
-      throw new \Civi\Payment\Exception\PaymentProcessorException('Failed to retrieve Stripe Customer: ' . $errorMessage);
+      $err = CRM_Core_Payment_Stripe::parseStripeException('retrieve_customer', $e);
+      \Civi::log('stripe')->error('Failed to retrieve Stripe Customer: ' . $err['message'] . '; ' . print_r($err, TRUE));
+      throw new PaymentProcessorException('Failed to retrieve Stripe Customer: ' . $err['code']);
     }
 
     // Get the contact display name
