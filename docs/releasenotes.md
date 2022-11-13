@@ -9,6 +9,15 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
+## Release 6.7.12 (not yet released)
+
+* Require Firewall 1.5.3.
+* Cleanup and remove legacy error handling.
+* Add check for extra data.
+* Make firewall a required extension.
+* Add check for failed paymentIntents.
+* Protect StripePaymentintent.process API call with ReCAPTCHA if available (requires formprotection extension and force recaptcha on contribution pages to be enabled).
+
 ## Release 6.7.11 (2022-10-14)
 
 * Add psr0 prefix (might fix classloader issues / class not found).

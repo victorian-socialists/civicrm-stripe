@@ -37,8 +37,24 @@
 
       CRM.payment.resetBillingFieldsRequiredForJQueryValidate();
 
-      // Submit the form
-      CRM.payment.form.submit();
+      if (script.getReCAPTCHAToken()) {
+        reloadReCAPTCHA().then(function() {
+          // Insert the token ID into the form so it gets submitted to the server
+          var hiddenInput2 = document.createElement('input');
+          hiddenInput2.setAttribute('type', 'hidden');
+          hiddenInput2.setAttribute('name', 'captcha');
+          hiddenInput2.setAttribute('value', script.getReCAPTCHAToken());
+          CRM.payment.form.appendChild(hiddenInput2);
+
+          // Submit the form
+          CRM.payment.form.submit();
+        });
+      }
+      else {
+        // Submit the form
+        CRM.payment.form.submit();
+      }
+
     },
 
     /**
@@ -97,6 +113,24 @@
     },
 
     /**
+     * Get the ReCAPTCHA token if available (function currently only implemented by formprotection)
+     *
+     * @returns {*|string}
+     */
+    getReCAPTCHAToken: function() {
+      return (typeof getReCAPTCHAToken === 'function') ? getReCAPTCHAToken() : '';
+    },
+
+    /**
+     * Wrapper for formprotection reloadReCAPTCHA function
+     */
+    reloadReCAPTCHA: function() {
+      if (typeof reloadReCAPTCHA === 'function') {
+        reloadReCAPTCHA();
+      }
+    },
+
+    /**
      * Handle the "Card" submission to Stripe
      *
      * @param submitEvent
@@ -124,10 +158,12 @@
                 payment_processor_id: CRM.vars[script.name].id,
                 description: document.title,
                 csrfToken: CRM.vars[script.name].csrfToken,
-                extra_data: CRM.payment.getBillingEmail() + CRM.payment.getBillingName()
+                extra_data: CRM.payment.getBillingEmail() + CRM.payment.getBillingName(),
+                captcha: script.getReCAPTCHAToken()
               })
                 .done(function (paymentIntentProcessResponse) {
                   CRM.payment.swalClose();
+                  script.reloadReCAPTCHA();
                   CRM.payment.debugging(script.name, 'StripePaymentintent.Process done (setupIntent)');
                   if (paymentIntentProcessResponse.is_error) {
                     // Triggered for api3_create_error or Exception
@@ -179,10 +215,12 @@
                 payment_processor_id: CRM.vars[script.name].id,
                 description: document.title,
                 csrfToken: CRM.vars[script.name].csrfToken,
-                extra_data: CRM.payment.getBillingEmail() + CRM.payment.getBillingName()
+                extra_data: CRM.payment.getBillingEmail() + CRM.payment.getBillingName(),
+                captcha: script.getReCAPTCHAToken()
               })
                 .done(function (paymentIntentProcessResponse) {
                   CRM.payment.swalClose();
+                  script.reloadReCAPTCHA();
                   CRM.payment.debugging(script.name, 'StripePaymentintent.Process done (paymentIntent)');
                   if (paymentIntentProcessResponse.is_error) {
                     // Triggered for api3_create_error or Exception
@@ -243,11 +281,14 @@
         currency: CRM.payment.getCurrency(CRM.vars[script.name].currency),
         payment_processor_id: CRM.vars[script.name].id,
         description: document.title,
-        csrfToken: CRM.vars[script.name].csrfToken
+        csrfToken: CRM.vars[script.name].csrfToken,
+        captcha: script.getReCAPTCHAToken()
       })
         .done(function (paymentIntentProcessResponse) {
           CRM.payment.swalClose();
+          script.reloadReCAPTCHA();
           script.debugging('StripePaymentintent.Process done');
+
           if (paymentIntentProcessResponse.is_error) {
             // Triggered for api3_create_error or Exception
             CRM.payment.displayError(paymentIntentProcessResponse.error_message, true);

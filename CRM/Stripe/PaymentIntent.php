@@ -332,8 +332,7 @@ class CRM_Stripe_PaymentIntent {
       if (!empty($this->extraData)) {
         // The firewall will block IP addresses when it detects fraud.
         // This additionally checks if the same details are being used on a different IP address.
-        $firewall = new \Civi\Firewall\Firewall();
-        $ipAddress = $firewall->getIPAddress();
+        $ipAddress = \Civi\Firewall\Firewall::getIPAddress();
 
         // Where a payment is declined as likely fraud, log it as a more serious exception
         $numberOfFailedAttempts = \Civi\Api4\StripePaymentintent::get(FALSE)
@@ -407,8 +406,7 @@ class CRM_Stripe_PaymentIntent {
           $fraud = FALSE;
 
           if (method_exists('\Civi\Firewall\Firewall', 'getIPAddress')) {
-            $firewall = new \Civi\Firewall\Firewall();
-            $ipAddress = $firewall->getIPAddress();
+            $ipAddress = \Civi\Firewall\Firewall::getIPAddress();
           }
           else {
             $ipAddress = \CRM_Utils_System::ipAddress();

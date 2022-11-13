@@ -162,6 +162,13 @@ function _civicrm_api3_stripe_paymentintent_process_spec(&$spec) {
  * @throws \Stripe\Exception\UnknownApiErrorException
  */
 function civicrm_api3_stripe_paymentintent_process($params) {
+  if (\Civi::settings()->get('formprotection_recaptcha_force')) {
+    $errors = [];
+    if (!\Civi\Formprotection\Recaptcha::validate($params['captcha'], $errors)) {
+      \Civi::log()->error('StripePaymentintent Recaptcha validate failed: ' . print_r($errors, TRUE));
+      _civicrm_api3_stripe_paymentintent_returnInvalid('Bad Request');
+    }
+  }
   if (class_exists('\Civi\Firewall\Firewall')) {
     $firewall = new Firewall();
     if (!$firewall->checkIsCSRFTokenValid(CRM_Utils_Type::validate($params['csrfToken'], 'String'))) {
