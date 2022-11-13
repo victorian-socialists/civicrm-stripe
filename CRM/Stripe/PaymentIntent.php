@@ -388,7 +388,8 @@ class CRM_Stripe_PaymentIntent {
           $intentParams['customer'] = $params['customer'];
         }
         $intent = $this->paymentProcessor->stripeClient->paymentIntents->create($intentParams);
-      } catch (Exception $e) {
+      }
+      catch (Exception $e) {
         // Save the "error" in the paymentIntent table in case investigation is required.
         $stripePaymentintentParams = [
           'payment_processor_id' => $this->paymentProcessor->getID(),
