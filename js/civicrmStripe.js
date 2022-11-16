@@ -38,7 +38,7 @@
       CRM.payment.resetBillingFieldsRequiredForJQueryValidate();
 
       if (script.getReCAPTCHAToken()) {
-        let recaptcha = script.reloadReCAPTCHA();
+        let recaptcha = await script.reloadReCAPTCHA();
 
         // Insert the token ID into the form so it gets submitted to the server
         var hiddenInput2 = document.createElement('input');
