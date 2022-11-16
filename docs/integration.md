@@ -146,5 +146,5 @@ API3 `StripePaymentIntent.Process` now allows you to implement Stripe [setupInte
 which allow you to capture the user authentication (eg. 3DSecure) without taking payment.
 This is used for creating subscriptions and for delayed payments when you don't know the exact amount until you've completed "checkout".
 
-See civicrm_stripe.js for an example implementation. Note the return values in our implementation are more consistent that paymentIntents.
+See civicrmStripe.js for an example implementation. Note the return values in our implementation are more consistent that paymentIntents.
 

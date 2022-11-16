@@ -474,13 +474,10 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'weight' => -1,
     ]);
     CRM_Core_Region::instance('billing-block')->add([
-      'scriptUrl' => \Civi::service('asset_builder')->getUrl(
-        'civicrmStripe.js',
-        [
-          'path' => \Civi::resources()->getPath(E::LONG_NAME, 'js/civicrm_stripe.js'),
-          'mimetype' => 'application/javascript',
-        ]
-      ),
+      'scriptFile' => [
+        E::LONG_NAME,
+        'js/civicrmStripe.js',
+      ],
       // Load after other scripts on form (default = 1)
       'weight' => 100,
     ]);
