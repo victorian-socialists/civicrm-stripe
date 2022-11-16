@@ -86,6 +86,13 @@ class ProcessPublic extends \Civi\Api4\Generic\AbstractAction {
   protected $csrfToken = '';
 
   /**
+   * A captcha token for verification (if enabled)
+   *
+   * @var string
+   */
+  protected $captcha = '';
+
+  /**
    * @param \Civi\Api4\Generic\Result $result
    *
    * @return void
@@ -93,11 +100,10 @@ class ProcessPublic extends \Civi\Api4\Generic\AbstractAction {
    * @throws \Stripe\Exception\ApiErrorException
    */
   public function _run(\Civi\Api4\Generic\Result $result) {
-    if (class_exists('\Civi\Firewall\Firewall')) {
-      $firewall = new \Civi\Firewall\Firewall();
-      if (!$firewall->checkIsCSRFTokenValid(\CRM_Utils_Type::validate($this->csrfToken, 'String'))) {
-        throw new \CRM_Core_Exception($firewall->getReasonDescription());
-      }
+    $authorizeEvent = new \Civi\Stripe\Event\AuthorizeEvent($this->getEntityName(), $this->getActionName(), $this->getParams());
+    $event = \Civi::dispatcher()->dispatch('civi.stripe.authorize', $authorizeEvent);
+    if ($event->isAuthorized() === FALSE) {
+      throw new \CRM_Core_Exception('Bad Request');
     }
 
     if (empty($this->amount) && !$this->setup) {
