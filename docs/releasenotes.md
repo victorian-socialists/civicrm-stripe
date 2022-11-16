@@ -11,7 +11,7 @@ Releases use the following numbering system:
 
 ## Release 6.7.12 (not yet released)
 
-* Require Firewall 1.5.3.
+* Require Firewall 1.5.4.
 * Cleanup and remove legacy error handling.
 * Add check for extra data.
 * Make firewall a required extension.
