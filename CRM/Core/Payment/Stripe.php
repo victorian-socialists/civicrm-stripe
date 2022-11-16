@@ -409,6 +409,11 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    */
   public function buildForm(&$form) {
     // Don't use \Civi::resources()->addScriptFile etc as they often don't work on AJAX loaded forms (eg. participant backend registration)
+    $context = [];
+    if (class_exists('Civi\Formprotection\Forms')) {
+      $context = \Civi\Formprotection\Forms::getContextFromQuickform($form);
+    }
+
     $jsVars = [
       'id' => $form->_paymentProcessor['id'],
       'currency' => $this->getDefaultCurrencyForForm($form),
@@ -417,7 +422,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'paymentProcessorTypeID' => $form->_paymentProcessor['payment_processor_type_id'],
       'locale' => CRM_Stripe_Api::mapCiviCRMLocaleToStripeLocale(),
       'apiVersion' => CRM_Stripe_Check::API_VERSION,
-      'csrfToken' => class_exists('\Civi\Firewall\Firewall') ? \Civi\Firewall\Firewall::getCSRFToken() : NULL,
+      'csrfToken' => class_exists('\Civi\Firewall\Firewall') ? \Civi\Firewall\Firewall::getCSRFToken($context) : NULL,
       'country' => \Civi::settings()->get('stripe_country'),
     ];
 

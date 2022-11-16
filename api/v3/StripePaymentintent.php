@@ -162,19 +162,12 @@ function _civicrm_api3_stripe_paymentintent_process_spec(&$spec) {
  * @throws \Stripe\Exception\UnknownApiErrorException
  */
 function civicrm_api3_stripe_paymentintent_process($params) {
-  if (\Civi::settings()->get('formprotection_recaptcha_force')) {
-    $errors = [];
-    if (!\Civi\Formprotection\Recaptcha::validate($params['captcha'], $errors)) {
-      \Civi::log()->error('StripePaymentintent Recaptcha validate failed: ' . print_r($errors, TRUE));
-      _civicrm_api3_stripe_paymentintent_returnInvalid('Bad Request');
-    }
+  $authorizeEvent = new \Civi\Stripe\Event\AuthorizeEvent('StripePaymentintent', 'process', $params);
+  $event = \Civi::dispatcher()->dispatch('civi.stripe.authorize', $authorizeEvent);
+  if ($event->isAuthorized() === FALSE) {
+    _civicrm_api3_stripe_paymentintent_returnInvalid(E::ts('Bad Request'));
   }
-  if (class_exists('\Civi\Firewall\Firewall')) {
-    $firewall = new Firewall();
-    if (!$firewall->checkIsCSRFTokenValid(CRM_Utils_Type::validate($params['csrfToken'], 'String'))) {
-      _civicrm_api3_stripe_paymentintent_returnInvalid($firewall->getReasonDescription());
-    }
-  }
+
   foreach ($params as $key => $value) {
     if (substr($key, 0, 3) === 'api') {
       _civicrm_api3_stripe_paymentintent_returnInvalid('Invalid params');

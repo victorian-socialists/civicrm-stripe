@@ -11,12 +11,14 @@ Releases use the following numbering system:
 
 ## Release 6.7.12 (not yet released)
 
-* Require Firewall 1.5.4.
+* Require Firewall 1.5.6.
 * Cleanup and remove legacy error handling.
 * Add check for extra data.
 * Make firewall a required extension.
 * Add check for failed paymentIntents.
-* Protect StripePaymentintent.process API call with ReCAPTCHA if available (requires formprotection extension and force recaptcha on contribution pages to be enabled).
+* Add `civi.stripe.authorize` event which is used by other extensions (eg. Firewall, Formprotection with ReCAPTCHA)
+to authorize or deny access to StripePaymentintent API calls.
+* Add support for passing ReCAPTCHA token to backend so it can be used to validate API calls.
 
 ## Release 6.7.11 (2022-10-14)
 
