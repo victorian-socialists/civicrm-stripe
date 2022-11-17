@@ -425,7 +425,8 @@ class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
       // ALTER TABLE ... RENAME COLUMN only in MySQL8+
       CRM_Core_DAO::executeQuery("ALTER TABLE civicrm_stripe_customers CHANGE COLUMN id customer_id varchar(255) COMMENT 'Stripe Customer ID'");
       if (CRM_Core_BAO_SchemaHandler::checkIfIndexExists('civicrm_stripe_customers', 'id')) {
-        CRM_Core_DAO::executeQuery("ALTER TABLE civicrm_stripe_customers RENAME INDEX id TO customer_id");
+        CRM_Core_DAO::executeQuery('ALTER TABLE civicrm_stripe_customers DROP INDEX id');
+        CRM_Core_DAO::executeQuery('CREATE INDEX customer_id ON civicrm_stripe_customers (customer_id)');
       }
       CRM_Core_DAO::executeQuery("ALTER TABLE civicrm_stripe_customers ADD COLUMN id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT 'Unique ID' FIRST");
     }
