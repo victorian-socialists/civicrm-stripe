@@ -117,7 +117,7 @@ class ProcessPublic extends \Civi\Api4\Generic\AbstractAction {
       $moneyAmount = Money::of($this->amount, $this->currency, new DefaultContext(), RoundingMode::CEILING);
       $moneyMinAmount = Money::of($minAmount, $this->currency, new DefaultContext(), RoundingMode::CEILING);
       if ($moneyAmount->isLessThan($moneyMinAmount)) {
-        \Civi::log('stripe')->error(__CLASS__ . 'amount: ' . $this->amount . ' is less than min_amount: ' . $minAmount);
+        \Civi::log('stripe')->error('StripeProcessintent: ' . 'amount: ' . $this->amount . ' is less than min_amount: ' . $minAmount);
         throw new \CRM_Core_Exception('Bad request');
       }
     }
