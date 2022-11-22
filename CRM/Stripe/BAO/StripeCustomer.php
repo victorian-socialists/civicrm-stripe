@@ -18,11 +18,25 @@ class CRM_Stripe_BAO_StripeCustomer extends CRM_Stripe_DAO_StripeCustomer {
    * @throws \Civi\API\Exception\UnauthorizedException
    */
   public static function getStripeCustomerMetadata(int $contactID, ?string $email = NULL, array $invoiceSettings = [], ?string $description = NULL) {
-    $contactDisplayName = Contact::get(FALSE)
+    $contact = Contact::get(FALSE)
       ->addSelect('display_name', 'email_primary.email', 'email_billing.email')
       ->addWhere('id', '=', $contactID)
       ->execute()
-      ->first()['display_name'];
+      ->first();
+
+    if (version_compare(\CRM_Utils_System::version(), '5.53.0', '<')) {
+      // @todo: Remove when we drop support for CiviCRM < 5.53
+      // APIv4 - Read & write contact primary and billing locations as implicit joins
+      // https://github.com/civicrm/civicrm-core/pull/23972 was added in 5.53
+      $email = \Civi\Api4\Email::get(FALSE)
+        ->addOrderBy('is_primary', 'DESC')
+        ->addOrderBy('is_billing', 'DESC')
+        ->execute()
+        ->first();
+      if (!empty($email['email'])) {
+        $contact['email_primary.email'] = $email['email'];
+      }
+    }
 
     $extVersion = Extension::get(FALSE)
       ->addWhere('file', '=', E::SHORT_NAME)
@@ -30,17 +44,17 @@ class CRM_Stripe_BAO_StripeCustomer extends CRM_Stripe_DAO_StripeCustomer {
       ->first()['version'];
 
     $stripeCustomerParams = [
-      'name' => $contactDisplayName,
+      'name' => $contact['display_name'],
       // Stripe does not include the Customer Name when exporting payments, just the customer
       // description, so we stick the name in the description.
-      'description' => $description ?? $contactDisplayName . ' (CiviCRM)',
+      'description' => $description ?? $contact['display_name'] . ' (CiviCRM)',
       'metadata' => [
         'CiviCRM Contact ID' => $contactID,
         'CiviCRM URL' => CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$contactID}", TRUE, NULL, FALSE, FALSE, TRUE),
         'CiviCRM Version' => CRM_Utils_System::version() . ' ' . $extVersion,
       ],
     ];
-    $email = $email ?? $contactDisplayName['email_primary.email'] ?? $contactDisplayName['email_billing.email'] ?? NULL;
+    $email = $email ?? $contact['email_primary.email'] ?? $contact['email_billing.email'] ?? NULL;
     if ($email) {
       $stripeCustomerParams['email'] = $email;
     }

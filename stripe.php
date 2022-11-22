@@ -262,14 +262,35 @@ function stripe_civicrm_permission(&$permissions) {
 function stripe_civicrm_post($op, $objectName, $objectId, &$objectRef) {
   switch ($objectName) {
     case 'Contact':
-      if ($op === 'merge') {
-        try {
-          CRM_Stripe_BAO_StripeCustomer::updateMetadataForContact($objectId);
-        }
-        catch (Exception $e) {
-          \Civi::log(E::SHORT_NAME)->error('Stripe Contact Merge failed: ' . $e->getMessage());
-        }
+    case 'Individual':
+      switch ($op) {
+        case 'merge':
+          try {
+            CRM_Stripe_BAO_StripeCustomer::updateMetadataForContact($objectId);
+          }
+          catch (Exception $e) {
+            \Civi::log(E::SHORT_NAME)->error('Stripe Contact Merge failed: ' . $e->getMessage());
+          }
+          break;
+
+        case 'edit':
+          try {
+            // Does the contact have a Stripe customer record?
+            $stripeCustomers = \Civi\Api4\StripeCustomer::get(FALSE)
+              ->addWhere('contact_id', '=', $objectId)
+              ->execute();
+            // Update the contact details at Stripe for each customer associated with this contact
+            foreach ($stripeCustomers as $stripeCustomer) {
+              \Civi\Api4\StripeCustomer::updateStripe(FALSE)
+                ->setCustomerID($stripeCustomer['customer_id'])
+                ->execute();
+            }
+          }
+          catch (Exception $e) {
+            \Civi::log(E::SHORT_NAME)->error('Stripe Contact update failed: ' . $e->getMessage());
+          }
       }
+
     case 'Email':
       if (in_array($op, ['create', 'edit']) && ((int)$objectRef->is_primary === 1)) {
         try {

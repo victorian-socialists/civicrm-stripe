@@ -135,7 +135,7 @@ function civicrm_api3_stripe_customer_updatestripemetadata($params) {
   if (!isset($params['dryrun'])) {
     throw new CRM_Core_Exception('Missing required parameter dryrun');
   }
-  $customers = \Civi\Api4\StripeCustomer::get();
+  $customers = \Civi\Api4\StripeCustomer::get(FALSE);
   if (isset($params['options']['limit'])) {
     $customers = $customers->setLimit($params['options']['limit']);
   }
