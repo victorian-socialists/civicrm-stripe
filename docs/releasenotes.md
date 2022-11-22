@@ -14,7 +14,7 @@ Releases use the following numbering system:
 
 ### Features:
 * Implement optional MOTO payments for backoffice.
-* Update email address at Stripe if contact has a Stripe Customer when updating primary contact email.
+* Update name/email address at Stripe if contact has a Stripe Customer when updating contact / email (primary/billing).
 * Allow to configure a minimum amount that Stripe can process. Anything below this will fail with 'Bad Request'. This helps reduce card testing in some circumstances.
 * Add APIv3 `Stripe.membershipcheck` api.
 
