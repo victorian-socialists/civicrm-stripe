@@ -1,6 +1,7 @@
 <?php
 
 use Civi\Api4\Contact;
+use Civi\Api4\Email;
 use Civi\Api4\Extension;
 use Civi\Api4\StripeCustomer;
 use CRM_Stripe_ExtensionUtil as E;
@@ -28,13 +29,14 @@ class CRM_Stripe_BAO_StripeCustomer extends CRM_Stripe_DAO_StripeCustomer {
       // @todo: Remove when we drop support for CiviCRM < 5.53
       // APIv4 - Read & write contact primary and billing locations as implicit joins
       // https://github.com/civicrm/civicrm-core/pull/23972 was added in 5.53
-      $email = \Civi\Api4\Email::get(FALSE)
+      $emailResult = Email::get(FALSE)
+        ->addWhere('contact_id', '=', $contactID)
         ->addOrderBy('is_primary', 'DESC')
         ->addOrderBy('is_billing', 'DESC')
         ->execute()
         ->first();
-      if (!empty($email['email'])) {
-        $contact['email_primary.email'] = $email['email'];
+      if (!empty($emailResult['email'])) {
+        $contact['email_primary.email'] = $emailResult['email'];
       }
     }
 
