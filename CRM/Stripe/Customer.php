@@ -147,7 +147,6 @@ class CRM_Stripe_Customer {
     }
     catch (Exception $e) {
       $err = CRM_Core_Payment_Stripe::parseStripeException('create_customer', $e, FALSE);
-      \Civi::log('stripe')->error('Failed to create Stripe Customer: ' . $err['message'] . '; ' . print_r($err, TRUE));
       throw new PaymentProcessorException('Failed to create Stripe Customer: ' . $err['code']);
     }
 
@@ -186,7 +185,6 @@ class CRM_Stripe_Customer {
     }
     catch (Exception $e) {
       $err = CRM_Core_Payment_Stripe::parseStripeException('create_customer', $e);
-      \Civi::log('stripe')->error('Failed to update Stripe Customer: ' . $err['message'] . '; ' . print_r($err, TRUE));
       throw new PaymentProcessorException('Failed to update Stripe Customer: ' . $err['code']);
     }
     return $stripeCustomer;
@@ -207,11 +205,6 @@ class CRM_Stripe_Customer {
       ->execute()
       ->first()['display_name'];
 
-    $domainName = \Civi\Api4\Domain::get(FALSE)
-      ->setCurrentDomain(TRUE)
-      ->addSelect('name')
-      ->execute()
-      ->first()['name'];
     $extVersion = civicrm_api3('Extension', 'getvalue', ['return' => 'version', 'full_name' => E::LONG_NAME]);
 
     $stripeCustomerParams = [

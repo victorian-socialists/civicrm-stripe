@@ -262,20 +262,50 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
   }
 
   /**
-   * Stripe exceptions contain a json object in the body "error". This function extracts and returns that as an array.
-   * @param String $op
-   * @param Exception $e
-   * @param Boolean $log
+   * This function parses, sanitizes and extracts useful information from the exception that was thrown.
+   * The goal is that it only returns information that is safe to show to the end-user.
+   *
+   * @see https://stripe.com/docs/api/errors/handling?lang=php
+   *
+   * @param string $op
+   * @param \Exception $e
    *
    * @return array $err
    */
-  public static function parseStripeException($op, $e, $log = FALSE) {
-    $body = $e->getJsonBody();
-    if ($log) {
-      Civi::log()->error("Stripe_Error {$op}: " . print_r($body, TRUE));
+  public static function parseStripeException(string $op, \Exception $e): array {
+    $genericError = ['code' => 9000, 'message' => E::ts('An error occurred')];
+
+    switch (get_class($e)) {
+      case 'Stripe\Exception\CardException':
+        // Since it's a decline, \Stripe\Exception\CardException will be caught
+        \Civi::log('stripe')->error($op . ': ' . get_class($e) . ': ' . $e->getMessage() . print_r($e->getJsonBody(),TRUE));
+        $error['code'] = $e->getError()->code;
+        $error['message'] = $e->getError()->message;
+        return $error;
+
+      case 'Stripe\Exception\RateLimitException':
+        // Too many requests made to the API too quickly
+      case 'Stripe\Exception\InvalidRequestException':
+        // Invalid parameters were supplied to Stripe's API
+      case 'Stripe\Exception\AuthenticationException':
+        // Authentication with Stripe's API failed
+        // (maybe you changed API keys recently)
+      case 'Stripe\Exception\ApiConnectionException':
+        // Network communication with Stripe failed
+        \Civi::log('stripe')->error($op . ': ' . get_class($e) . ': ' . $e->getMessage());
+        return $genericError;
+
+      case 'Stripe\Exception\ApiErrorException':
+        // Display a very generic error to the user, and maybe send yourself an email
+        // Get the error array. Creat a "fake" error code if error is not set.
+        // The calling code will parse this further.
+        \Civi::log('stripe')->error($op . ': ' . get_class($e) . ': ' . $e->getMessage() . print_r($e->getJsonBody(),TRUE));
+        return $e->getJsonBody()['error'] ?? $genericError;
+
+      default:
+        // Something else happened, completely unrelated to Stripe
+        return $genericError;
     }
-    // Get the error array. Creat a "fake" error code if error is not set.
-    return $body['error'] ?? ['code' => 9000];
   }
 
   /**
@@ -578,7 +608,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         $stripeCustomer = $this->stripeClient->customers->retrieve($stripeCustomerId);
       } catch (Exception $e) {
         $err = self::parseStripeException('retrieve_customer', $e);
-        \Civi::log('stripe')->error('Failed to retrieve Stripe Customer: ' . $err['message'] . '; ' . print_r($err, TRUE));
         throw new PaymentProcessorException('Failed to retrieve Stripe Customer: ' . $err['code']);
       }
 
@@ -590,7 +619,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         } catch (Exception $e) {
           // We still failed to create a customer
           $err = self::parseStripeException('create_customer', $e);
-          \Civi::log('stripe')->error('Failed to create Stripe Customer: ' . $err['message'] . '; ' . print_r($err, TRUE));
           throw new PaymentProcessorException('Failed to create Stripe Customer: ' . $err['code']);
         }
       }
@@ -869,7 +897,6 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
           }
           catch (Exception $e) {
             $err = self::parseStripeException('retrieve_balance_transaction', $e);
-            \Civi::log('stripe')->error('Failed to retrieve Stripe Balance Transaction: ' . $err['message'] . '; ' . print_r($err, TRUE));
             throw new PaymentProcessorException('Failed to retrieve Stripe Balance Transaction: ' . $err['code']);
           }
           if (($stripeCharge['currency'] !== $stripeBalanceTransaction->currency)

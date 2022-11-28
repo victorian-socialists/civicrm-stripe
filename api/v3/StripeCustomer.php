@@ -257,7 +257,6 @@ function civicrm_api3_stripe_customer_updatestripemetadata($params) {
       $paymentProcessor->stripeClient->customers->retrieve($customerId);
     } catch (Exception $e) {
       $err = CRM_Core_Payment_Stripe::parseStripeException('retrieve_customer', $e);
-      \Civi::log('stripe')->error('Failed to retrieve Stripe Customer: ' . $err['message'] . '; ' . print_r($err, TRUE));
       throw new PaymentProcessorException('Failed to retrieve Stripe Customer: ' . $err['code']);
     }
 
