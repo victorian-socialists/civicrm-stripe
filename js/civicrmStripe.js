@@ -204,10 +204,6 @@
           }, '', false);
 
           try {
-            let processMode = 'Public';
-            if (CRM.vars.stripe.moto && document.getElementById('enableMOTO').checked) {
-              processMode = 'MOTO';
-            }
             let processParams = {
               // payment_method_id: createPaymentMethodResult.paymentMethod.id,
               paymentMethodID: createPaymentMethodResult.paymentMethod.id,
@@ -216,10 +212,15 @@
               paymentProcessorID: CRM.vars[script.name].id,
               description: document.title,
               extraData: CRM.payment.getBillingEmail() + CRM.payment.getBillingName(),
-              captcha: script.getReCAPTCHAToken()
             };
-            if (processMode !== 'MOTO') {
+
+            let processMode = 'Public';
+            if (CRM.vars.stripe.moto && document.getElementById('enableMOTO').checked) {
+              processMode = 'MOTO';
+            }
+            else {
               processParams.csrfToken = CRM.vars[script.name].csrfToken;
+              processParams.captcha = script.getReCAPTCHAToken();
             }
 
             let paymentIntentProcessResponse = await CRM.api4('StripePaymentintent', 'Process' + processMode, processParams);
