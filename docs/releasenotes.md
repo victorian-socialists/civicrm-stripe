@@ -9,7 +9,8 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
-## Release 6.7.12 (not yet released)
+## Release 6.7.12 (2022-11-28)
+**Requires mjwshared (Payment Shared) 1.2.10 and Firewall 1.5.6**
 
 * Require Firewall 1.5.6.
 * Cleanup and remove legacy error handling.
@@ -19,6 +20,7 @@ Releases use the following numbering system:
 * Add `civi.stripe.authorize` event which is used by other extensions (eg. Firewall, Formprotection with ReCAPTCHA)
 to authorize or deny access to StripePaymentintent API calls.
 * Add support for passing ReCAPTCHA token to backend so it can be used to validate API calls.
+* Fix [#397](https://lab.civicrm.org/extensions/stripe/-/issues/397) Error: Call to undefined method Stripe\Exception\InvalidArgumentException::getJsonBody().
 
 ## Release 6.7.11 (2022-10-14)
 
