@@ -471,6 +471,7 @@ class CRM_Stripe_PaymentIntent {
         $intent = $this->paymentProcessor->stripeClient->paymentIntents->create($intentParams);
       }
       catch (Exception $e) {
+        $parsedError = $this->paymentProcessor::parseStripeException('process_paymentintent', $e);
         // Save the "error" in the paymentIntent table in case investigation is required.
         $stripePaymentintentParams = [
           'payment_processor_id' => $this->paymentProcessor->getID(),
@@ -533,14 +534,13 @@ class CRM_Stripe_PaymentIntent {
           }
 
           // Returned message should not indicate whether fraud was detected
-          $message = $e->getMessage();
+          $message = $parsedError['message'];
         }
         elseif ($e instanceof \Stripe\Exception\InvalidRequestException) {
-          \Civi::log('stripe')->error('processPaymentIntent: ' . $e->getMessage());
-          $message = 'Invalid request';
+          $message = $parsedError['message'];
         }
         $resultObject->ok = FALSE;
-        $resultObject->message = $message;
+        $resultObject->message = $message ?? 'Unknown error';
         return $resultObject;
       }
     }
