@@ -810,8 +810,8 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       throw new PaymentProcessorException('Payment failed');
     }
 
-    // artfulrobot: Q. what do we normally get here?
-    if ($stripeSubscription->latest_invoice) {
+    // For a recurring (subscription) with future start date we might not have an invoice yet.
+    if (!empty($stripeSubscription->latest_invoice)) {
       // Get the paymentIntent for the latest invoice
       $intent = $stripeSubscription->latest_invoice['payment_intent'];
       $params = $this->processPaymentIntent($params, $intent);
@@ -891,7 +891,12 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
           $intent->capture();
         case 'succeeded':
           // Return fees & net amount for Civi reporting.
-          $stripeCharge = $intent->charges->data[0];
+          if (!empty($intent->charges)) {
+            $stripeCharge = $intent->charges->data[0];
+          }
+          elseif (!empty($intent->latest_charge)) {
+            $stripeCharge = $this->stripeClient->charges->retrieve($intent->latest_charge);
+          }
           try {
             $stripeBalanceTransaction = $this->stripeClient->balanceTransactions->retrieve($stripeCharge->balance_transaction);
           }

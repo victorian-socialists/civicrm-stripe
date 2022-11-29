@@ -188,7 +188,6 @@ class CRM_Stripe_PaymentIntent {
     }
 
     $intent = $stripe->stripeClient->paymentIntents->retrieve($params['id']);
-    $paymentIntent = self::get($params);
     $params['status'] = $intent->status;
     self::add($params);
   }
