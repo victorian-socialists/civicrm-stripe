@@ -287,6 +287,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         // Too many requests made to the API too quickly
       case 'Stripe\Exception\InvalidRequestException':
         // Invalid parameters were supplied to Stripe's API
+        $genericError['code'] = $e->getError()->code;
       case 'Stripe\Exception\AuthenticationException':
         // Authentication with Stripe's API failed
         // (maybe you changed API keys recently)
