@@ -9,6 +9,10 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
+## Release 6.7.14 (2022-12-19)
+
+* Fix [#404](https://lab.civicrm.org/extensions/stripe/-/issues/404)
+
 ## Release 6.7.13 (2022-11-29)
 **Add support for Stripe API version 2022-11-15**
 
