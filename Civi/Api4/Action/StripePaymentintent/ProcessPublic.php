@@ -111,9 +111,10 @@ class ProcessPublic extends \Civi\Api4\Generic\AbstractAction {
       throw new \CRM_Core_Exception('Bad request');
     }
 
-    // If we configured a minimum allowed amount for processing check it here
+    // setupIntent doesn't have an amount so we can't validate minamount in that case
+    // If we configured a minimum allowed amount for processing check it now
     $minAmount = \Civi::settings()->get('stripe_minamount');
-    if (!empty($minAmount)) {
+    if (!$this->setup && !empty($minAmount)) {
       $moneyAmount = Money::of($this->amount, $this->currency, new DefaultContext(), RoundingMode::CEILING);
       $moneyMinAmount = Money::of($minAmount, $this->currency, new DefaultContext(), RoundingMode::CEILING);
       if ($moneyAmount->isLessThan($moneyMinAmount)) {
