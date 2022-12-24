@@ -107,7 +107,7 @@ class CRM_Stripe_Customer {
       }
     }
 
-    $stripeCustomerParams = CRM_Stripe_BAO_StripeCustomer::getStripeCustomerMetadata($params['contact_id'], $params['email'] ?? NULL, $params['invoice_settings'] ?? []);
+    $stripeCustomerParams = CRM_Stripe_BAO_StripeCustomer::getStripeCustomerMetadata($params['contact_id'], $params['invoice_settings'] ?? []);
 
     try {
       $stripeCustomer = $stripe->stripeClient->customers->create($stripeCustomerParams);

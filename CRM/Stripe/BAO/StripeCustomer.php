@@ -10,7 +10,6 @@ class CRM_Stripe_BAO_StripeCustomer extends CRM_Stripe_DAO_StripeCustomer {
 
   /**
    * @param int $contactID
-   * @param string|null $email
    * @param array $invoiceSettings
    * @param string|null $description
    *
@@ -18,7 +17,7 @@ class CRM_Stripe_BAO_StripeCustomer extends CRM_Stripe_DAO_StripeCustomer {
    * @throws \CRM_Core_Exception
    * @throws \Civi\API\Exception\UnauthorizedException
    */
-  public static function getStripeCustomerMetadata(int $contactID, ?string $email = NULL, array $invoiceSettings = [], ?string $description = NULL) {
+  public static function getStripeCustomerMetadata(int $contactID, array $invoiceSettings = [], ?string $description = NULL) {
     $contact = Contact::get(FALSE)
       ->addSelect('display_name', 'email_primary.email', 'email_billing.email')
       ->addWhere('id', '=', $contactID)
@@ -56,7 +55,7 @@ class CRM_Stripe_BAO_StripeCustomer extends CRM_Stripe_DAO_StripeCustomer {
         'CiviCRM Version' => CRM_Utils_System::version() . ' ' . $extVersion,
       ],
     ];
-    $email = $email ?? $contact['email_primary.email'] ?? $contact['email_billing.email'] ?? NULL;
+    $email = $contact['email_primary.email'] ?? $contact['email_billing.email'] ?? NULL;
     if ($email) {
       $stripeCustomerParams['email'] = $email;
     }
@@ -85,7 +84,7 @@ class CRM_Stripe_BAO_StripeCustomer extends CRM_Stripe_DAO_StripeCustomer {
       }
     }
 
-    $stripeCustomerParams = CRM_Stripe_BAO_StripeCustomer::getStripeCustomerMetadata($params['contact_id'], $params['email'] ?? NULL, $params['invoice_settings'] ?? [], $params['description'] ?? NULL);
+    $stripeCustomerParams = CRM_Stripe_BAO_StripeCustomer::getStripeCustomerMetadata($params['contact_id'], $params['invoice_settings'] ?? [], $params['description'] ?? NULL);
 
     try {
       $stripeCustomer = $stripe->stripeClient->customers->update($stripeCustomerID, $stripeCustomerParams);

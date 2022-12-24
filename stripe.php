@@ -274,45 +274,45 @@ function stripe_civicrm_post($op, $objectName, $objectId, &$objectRef) {
           break;
 
         case 'edit':
-          try {
-            // Does the contact have a Stripe customer record?
-            $stripeCustomers = \Civi\Api4\StripeCustomer::get(FALSE)
-              ->addWhere('contact_id', '=', $objectId)
-              ->execute();
-            // Update the contact details at Stripe for each customer associated with this contact
-            foreach ($stripeCustomers as $stripeCustomer) {
-              \Civi\Api4\StripeCustomer::updateStripe(FALSE)
-                ->setCustomerID($stripeCustomer['customer_id'])
-                ->execute();
-            }
-          }
-          catch (Exception $e) {
-            \Civi::log(E::SHORT_NAME)->error('Stripe Contact update failed: ' . $e->getMessage());
-          }
+          register_shutdown_function('stripe_civicrm_shutdown_updatestripecustomer', $objectId);
       }
+      break;
 
     case 'Email':
-      if (in_array($op, ['create', 'edit']) && ((int)$objectRef->is_primary === 1)) {
-        try {
-          // Does the contact have a Stripe customer record?
-          $stripeCustomers = \Civi\Api4\StripeCustomer::get(FALSE)
-            ->addWhere('contact_id', '=', $objectRef->contact_id)
-            ->execute();
-          // Update the email address at Stripe for each customer associated with this contact
-          foreach ($stripeCustomers as $stripeCustomer) {
-            \Civi\Api4\StripeCustomer::updateStripe(FALSE)
-              ->setCustomerID($stripeCustomer['customer_id'])
-              ->setEmail($objectRef->email)
-              ->execute();
-          }
-        }
-        catch (Exception $e) {
-          \Civi::log(E::SHORT_NAME)->error('Stripe Contact update email failed: ' . $e->getMessage());
-        }
+      if (in_array($op, ['create', 'edit'])) {
+        register_shutdown_function('stripe_civicrm_shutdown_updatestripecustomer', $objectRef->contact_id);
       }
+  }
+}
 
-    default:
-      return;
+/**
+ * Update the Stripe Customers for a contact (metadata)
+ *
+ * @param int $contactID
+ *
+ * @return void
+ */
+function stripe_civicrm_shutdown_updatestripecustomer(int $contactID) {
+  if (isset(\Civi::$statics['stripe_civicrm_shutdown_updatestripecustomer'][$contactID])) {
+    // Don't run the update more than once
+    return;
+  }
+  \Civi::$statics['stripe_civicrm_shutdown_updatestripecustomer'][$contactID] = TRUE;
+
+  try {
+    // Does the contact have a Stripe customer record?
+    $stripeCustomers = \Civi\Api4\StripeCustomer::get(FALSE)
+      ->addWhere('contact_id', '=', $contactID)
+      ->execute();
+    // Update the contact details at Stripe for each customer associated with this contact
+    foreach ($stripeCustomers as $stripeCustomer) {
+      \Civi\Api4\StripeCustomer::updateStripe(FALSE)
+        ->setCustomerID($stripeCustomer['customer_id'])
+        ->execute();
+    }
+  }
+  catch (Exception $e) {
+    \Civi::log(E::SHORT_NAME)->error('Stripe Contact update failed: ' . $e->getMessage());
   }
 
 }

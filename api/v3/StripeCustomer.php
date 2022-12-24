@@ -175,7 +175,7 @@ function civicrm_api3_stripe_customer_updatestripemetadata($params) {
       throw new PaymentProcessorException('Failed to retrieve Stripe Customer: ' . $err['code']);
     }
 
-    $stripeCustomerParams = CRM_Stripe_BAO_StripeCustomer::getStripeCustomerMetadata($customer['contact_id'], $customer['email'] ?? NULL, $customer['invoice_settings'] ?? []);
+    $stripeCustomerParams = CRM_Stripe_BAO_StripeCustomer::getStripeCustomerMetadata($customer['contact_id'], $customer['invoice_settings'] ?? []);
 
     // Update the stripe customer object at stripe
     if (!$params['dryrun']) {
