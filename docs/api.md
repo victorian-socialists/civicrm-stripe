@@ -159,9 +159,6 @@ Permissions: `access Ajax API` + `make online contributions`
 
 * `Job.process_stripe` - this cancels uncaptured paymentIntents and removes successful ones from the local database cache after a period of time:
 
-  Parameters:
-  * delete_old: Delete old records from database. Specify 0 to disable. Default is "-3 month"
-  * cancel_incomplete: Cancel incomplete paymentIntents in your stripe account. Specify 0 to disable. Default is "-1 hour"
-
-
-
+  * Parameters:
+    * delete_old: Delete old records from database. Specify 0 to disable. Default is "-3 month"
+    * cancel_incomplete: Cancel incomplete paymentIntents in your stripe account. Specify 0 to disable. Default is "-1 hour"
