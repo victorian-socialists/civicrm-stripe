@@ -459,7 +459,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     ];
     if (class_exists('\Civi\Firewall\Firewall')) {
       $firewall = new \Civi\Firewall\Firewall();
-      $jsVars['csrfToken'] = $firewall->generateCSRFToken();
+      $jsVars['csrfToken'] = $firewall->generateCSRFToken($context);
     }
 
     // Add CSS via region (it won't load on drupal webform if added via \Civi::resources()->addStyleFile)
