@@ -24,7 +24,7 @@ use Civi\API\Event\AuthorizedTrait;
  *
  * Event name: 'civi.api.authorize'
  */
-class AuthorizeEvent extends \Symfony\Component\EventDispatcher\Event {
+class AuthorizeEvent extends \Civi\Core\Event\GenericHookEvent {
 
   use AuthorizedTrait;
 
