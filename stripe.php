@@ -32,45 +32,10 @@ function stripe_civicrm_install() {
 }
 
 /**
- * Implementation of hook_civicrm_postInstall
- */
-function stripe_civicrm_postInstall() {
-  _stripe_civix_civicrm_postInstall();
-}
-
-/**
- * Implementation of hook_civicrm_uninstall().
- */
-function stripe_civicrm_uninstall() {
-  _stripe_civix_civicrm_uninstall();
-}
-
-/**
  * Implementation of hook_civicrm_enable().
  */
 function stripe_civicrm_enable() {
   _stripe_civix_civicrm_enable();
-}
-
-/**
- * Implementation of hook_civicrm_disable().
- */
-function stripe_civicrm_disable() {
-  return _stripe_civix_civicrm_disable();
-}
-
-/**
- * Implementation of hook_civicrm_upgrade
- */
-function stripe_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
-  return _stripe_civix_civicrm_upgrade($op, $queue);
-}
-
-/**
- * Implements hook_civicrm_entityTypes().
- */
-function stripe_civicrm_entityTypes(&$entityTypes) {
-  _stripe_civix_civicrm_entityTypes($entityTypes);
 }
 
 /**

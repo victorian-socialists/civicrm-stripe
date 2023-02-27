@@ -17,7 +17,7 @@ use CRM_Stripe_ExtensionUtil as E;
  * Naming scheme upgrade_X_Y_Z is offically wrong!
  * https://chat.civicrm.org/civicrm/pl/usx3pfjzjbrhzpewuggu1e6ftw
  */
-class CRM_Stripe_Upgrader extends CRM_Stripe_Upgrader_Base {
+class CRM_Stripe_Upgrader extends CRM_Extension_Upgrader_Base {
 
   // By convention, functions that look like "function upgrade_NNNN()" are
   // upgrade tasks. They are executed in order (like Drupal's hook_update_N).
