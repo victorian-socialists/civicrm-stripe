@@ -37,7 +37,7 @@ Releases use the following numbering system:
 * Record IP address and error message when processIntent fails.
 * Convert StripeCustomer to an entity and add API4 methods to access it.
 * Update Stripe PHP library to v9.
-* Change recommended Stripe API version to 2022-08-01.
+* Change recommended Stripe API version to 2022-11-15.
 
 ## Release 6.7.14 (2022-12-19)
 
