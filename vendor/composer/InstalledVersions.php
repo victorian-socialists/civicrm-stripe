@@ -30,7 +30,7 @@ private static $installed = array (
     'aliases' => 
     array (
     ),
-    'reference' => 'b9b8fdaea5e0876d35a29274c9261a6a4c60f160',
+    'reference' => '30fe9d87ad1d84b725ba3be99105951d9ca18b16',
     'name' => 'civicrm/stripe',
   ),
   'versions' => 
@@ -42,7 +42,7 @@ private static $installed = array (
       'aliases' => 
       array (
       ),
-      'reference' => 'b9b8fdaea5e0876d35a29274c9261a6a4c60f160',
+      'reference' => '30fe9d87ad1d84b725ba3be99105951d9ca18b16',
     ),
     'stripe/stripe-php' => 
     array (

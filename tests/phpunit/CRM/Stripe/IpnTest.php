@@ -901,23 +901,28 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       ->with($this->equalTo('ch_mock'))
       ->willReturn($mockCharge);
 
-    $mockPaymentIntent = $this->createMock('Stripe\\PaymentIntent');
-    $mockPaymentIntent
-      ->method('__get')
-      ->will($this->returnValueMap([
-        ['id', 'pi_mock'],
-        ['status', 'succeeded'],
-        ['charges', $mockChargesCollection]
-      ]));
+    $mockPaymentIntent = new PropertySpy('PaymentIntent', [
+      'id' => 'pi_mock',
+      'status' => 'succeeded',
+      'latest_charge' => $mockCharge
+    ]);
 
     $stripeClient->paymentIntents = $this->createMock('Stripe\\Service\\PaymentIntentService');
     $stripeClient->paymentIntents
       ->method('retrieve')
       ->with($this->equalTo('pi_mock'))
       ->willReturn($mockPaymentIntent);
+
+    $mockPaymentIntentWithAmount = new PropertySpy('PaymentIntent', [
+      'id' => 'pi_mock',
+      'status' => 'succeeded',
+      'latest_charge' => $mockCharge,
+      'amount' => '40000',
+    ]);
     $stripeClient->paymentIntents
       ->method('update')
-      ->willReturn($mockPaymentIntent);
+      ->with($this->equalTo('pi_mock'))
+      ->willReturn($mockPaymentIntentWithAmount);
 
     $stripeClient->balanceTransactions = $this->createMock('Stripe\\Service\\BalanceTransactionService');
     $stripeClient->balanceTransactions
@@ -1049,14 +1054,28 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       ->with($this->equalTo('ch_mock'))
       ->willReturn($mockCharge);
 
-    $mockPaymentIntent = $this->createMock('Stripe\\PaymentIntent');
-    $mockPaymentIntent
-      ->method('__get')
-      ->will($this->returnValueMap([
-        ['id', 'pi_mock'],
-        ['status', 'succeeded'],
-        ['charges', $mockChargesCollection]
-      ]));
+    $mockPaymentIntent = new PropertySpy('PaymentIntent', [
+      'id' => 'pi_mock',
+      'status' => 'succeeded',
+      'latest_charge' => $mockCharge
+    ]);
+
+    $stripeClient->paymentIntents = $this->createMock('Stripe\\Service\\PaymentIntentService');
+    $stripeClient->paymentIntents
+      ->method('retrieve')
+      ->with($this->equalTo('pi_mock'))
+      ->willReturn($mockPaymentIntent);
+
+    $mockPaymentIntentWithAmount = new PropertySpy('PaymentIntent', [
+      'id' => 'pi_mock',
+      'status' => 'succeeded',
+      'latest_charge' => $mockCharge,
+      'amount' => '40000',
+    ]);
+    $stripeClient->paymentIntents
+      ->method('update')
+      ->with($this->equalTo('pi_mock'))
+      ->willReturn($mockPaymentIntentWithAmount);
 
     $mockSubscription = new PropertySpy('subscription.create', [
       'id' => 'sub_mock',
@@ -1076,15 +1095,6 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       ->method('retrieve')
       ->with($this->equalTo('sub_mock'))
       ->willReturn($mockSubscription);
-
-    $stripeClient->paymentIntents = $this->createMock('Stripe\\Service\\PaymentIntentService');
-    $stripeClient->paymentIntents
-      ->method('retrieve')
-      ->with($this->equalTo('pi_mock'))
-      ->willReturn($mockPaymentIntent);
-    $stripeClient->paymentIntents
-      ->method('update')
-      ->willReturn($mockPaymentIntent);
 
     $stripeClient->balanceTransactions = $this->createMock('Stripe\\Service\\BalanceTransactionService');
     $stripeClient->balanceTransactions

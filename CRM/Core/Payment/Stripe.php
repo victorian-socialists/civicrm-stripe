@@ -895,10 +895,12 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
         case 'succeeded':
           // Return fees & net amount for Civi reporting.
           if (!empty($intent->charges)) {
+            // Stripe API version < 2022-11-15
             $stripeCharge = $intent->charges->data[0];
           }
           elseif (!empty($intent->latest_charge)) {
-            $stripeCharge = $this->stripeClient->charges->retrieve($intent->latest_charge);
+            // Stripe API version 2022-11-15
+            $stripeCharge = $this->stripeClient->charges->retrieve($intent->latest_charge->id);
           }
           try {
             $stripeBalanceTransaction = $this->stripeClient->balanceTransactions->retrieve($stripeCharge->balance_transaction);
