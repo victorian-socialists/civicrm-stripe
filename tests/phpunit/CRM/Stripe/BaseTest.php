@@ -131,8 +131,16 @@ abstract class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implement
 
   /**
    * Submit to stripe
+   *
+   * @param array $params
+   *
+   * @return array The result from PaymentProcessor->doPayment
+   * @throws \CRM_Core_Exception
+   * @throws \CiviCRM_API3_Exception
+   * @throws \Civi\Payment\Exception\PaymentProcessorException
+   * @throws \Stripe\Exception\ApiErrorException
    */
-  public function doPayment($params = []) {
+  public function doPayment(array $params = []): array {
     // Send in credit card to get payment method. xxx mock here
     $paymentMethod = $this->paymentObject->stripeClient->paymentMethods->create([
       'type' => 'card',
@@ -210,6 +218,7 @@ abstract class CRM_Stripe_BaseTest extends \PHPUnit\Framework\TestCase implement
         $this->processorID = $dao->processor_id;
       }
     }
+    return $ret;
   }
 
   /**

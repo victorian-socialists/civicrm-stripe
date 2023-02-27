@@ -114,6 +114,51 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
   }
 
   /**
+   * Test creating a one-off contribution and
+   * update it after creation.
+   */
+  public function testNewOneOffChargeRefundedFull() {
+    $doPaymentResult = $this->mockOneOffPaymentSetup();
+
+    if ($doPaymentResult['payment_status'] === 'Completed') {
+      $result = civicrm_api3('Payment', 'create', [
+        'trxn_id' => $doPaymentResult['trxn_id'],
+        'total_amount' => $this->total,
+        'fee_amount' => $doPaymentResult['fee_amount'],
+        'order_reference' => $doPaymentResult['order_reference'],
+        'contribution_id' => $this->contributionID,
+      ]);
+    }
+
+    $this->simulateEvent([
+      'type'             => 'charge.refunded',
+      'id'               => 'evt_mock',
+      'object'           => 'event', // ?
+      'livemode'         => FALSE,
+      'pending_webhooks' => 0,
+      'request'          => [ 'id' => NULL ],
+      'data'             => [
+        'object' => [
+          'id'              => 'ch_mock',
+          'object'          => 'charge',
+          'customer'        => 'cus_mock',
+          'charge'          => 'ch_mock',
+          'created'         => time(),
+          'amount_refunded' => $this->total*100,
+          'status'          => 'succeeded',
+          "captured"        => TRUE,
+        ]
+      ],
+    ]);
+
+    // Ensure Contribution status is updated to complete and that we now have both invoice ID and charge ID as the transaction ID.
+    $this->checkContrib([
+      'contribution_status_id' => 'Refunded',
+      'trxn_id'                => 'ch_mock,re_mock',
+    ]);
+  }
+
+  /**
    * Test creating a recurring contribution and
    * update it after creation. @todo The membership should also be updated.
    */
@@ -829,8 +874,14 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
    * - ch_mock   Charge
    * - txn_mock  Balance transaction
    * - sub_mock  Subscription
+   *
+   * @return array The result from doPayment()
+   * @throws \CRM_Core_Exception
+   * @throws \CiviCRM_API3_Exception
+   * @throws \Civi\Payment\Exception\PaymentProcessorException
+   * @throws \Stripe\Exception\ApiErrorException
    */
-  protected function mockOneOffPaymentSetup() {
+  protected function mockOneOffPaymentSetup(): array {
     PropertySpy::$buffer = 'none';
     // Set this to 'print' or 'log' maybe more helpful in debugging but for
     // generally running tests 'exception' suits as we don't expect any output.
@@ -936,6 +987,19 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
         'object' => 'balance_transaction',
       ]));
 
+    $mockRefund = new PropertySpy('Refund', [
+      'amount_refunded' => $this->total*100,
+      'charge_id' => 'ch_mock', //xxx
+      'created' => time(),
+      'currency' => 'usd',
+      'id' => 're_mock',
+      'object' => 'refund',
+    ]);
+    $stripeClient->refunds = $this->createMock('Stripe\\Service\\RefundService');
+    $stripeClient->refunds
+      ->method('all')
+      ->willReturn(new PropertySpy('refunds.all', [ 'data' => [ $mockRefund ] ]));
+
     $this->setupTransaction();
     // Submit the payment.
     $payment_extra_params = [
@@ -943,7 +1007,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       'paymentIntentID'     => 'pi_mock',
     ];
 
-    $this->doPayment($payment_extra_params);
+    $doPaymentResult = $this->doPayment($payment_extra_params);
 
     //
     // Check the Contribution
@@ -954,6 +1018,8 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
       'contribution_status_id' => 'Pending',
       'trxn_id'                => 'ch_mock',
     ]);
+
+    return $doPaymentResult;
   }
 
   /**
