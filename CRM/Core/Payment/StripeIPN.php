@@ -385,14 +385,21 @@ class CRM_Core_Payment_StripeIPN {
    * @throws \API_Exception
    * @throws \Civi\API\Exception\UnauthorizedException
    */
-  public function processWebhookEvent() :StdClass {
+  public function processWebhookEvent() :stdClass {
     $return = (object) ['message' => '', 'ok' => FALSE, 'exception' => NULL];
+
     try {
       $this->setInputParameters();
+
+      $webhookEventProcessor = new \Civi\Stripe\Webhook\Events();
+      $webhookEventProcessor->setEventType($this->getEventType());
+      $webhookEventProcessor->setEventID($this->getEventID());
+      $webhookEventProcessor->setData($this->getData());
+      $webhookEventProcessor->setPaymentProcessor($this->getPaymentProcessor()->getID());
+
       switch ($this->eventType) {
         case 'charge.refunded':
-          $return->ok = TRUE;
-          $return->message = $this->doChargeRefunded();
+          $return = $webhookEventProcessor->doChargeRefunded();
           break;
 
         default:
@@ -623,79 +630,6 @@ class CRM_Core_Payment_StripeIPN {
 
     // Unhandled event
     return TRUE;
-  }
-
-  /**
-   * Process the charge.refunded event from Stripe
-   *
-   * @return bool
-   * @throws \CRM_Core_Exception
-   * @throws \CiviCRM_API3_Exception
-   * @throws \Civi\Payment\Exception\PaymentProcessorException
-   * @throws \Stripe\Exception\ApiErrorException
-   */
-  private function doChargeRefunded() {
-    // Cancelling an uncaptured paymentIntent triggers charge.refunded but we don't want to process that
-    if (empty(CRM_Stripe_Api::getObjectParam('captured', $this->getData()->object))) {
-      return TRUE;
-    }
-
-    // This gives us the refund date + reason code
-    $refunds = $this->getPaymentProcessor()->stripeClient->refunds->all(['charge' => $this->charge_id, 'limit' => 1]);
-    $refund = $refunds->data[0];
-
-    // Stripe does not refund fees - see https://support.stripe.com/questions/understanding-fees-for-refunded-payments
-    // This gets the fee refunded
-    // $this->fee = $this->getPaymentProcessor()->getFeeFromBalanceTransaction($refund->balance_transaction, $this->retrieve('currency', 'String', FALSE));
-    // This gives us the actual amount refunded
-    $amountRefunded = CRM_Stripe_Api::getObjectParam('amount_refunded', $this->getData()->object);
-
-    // Get the CiviCRM contribution that matches the Stripe metadata we have from the event
-    $this->getContribution();
-
-    if (isset($this->contribution['payments'])) {
-      foreach ($this->contribution['payments'] as $payment) {
-        if ($payment['trxn_id'] === $refund->id) {
-          return 'Refund ' . $refund->id . ' already recorded in CiviCRM';
-        }
-        if ($payment['trxn_id'] === $this->charge_id) {
-          // This triggers the financial transactions/items to be updated correctly.
-          $cancelledPaymentID = $payment['id'];
-        }
-      }
-    }
-
-    $refundParams = [
-      'contribution_id' => $this->contribution['id'],
-      'total_amount' => 0 - abs($amountRefunded),
-      'trxn_date' => date('YmdHis', $refund->created),
-      'trxn_result_code' => $refund->reason,
-      'fee_amount' => 0,
-      'trxn_id' => $refund->id,
-      'order_reference' => $this->invoice_id ?? NULL,
-    ];
-
-    if (!empty($cancelledPaymentID)) {
-      $refundParams['cancelled_payment_id'] = $cancelledPaymentID;
-    }
-
-    $lock = Civi::lockManager()->acquire('data.contribute.contribution.' . $refundParams['contribution_id']);
-    if (!$lock->isAcquired()) {
-      \Civi::log()->error('Could not acquire lock to record refund for contribution: ' . $refundParams['contribution_id']);
-    }
-    $refundPayment = civicrm_api3('Payment', 'get', [
-      'trxn_id' => $refundParams['trxn_id'],
-      'total_amount' => $refundParams['total_amount'],
-    ]);
-    if (!empty($refundPayment['count'])) {
-      $message = 'OK - refund already recorded';
-    }
-    else {
-      $this->updateContributionRefund($refundParams);
-      $message = 'OK - refund recorded';
-    }
-    $lock->release();
-    return $message;
   }
 
   /**
