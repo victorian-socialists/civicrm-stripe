@@ -467,7 +467,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
       'styleUrl' => \Civi::service('asset_builder')->getUrl(
         'elements.css',
         [
-          'path' => \Civi::resources()->getPath(E::LONG_NAME, 'css/elements.css'),
+          'path' => E::path('css/elements.css'),
           'mimetype' => 'text/css',
         ]
       ),
@@ -489,8 +489,10 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
     // Assign to smarty so we can add via Card.tpl for drupal webform and other situations where jsVars don't get loaded on the form.
     // This applies to some contribution page configurations as well.
     $form->assign('stripeJSVars', $jsVars);
-    CRM_Core_Region::instance('billing-block')->add(
-      ['template' => 'CRM/Core/Payment/Stripe/Card.tpl', 'weight' => -1]);
+    CRM_Core_Region::instance('billing-block')->add([
+      'template' => E::path('templates/CRM/Core/Payment/Stripe/Card.tpl'),
+      'weight' => -1,
+    ]);
 
     // Enable JS validation for forms so we only (submit) create a paymentIntent when the form has all fields validated.
     $form->assign('isJsValidate', TRUE);
