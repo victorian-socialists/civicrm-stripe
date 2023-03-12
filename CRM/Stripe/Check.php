@@ -25,8 +25,8 @@ class CRM_Stripe_Check {
   /**
    * @var string
    */
-  const MIN_VERSION_MJWSHARED = '1.2.10';
-  const MIN_VERSION_FIREWALL = '1.5.6';
+  const MIN_VERSION_MJWSHARED = '1.2.11';
+  const MIN_VERSION_FIREWALL = '1.5.8';
 
   /**
    * @var array
@@ -49,7 +49,6 @@ class CRM_Stripe_Check {
   public function checkRequirements() {
     $this->checkExtensionMjwshared();
     $this->checkExtensionFirewall();
-    $this->checkUpgradeMessages();
     $this->checkWebhooks();
     $this->checkFailedPaymentIntents();
     return $this->messages;
@@ -165,41 +164,6 @@ class CRM_Stripe_Check {
     }
     if (isset($extensions['id']) && $extensions['values'][$extensions['id']]['status'] === 'installed') {
       $this->requireExtensionMinVersion($extensionName, CRM_Stripe_Check::MIN_VERSION_FIREWALL, $extensions['values'][$extensions['id']]['version']);
-    }
-  }
-
-  /**
-   * Display messages on version upgrade
-   *
-   * @param array $messages
-   */
-  private function checkUpgradeMessages() {
-    // @todo: When we release 6.7 we need to think about if this should be displayed or not (consider install/upgrade).
-    if ((bool) \Civi::settings()->get('stripe_upgrade66message')) {
-      $message = new CRM_Utils_Check_Message(
-        __FUNCTION__ . 'stripe_upgrade66message',
-        E::ts('Thankyou for upgrading to Stripe 6.6. You MUST check your configuration to make sure it will continue working:
-        <ul>
-          <li><strong>Access AJAX API</strong> permission is required for all users that make payments using Stripe (including the anonymous user).
-          You need to check that all users making Stripe payments have the CiviCRM permission <strong>Access AJAX API</strong> otherwise payments will fail.</li>
-          <li>Billing address fields are now disabled by default (if you require additional fields collect them via a profile).
-          If you require the billing address fields you can enable them in <em>Administer->CiviContribute->Stripe Settings->Disable billing address fields</em>.
-          They will be removed in a future version - if this is a problem please contact <a href="https://mjw.pt/support">MJW</a> and let us know why!</li>
-          <li><a href="https://docs.civicrm.org/mjwshared/en/latest/refunds/">Refund UI</a> is now enabled by default.</li>
-        </ul>'
-        ),
-        E::ts('Stripe: You need to check some settings now that you have upgraded to 6.6'),
-        \Psr\Log\LogLevel::CRITICAL,
-        'fa-money'
-      );
-      $message->addAction(
-        E::ts('I\'ve read this'),
-        E::ts('I\'ve read this and made any necessary configuration changes - don\'t show me this upgrade message any
-      more'),
-        'api3',
-        ['Setting', 'create', ['stripe_upgrade66message' => 0]]
-      );
-      $this->messages[] = $message;
     }
   }
 
