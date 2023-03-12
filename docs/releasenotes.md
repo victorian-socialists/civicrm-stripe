@@ -9,7 +9,8 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
-## Release 6.8 (not yet released)
+## Release 6.8 (2023-03-12)
+
 **You don't need "Access AJAX API" permission for anonymous user to make payments**
 
 ### Features:
@@ -38,6 +39,8 @@ Releases use the following numbering system:
 * Convert StripeCustomer to an entity and add API4 methods to access it.
 * Update Stripe PHP library to v9.
 * Change recommended Stripe API version to 2022-11-15.
+* Fix loading stripe element for some WordPress sites.
+* New framework for handling webhook events.
 
 ## Release 6.7.14 (2022-12-19)
 
