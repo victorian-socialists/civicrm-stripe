@@ -9,6 +9,10 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
+## Release 6.8.1 (2023-03-13)
+
+* Add mixin required for versions older than 5.59 (ie. 5.58).
+
 ## Release 6.8 (2023-03-12)
 
 **You don't need "Access AJAX API" permission for anonymous user to make payments**
