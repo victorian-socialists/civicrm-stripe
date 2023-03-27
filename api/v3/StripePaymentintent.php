@@ -165,12 +165,12 @@ function civicrm_api3_stripe_paymentintent_process($params) {
   $authorizeEvent = new \Civi\Stripe\Event\AuthorizeEvent('StripePaymentintent', 'process', $params);
   $event = \Civi::dispatcher()->dispatch('civi.stripe.authorize', $authorizeEvent);
   if ($event->isAuthorized() === FALSE) {
-    _civicrm_api3_stripe_paymentintent_returnInvalid(E::ts('Bad Request'));
+    return civicrm_api3_create_error(E::ts('There was a problem authorizing or validating your request.'));
   }
 
   foreach ($params as $key => $value) {
     if (substr($key, 0, 3) === 'api') {
-      _civicrm_api3_stripe_paymentintent_returnInvalid('Invalid params');
+      return civicrm_api3_create_error(E::ts('There was a problem authorizing or validating your request.'));
     }
   }
   $paymentMethodID = CRM_Utils_Type::validate($params['payment_method_id'] ?? '', 'String');
@@ -182,7 +182,7 @@ function civicrm_api3_stripe_paymentintent_process($params) {
   //   authentication from the user (eg. on the confirmation page). So we don't need the amount
   //   in this case.
   if (empty($amount) && !$capture && !$setup) {
-    _civicrm_api3_stripe_paymentintent_returnInvalid();
+    return civicrm_api3_create_error(E::ts('There was a problem authorizing or validating your request.'));
   }
 
   $description = CRM_Utils_Type::validate($params['description'], 'String');
