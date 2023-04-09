@@ -737,7 +737,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
    * @throws \CiviCRM_API3_Exception
    * @throws \CRM_Core_Exception
    */
-  public function doRecurPayment($propertyBag, $amountFormattedForStripe, $stripeCustomer) {
+  public function doRecurPayment(\Civi\Payment\PropertyBag $propertyBag, int $amountFormattedForStripe, $stripeCustomer): array {
     $params = $this->getPropertyBagAsArray($propertyBag);
 
     // @fixme FROM HERE we are using $params array (but some things are READING from $propertyBag)
@@ -902,7 +902,7 @@ class CRM_Core_Payment_Stripe extends CRM_Core_Payment {
           }
           elseif (!empty($intent->latest_charge)) {
             // Stripe API version 2022-11-15
-            $stripeCharge = $this->stripeClient->charges->retrieve($intent->latest_charge->id);
+            $stripeCharge = $this->stripeClient->charges->retrieve($intent->latest_charge);
           }
           try {
             $stripeBalanceTransaction = $this->stripeClient->balanceTransactions->retrieve($stripeCharge->balance_transaction);

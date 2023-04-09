@@ -955,7 +955,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     $mockPaymentIntent = new PropertySpy('PaymentIntent', [
       'id' => 'pi_mock',
       'status' => 'succeeded',
-      'latest_charge' => $mockCharge
+      'latest_charge' => 'ch_mock'
     ]);
 
     $stripeClient->paymentIntents = $this->createMock('Stripe\\Service\\PaymentIntentService');
@@ -967,7 +967,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     $mockPaymentIntentWithAmount = new PropertySpy('PaymentIntent', [
       'id' => 'pi_mock',
       'status' => 'succeeded',
-      'latest_charge' => $mockCharge,
+      'latest_charge' => 'ch_mock',
       'amount' => '40000',
     ]);
     $stripeClient->paymentIntents
@@ -1123,7 +1123,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     $mockPaymentIntent = new PropertySpy('PaymentIntent', [
       'id' => 'pi_mock',
       'status' => 'succeeded',
-      'latest_charge' => $mockCharge
+      'latest_charge' => 'ch_mock'
     ]);
 
     $stripeClient->paymentIntents = $this->createMock('Stripe\\Service\\PaymentIntentService');
@@ -1135,7 +1135,7 @@ class CRM_Stripe_IpnTest extends CRM_Stripe_BaseTest {
     $mockPaymentIntentWithAmount = new PropertySpy('PaymentIntent', [
       'id' => 'pi_mock',
       'status' => 'succeeded',
-      'latest_charge' => $mockCharge,
+      'latest_charge' => 'ch_mock',
       'amount' => '40000',
     ]);
     $stripeClient->paymentIntents

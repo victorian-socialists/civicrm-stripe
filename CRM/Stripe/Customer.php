@@ -95,11 +95,11 @@ class CRM_Stripe_Customer {
    * @param array $params
    * @param \CRM_Core_Payment_Stripe $stripe
    *
-   * @return \Stripe\ApiResource
+   * @return \Stripe\Customer|\PropertySpy
    * @throws \CiviCRM_API3_Exception
    * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
-  public static function create($params, $stripe) {
+  public static function create(array $params, \CRM_Core_Payment_Stripe $stripe) {
     $requiredParams = ['contact_id', 'processor_id'];
     foreach ($requiredParams as $required) {
       if (empty($params[$required])) {
