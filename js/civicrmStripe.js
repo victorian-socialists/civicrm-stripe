@@ -404,8 +404,7 @@
       script.debugging('locale: ' + CRM.vars[script.name].locale);
       var stripeElements = stripe.elements({locale: CRM.vars[script.name].locale});
 
-      // By default we load paymentRequest button if we can, fallback to card element
-      script.createElementPaymentRequest(stripeElements);
+      script.createElementCard(stripeElements);
     },
 
     /**
